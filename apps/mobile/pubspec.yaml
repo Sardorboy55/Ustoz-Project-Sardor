@@ -1,0 +1,46 @@
+name: ustoz_mobile
+description: "USTOZ — tutor & specialist marketplace for Uzbekistan (mobile app)."
+publish_to: 'none'
+
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.12.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # state & architecture
+  flutter_riverpod: ^3.0.3
+  riverpod_annotation: ^3.0.3
+
+  # navigation
+  go_router: ^16.3.0
+
+  # models
+  freezed_annotation: ^3.0.0
+  json_annotation: ^4.9.0
+
+  # backend
+  supabase_flutter: ^2.10.3
+
+  # misc
+  intl: any # pinned by flutter_localizations
+  shared_preferences: ^2.5.3
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  build_runner: ^2.4.0
+  riverpod_generator: ^3.0.0
+  freezed: ^3.0.0
+  json_serializable: ^6.9.0
+
+flutter:
+  uses-material-design: true
+  generate: true # gen-l10n from lib/l10n/*.arb
