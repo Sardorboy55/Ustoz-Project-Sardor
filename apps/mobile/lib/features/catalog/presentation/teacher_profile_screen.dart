@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/providers/locale_provider.dart';
+import '../../../core/providers/supabase_providers.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../booking/presentation/booking_sheet.dart';
 import '../data/catalog_repository.dart';
 
 String _fmtUzs(num tiyin) {
@@ -167,10 +169,14 @@ class TeacherProfileScreen extends ConsumerWidget {
                   ),
                 ),
               const SizedBox(height: 16),
-              FilledButton(
-                onPressed: null,
-                child: Text(l10n.bookComingSoon),
-              ),
+              Builder(builder: (context) {
+                final isSelf = ref.read(sessionControllerProvider)?.user.id ==
+                    t['user_id'];
+                return FilledButton(
+                  onPressed: isSelf ? null : () => showBookingSheet(context, t),
+                  child: Text(l10n.bookingCta),
+                );
+              }),
               const SizedBox(height: 24),
             ],
           );

@@ -65,7 +65,11 @@ class HomeScreen extends ConsumerWidget {
                     label: l10n.catalogTitle,
                     onTap: () => context.push('/catalog'),
                   ),
-                  _StubCard(icon: Icons.event_rounded, label: l10n.lessonsTitle),
+                  _StubCard(
+                    icon: Icons.event_rounded,
+                    label: l10n.lessonsTitle,
+                    onTap: () => context.push('/lessons'),
+                  ),
                   _StubCard(icon: Icons.chat_bubble_rounded, label: l10n.chatsTitle),
                   _StubCard(
                     icon: Icons.person_rounded,
