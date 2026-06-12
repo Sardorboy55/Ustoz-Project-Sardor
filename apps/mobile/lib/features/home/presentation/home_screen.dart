@@ -60,7 +60,11 @@ class HomeScreen extends ConsumerWidget {
                 mainAxisSpacing: 12,
                 crossAxisSpacing: 12,
                 children: [
-                  _StubCard(icon: Icons.grid_view_rounded, label: l10n.catalogTitle),
+                  _StubCard(
+                    icon: Icons.grid_view_rounded,
+                    label: l10n.catalogTitle,
+                    onTap: () => context.push('/catalog'),
+                  ),
                   _StubCard(icon: Icons.event_rounded, label: l10n.lessonsTitle),
                   _StubCard(icon: Icons.chat_bubble_rounded, label: l10n.chatsTitle),
                   _StubCard(

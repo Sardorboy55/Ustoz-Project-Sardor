@@ -209,4 +209,49 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get minutes => 'мин';
+
+  @override
+  String get catalogSearchHint => 'Имя, предмет или направление...';
+
+  @override
+  String get catalogAll => 'Все';
+
+  @override
+  String get sortRecommended => 'Рекомендуем';
+
+  @override
+  String get sortCheap => 'Дешевле';
+
+  @override
+  String get sortRating => 'Рейтинг';
+
+  @override
+  String get catalogTrialChip => 'Бесплатный пробный';
+
+  @override
+  String get catalogEmpty => 'Ничего не найдено';
+
+  @override
+  String get catalogFrom => 'от';
+
+  @override
+  String get catalogTrialBadge => 'Бесплатный пробный урок';
+
+  @override
+  String get teacherProfileTitle => 'Профиль устоза';
+
+  @override
+  String get teacherAbout => 'О преподавателе';
+
+  @override
+  String get minutesLessons => 'уроков';
+
+  @override
+  String get years => 'лет';
+
+  @override
+  String get minShort => ' мин';
+
+  @override
+  String get bookComingSoon => 'Бронирование — в Фазе 3';
 }

@@ -65,5 +65,20 @@
   "teacherTrialToggle": "Bepul 20 daqiqalik sinov darsi",
   "teacherTrialOn": "sinov darsi bor",
   "teacherSubjectLimit": "FREE tarifda faqat 1 ta fan. PRO — 5 tagacha.",
-  "minutes": "daq"
+  "minutes": "daq",
+  "catalogSearchHint": "Ism, fan yoki yo'nalish...",
+  "catalogAll": "Hammasi",
+  "sortRecommended": "Tavsiya",
+  "sortCheap": "Arzon",
+  "sortRating": "Reyting",
+  "catalogTrialChip": "Bepul sinov",
+  "catalogEmpty": "Hech narsa topilmadi",
+  "catalogFrom": "dan",
+  "catalogTrialBadge": "Bepul sinov darsi",
+  "teacherProfileTitle": "Ustoz profili",
+  "teacherAbout": "Ustoz haqida",
+  "minutesLessons": "dars",
+  "years": "yil",
+  "minShort": " daq",
+  "bookComingSoon": "Band qilish — Faza 3 da"
 }

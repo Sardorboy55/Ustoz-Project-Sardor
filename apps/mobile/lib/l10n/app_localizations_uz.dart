@@ -212,4 +212,49 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get minutes => 'daq';
+
+  @override
+  String get catalogSearchHint => 'Ism, fan yoki yo\'nalish...';
+
+  @override
+  String get catalogAll => 'Hammasi';
+
+  @override
+  String get sortRecommended => 'Tavsiya';
+
+  @override
+  String get sortCheap => 'Arzon';
+
+  @override
+  String get sortRating => 'Reyting';
+
+  @override
+  String get catalogTrialChip => 'Bepul sinov';
+
+  @override
+  String get catalogEmpty => 'Hech narsa topilmadi';
+
+  @override
+  String get catalogFrom => 'dan';
+
+  @override
+  String get catalogTrialBadge => 'Bepul sinov darsi';
+
+  @override
+  String get teacherProfileTitle => 'Ustoz profili';
+
+  @override
+  String get teacherAbout => 'Ustoz haqida';
+
+  @override
+  String get minutesLessons => 'dars';
+
+  @override
+  String get years => 'yil';
+
+  @override
+  String get minShort => ' daq';
+
+  @override
+  String get bookComingSoon => 'Band qilish — Faza 3 da';
 }

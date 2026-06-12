@@ -65,5 +65,20 @@
   "teacherTrialToggle": "Бесплатный пробный урок 20 минут",
   "teacherTrialOn": "есть пробный",
   "teacherSubjectLimit": "На тарифе FREE — только 1 предмет. PRO — до 5.",
-  "minutes": "мин"
+  "minutes": "мин",
+  "catalogSearchHint": "Имя, предмет или направление...",
+  "catalogAll": "Все",
+  "sortRecommended": "Рекомендуем",
+  "sortCheap": "Дешевле",
+  "sortRating": "Рейтинг",
+  "catalogTrialChip": "Бесплатный пробный",
+  "catalogEmpty": "Ничего не найдено",
+  "catalogFrom": "от",
+  "catalogTrialBadge": "Бесплатный пробный урок",
+  "teacherProfileTitle": "Профиль устоза",
+  "teacherAbout": "О преподавателе",
+  "minutesLessons": "уроков",
+  "years": "лет",
+  "minShort": " мин",
+  "bookComingSoon": "Бронирование — в Фазе 3"
 }
