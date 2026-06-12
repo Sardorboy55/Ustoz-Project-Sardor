@@ -4,6 +4,25 @@
 
 Онлайн-платформа для Узбекистана: поиск, бронирование и проведение уроков/консультаций с преподавателями и специалистами **внутри платформы** — как italki/Preply, но для всех категорий: языки, IT, школьные предметы, психологи, мастера.
 
+## Разработка (быстрый старт)
+
+```bash
+# зависимости
+npm install                       # web + admin + shared (npm workspaces)
+cd apps/mobile && flutter pub get && flutter gen-l10n && dart run build_runner build
+
+# локальный Supabase (нужен Docker)
+supabase start                    # первый запуск тянет образы
+supabase db reset                 # миграции + seed (категории, предметы, 5 демо-преподавателей)
+
+# приложения
+npm run dev:web                   # http://localhost:3000 (uz), /ru — русская версия
+npm run dev:admin                 # http://localhost:3001
+cd apps/mobile && flutter run --dart-define=SUPABASE_URL=http://10.0.2.2:54321 --dart-define=SUPABASE_ANON_KEY=<anon key из supabase status>
+```
+
+Демо-данные: 5 преподавателей (slug `aziza-karimova`, `bobur-rahimov`, `nilufar-yusupova`, `sardor-alimov`, `madina-tosheva`), админ `+998 90 000 00 99`, ученик `+998 90 000 00 10`. Ветки: `main` + ветка на фазу (`phase-N-...`) с PR.
+
 ## Состав пакета документов
 
 | Файл | Что внутри |

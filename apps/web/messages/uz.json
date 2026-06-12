@@ -1,0 +1,31 @@
+{
+  "Landing": {
+    "title": "O'z ustozingizni toping",
+    "subtitle": "Tillar, maktab fanlari, IT, psixologiya va boshqa yo'nalishlar bo'yicha onlayn darslar — video, interaktiv doska va chat bilan bitta platformada.",
+    "ctaFind": "Ustoz topish",
+    "ctaBecome": "Ustoz bo'lish",
+    "categoriesTitle": "Yo'nalishlar",
+    "howTitle": "Qanday ishlaydi?",
+    "how1Title": "Toping",
+    "how1Body": "Katalogdan yo'nalish va narx bo'yicha o'zingizga mos ustozni tanlang.",
+    "how2Title": "Band qiling",
+    "how2Body": "Bo'sh vaqtni tanlab, Payme, Click yoki Uzum orqali to'lang.",
+    "how3Title": "O'qing",
+    "how3Body": "Dars platforma ichida: video, doska, chat va uy vazifalari."
+  },
+  "Nav": {
+    "catalog": "Katalog",
+    "forTeachers": "Ustozlar uchun",
+    "pricing": "Tariflar",
+    "signIn": "Kirish"
+  },
+  "Footer": {
+    "offer": "Ommaviy oferta",
+    "privacy": "Maxfiylik siyosati",
+    "rights": "Barcha huquqlar himoyalangan"
+  },
+  "Common": {
+    "loading": "Yuklanmoqda...",
+    "error": "Xatolik yuz berdi"
+  }
+}
