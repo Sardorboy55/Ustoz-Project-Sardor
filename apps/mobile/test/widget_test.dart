@@ -34,7 +34,8 @@ void main() {
     // advance past the splash timer so it is not pending at teardown
     await tester.pump(const Duration(milliseconds: 1300));
     await tester.pumpAndSettle();
-    expect(find.text('Главная'), findsOneWidget); // home in ru
+    // home in ru: AppBar title + bottom-nav tab label
+    expect(find.text('Главная'), findsWidgets);
 
     container.dispose();
   });
@@ -47,7 +48,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 1300));
     await tester.pumpAndSettle();
 
-    expect(find.text('Bosh sahifa'), findsOneWidget); // home title in uz
+    expect(find.text('Asosiy'), findsOneWidget); // home tab label in uz
     container.dispose();
   });
 }

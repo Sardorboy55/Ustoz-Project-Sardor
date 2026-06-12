@@ -113,37 +113,37 @@ abstract class AppLocalizations {
   /// No description provided for @onboardingTitle1.
   ///
   /// In uz, this message translates to:
-  /// **'Istalgan yo\'nalishda ustoz'**
+  /// **'O\'zingizga mos ustozni toping'**
   String get onboardingTitle1;
 
   /// No description provided for @onboardingBody1.
   ///
   /// In uz, this message translates to:
-  /// **'Tillar, maktab fanlari, IT, psixologiya va boshqalar — barchasi bitta ilovada.'**
+  /// **'Tillar, maktab fanlari, IT, psixologiya va boshqa yo\'nalishlar — tajribali ustozlar bitta ilovada.'**
   String get onboardingBody1;
 
   /// No description provided for @onboardingTitle2.
   ///
   /// In uz, this message translates to:
-  /// **'Dars platforma ichida'**
+  /// **'Qulay vaqtni band qiling'**
   String get onboardingTitle2;
 
   /// No description provided for @onboardingBody2.
   ///
   /// In uz, this message translates to:
-  /// **'Video, interaktiv doska, chat va uy vazifalari — hech qayerga o\'tish shart emas.'**
+  /// **'Ustozning bo\'sh vaqtlarini ko\'ring va o\'zingizga qulay paytni tanlang — bir necha soniyada.'**
   String get onboardingBody2;
 
   /// No description provided for @onboardingTitle3.
   ///
   /// In uz, this message translates to:
-  /// **'Xavfsiz to\'lov'**
+  /// **'Onlayn o\'qing, o\'sishni kuzating'**
   String get onboardingTitle3;
 
   /// No description provided for @onboardingBody3.
   ///
   /// In uz, this message translates to:
-  /// **'Payme, Click yoki Uzum orqali to\'lang. Dars bo\'lmasa — pul qaytadi.'**
+  /// **'Darslar platforma ichida o\'tadi: video, doska va chat. Natijalaringiz har doim ko\'z oldingizda.'**
   String get onboardingBody3;
 
   /// No description provided for @onboardingNext.
@@ -253,6 +253,72 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Xatolik yuz berdi. Qayta urinib ko\'ring.'**
   String get commonError;
+
+  /// No description provided for @commonRetry.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qayta urinish'**
+  String get commonRetry;
+
+  /// No description provided for @sectionAll.
+  ///
+  /// In uz, this message translates to:
+  /// **'Barchasi'**
+  String get sectionAll;
+
+  /// No description provided for @tabHome.
+  ///
+  /// In uz, this message translates to:
+  /// **'Asosiy'**
+  String get tabHome;
+
+  /// No description provided for @tabCatalog.
+  ///
+  /// In uz, this message translates to:
+  /// **'Katalog'**
+  String get tabCatalog;
+
+  /// No description provided for @tabLessons.
+  ///
+  /// In uz, this message translates to:
+  /// **'Darslar'**
+  String get tabLessons;
+
+  /// No description provided for @tabChats.
+  ///
+  /// In uz, this message translates to:
+  /// **'Chatlar'**
+  String get tabChats;
+
+  /// No description provided for @tabProfile.
+  ///
+  /// In uz, this message translates to:
+  /// **'Profil'**
+  String get tabProfile;
+
+  /// No description provided for @chatsEmptyTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xabarlar hozircha yo\'q'**
+  String get chatsEmptyTitle;
+
+  /// No description provided for @chatsEmptyBody.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ustozga uning profilidan yozing — barcha xabarlar shu yerda saqlanadi.'**
+  String get chatsEmptyBody;
+
+  /// No description provided for @chatsEmptyAction.
+  ///
+  /// In uz, this message translates to:
+  /// **'Katalogga o\'tish'**
+  String get chatsEmptyAction;
+
+  /// No description provided for @verifiedBadge.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tasdiqlangan'**
+  String get verifiedBadge;
 
   /// No description provided for @authPhoneTitle.
   ///
@@ -692,6 +758,30 @@ abstract class AppLocalizations {
   /// **'Bekor qilindi'**
   String get statusCancelled;
 
+  /// No description provided for @statusCancelledByStudent.
+  ///
+  /// In uz, this message translates to:
+  /// **'O\'quvchi bekor qildi'**
+  String get statusCancelledByStudent;
+
+  /// No description provided for @statusCancelledByTeacher.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ustoz bekor qildi'**
+  String get statusCancelledByTeacher;
+
+  /// No description provided for @statusNoShowStudent.
+  ///
+  /// In uz, this message translates to:
+  /// **'O\'quvchi kelmadi'**
+  String get statusNoShowStudent;
+
+  /// No description provided for @statusNoShowTeacher.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ustoz kelmadi'**
+  String get statusNoShowTeacher;
+
   /// No description provided for @statusExpired.
   ///
   /// In uz, this message translates to:
@@ -805,6 +895,900 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Kun yopish'**
   String get availabilityAddException;
+
+  /// No description provided for @homeGreetingMorning.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xayrli tong'**
+  String get homeGreetingMorning;
+
+  /// No description provided for @homeGreetingDay.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xayrli kun'**
+  String get homeGreetingDay;
+
+  /// No description provided for @homeGreetingEvening.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xayrli oqshom'**
+  String get homeGreetingEvening;
+
+  /// No description provided for @homeGreetingNight.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xayrli tun'**
+  String get homeGreetingNight;
+
+  /// No description provided for @homeSearchHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ustoz, fan yoki yo\'nalish qidiring...'**
+  String get homeSearchHint;
+
+  /// No description provided for @homeNextLesson.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yaqinlashayotgan dars'**
+  String get homeNextLesson;
+
+  /// No description provided for @homeCategories.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yo\'nalishlar'**
+  String get homeCategories;
+
+  /// No description provided for @homePopular.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mashhur ustozlar'**
+  String get homePopular;
+
+  /// No description provided for @homeTrialSection.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bepul sinov darsi bilan'**
+  String get homeTrialSection;
+
+  /// No description provided for @homeFavorites.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sevimli ustozlar'**
+  String get homeFavorites;
+
+  /// No description provided for @homeTeacherToday.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bugungi darslar: {count}'**
+  String homeTeacherToday(int count);
+
+  /// No description provided for @homeTeacherPanelCta.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ustoz kabinetiga o\'tish'**
+  String get homeTeacherPanelCta;
+
+  /// No description provided for @startsIn.
+  ///
+  /// In uz, this message translates to:
+  /// **'Boshlanishiga {time} qoldi'**
+  String startsIn(String time);
+
+  /// No description provided for @lessonStarted.
+  ///
+  /// In uz, this message translates to:
+  /// **'Dars boshlandi'**
+  String get lessonStarted;
+
+  /// No description provided for @unitDay.
+  ///
+  /// In uz, this message translates to:
+  /// **'kun'**
+  String get unitDay;
+
+  /// No description provided for @unitHour.
+  ///
+  /// In uz, this message translates to:
+  /// **'soat'**
+  String get unitHour;
+
+  /// No description provided for @unitMin.
+  ///
+  /// In uz, this message translates to:
+  /// **'daq'**
+  String get unitMin;
+
+  /// No description provided for @todayLabel.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bugun'**
+  String get todayLabel;
+
+  /// No description provided for @tomorrowLabel.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ertaga'**
+  String get tomorrowLabel;
+
+  /// No description provided for @catalogFilters.
+  ///
+  /// In uz, this message translates to:
+  /// **'Filtrlar'**
+  String get catalogFilters;
+
+  /// No description provided for @catalogSortTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Saralash'**
+  String get catalogSortTitle;
+
+  /// No description provided for @sortPriceAsc.
+  ///
+  /// In uz, this message translates to:
+  /// **'Avval arzonlari'**
+  String get sortPriceAsc;
+
+  /// No description provided for @sortPriceDesc.
+  ///
+  /// In uz, this message translates to:
+  /// **'Avval qimmatlari'**
+  String get sortPriceDesc;
+
+  /// No description provided for @filterCategory.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yo\'nalish'**
+  String get filterCategory;
+
+  /// No description provided for @filterSubject.
+  ///
+  /// In uz, this message translates to:
+  /// **'Fan'**
+  String get filterSubject;
+
+  /// No description provided for @filterAnySubject.
+  ///
+  /// In uz, this message translates to:
+  /// **'Barcha fanlar'**
+  String get filterAnySubject;
+
+  /// No description provided for @filterPrice.
+  ///
+  /// In uz, this message translates to:
+  /// **'Narx (60 daqiqa uchun)'**
+  String get filterPrice;
+
+  /// No description provided for @filterRatingMin.
+  ///
+  /// In uz, this message translates to:
+  /// **'Reyting 4 dan yuqori'**
+  String get filterRatingMin;
+
+  /// No description provided for @filterLang.
+  ///
+  /// In uz, this message translates to:
+  /// **'Dars tili'**
+  String get filterLang;
+
+  /// No description provided for @filterTrialOnly.
+  ///
+  /// In uz, this message translates to:
+  /// **'Faqat bepul sinov darsi bilan'**
+  String get filterTrialOnly;
+
+  /// No description provided for @filterReset.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tozalash'**
+  String get filterReset;
+
+  /// No description provided for @filterShow.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ko\'rsatish'**
+  String get filterShow;
+
+  /// No description provided for @languageEnglish.
+  ///
+  /// In uz, this message translates to:
+  /// **'Inglizcha'**
+  String get languageEnglish;
+
+  /// No description provided for @catalogEmptyBody.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qidiruv yoki filtrlarni o\'zgartirib ko\'ring.'**
+  String get catalogEmptyBody;
+
+  /// No description provided for @catalogResetFilters.
+  ///
+  /// In uz, this message translates to:
+  /// **'Filtrlarni tozalash'**
+  String get catalogResetFilters;
+
+  /// No description provided for @cardLessonsCount.
+  ///
+  /// In uz, this message translates to:
+  /// **'{count} ta dars'**
+  String cardLessonsCount(int count);
+
+  /// No description provided for @teacherVideoIntro.
+  ///
+  /// In uz, this message translates to:
+  /// **'Video taqdimot'**
+  String get teacherVideoIntro;
+
+  /// No description provided for @teacherServices.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xizmatlar va narxlar'**
+  String get teacherServices;
+
+  /// No description provided for @teacherFreeSlots.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bo\'sh vaqtlar'**
+  String get teacherFreeSlots;
+
+  /// No description provided for @teacherSlotsHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yaqin 3 kun · 60 daqiqalik dars'**
+  String get teacherSlotsHint;
+
+  /// No description provided for @teacherNoUpcomingSlots.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yaqin kunlarda bo\'sh vaqt yo\'q'**
+  String get teacherNoUpcomingSlots;
+
+  /// No description provided for @teacherReviewsTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sharhlar'**
+  String get teacherReviewsTitle;
+
+  /// No description provided for @reviewsCountLabel.
+  ///
+  /// In uz, this message translates to:
+  /// **'{count} ta sharh'**
+  String reviewsCountLabel(int count);
+
+  /// No description provided for @teacherReviewsEmpty.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sharhlar hozircha yo\'q'**
+  String get teacherReviewsEmpty;
+
+  /// No description provided for @showMore.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yana ko\'rsatish'**
+  String get showMore;
+
+  /// No description provided for @readMore.
+  ///
+  /// In uz, this message translates to:
+  /// **'To\'liq o\'qish'**
+  String get readMore;
+
+  /// No description provided for @readLess.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'ish'**
+  String get readLess;
+
+  /// No description provided for @reviewAnonymous.
+  ///
+  /// In uz, this message translates to:
+  /// **'O\'quvchi'**
+  String get reviewAnonymous;
+
+  /// No description provided for @teacherWrite.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yozish'**
+  String get teacherWrite;
+
+  /// No description provided for @bookingStepSubject.
+  ///
+  /// In uz, this message translates to:
+  /// **'Fan'**
+  String get bookingStepSubject;
+
+  /// No description provided for @bookingStepTime.
+  ///
+  /// In uz, this message translates to:
+  /// **'Vaqt'**
+  String get bookingStepTime;
+
+  /// No description provided for @bookingStepConfirm.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tasdiqlash'**
+  String get bookingStepConfirm;
+
+  /// No description provided for @bookingDateTime.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sana va vaqt'**
+  String get bookingDateTime;
+
+  /// No description provided for @bookingDuration.
+  ///
+  /// In uz, this message translates to:
+  /// **'Davomiyligi'**
+  String get bookingDuration;
+
+  /// No description provided for @bookingPolicyFree.
+  ///
+  /// In uz, this message translates to:
+  /// **'12 soatdan oldin bekor qilish — bepul'**
+  String get bookingPolicyFree;
+
+  /// No description provided for @bookingSuccessTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Band qilindi!'**
+  String get bookingSuccessTitle;
+
+  /// No description provided for @bookingSuccessPaidNote.
+  ///
+  /// In uz, this message translates to:
+  /// **'Dars tasdiqlandi. Uni \"Darslarim\" bo\'limida topasiz.'**
+  String get bookingSuccessPaidNote;
+
+  /// No description provided for @bookingPendingNote.
+  ///
+  /// In uz, this message translates to:
+  /// **'To\'lov kutilmoqda: onlayn to\'lov loyiha egasi tomonidan ulanmoqda. Tanlangan vaqt siz uchun 15 daqiqa band qilib turiladi.'**
+  String get bookingPendingNote;
+
+  /// No description provided for @bookingGoLessons.
+  ///
+  /// In uz, this message translates to:
+  /// **'Darslarim'**
+  String get bookingGoLessons;
+
+  /// No description provided for @bookingWriteTeacher.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ustozga yozish'**
+  String get bookingWriteTeacher;
+
+  /// No description provided for @bookingGoHome.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bosh sahifaga'**
+  String get bookingGoHome;
+
+  /// No description provided for @lessonsEmptyUpcomingTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kelgusi darslar yo\'q'**
+  String get lessonsEmptyUpcomingTitle;
+
+  /// No description provided for @lessonsEmptyUpcomingBody.
+  ///
+  /// In uz, this message translates to:
+  /// **'O\'zingizga mos ustozni tanlab, birinchi darsni band qiling.'**
+  String get lessonsEmptyUpcomingBody;
+
+  /// No description provided for @lessonsFindTeacher.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ustoz topish'**
+  String get lessonsFindTeacher;
+
+  /// No description provided for @lessonsEmptyPastTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'O\'tgan darslar hali yo\'q'**
+  String get lessonsEmptyPastTitle;
+
+  /// No description provided for @cancelLessonLate.
+  ///
+  /// In uz, this message translates to:
+  /// **'Diqqat: dars boshlanishiga 12 soatdan kam qoldi — to\'lov qaytarilmaydi.'**
+  String get cancelLessonLate;
+
+  /// No description provided for @lessonCancelled.
+  ///
+  /// In uz, this message translates to:
+  /// **'Dars bekor qilindi'**
+  String get lessonCancelled;
+
+  /// No description provided for @refundToBalance.
+  ///
+  /// In uz, this message translates to:
+  /// **'To\'lov balansingizga qaytarildi'**
+  String get refundToBalance;
+
+  /// No description provided for @leaveReview.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sharh qoldirish'**
+  String get leaveReview;
+
+  /// No description provided for @reviewTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Dars qanday o\'tdi?'**
+  String get reviewTitle;
+
+  /// No description provided for @reviewHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Fikringizni yozing (ixtiyoriy)'**
+  String get reviewHint;
+
+  /// No description provided for @reviewSend.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yuborish'**
+  String get reviewSend;
+
+  /// No description provided for @reviewThanks.
+  ///
+  /// In uz, this message translates to:
+  /// **'Rahmat! Sharhingiz qabul qilindi.'**
+  String get reviewThanks;
+
+  /// No description provided for @reviewAlready.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu dars uchun sharh allaqachon qoldirilgan.'**
+  String get reviewAlready;
+
+  /// No description provided for @yourRating.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sizning bahoyingiz'**
+  String get yourRating;
+
+  /// No description provided for @tagPunctual.
+  ///
+  /// In uz, this message translates to:
+  /// **'Punktual'**
+  String get tagPunctual;
+
+  /// No description provided for @tagClear.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tushunarli tushuntiradi'**
+  String get tagClear;
+
+  /// No description provided for @tagPolite.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xushmuomala'**
+  String get tagPolite;
+
+  /// No description provided for @tagRecommend.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tavsiya qilaman'**
+  String get tagRecommend;
+
+  /// No description provided for @chatYou.
+  ///
+  /// In uz, this message translates to:
+  /// **'Siz'**
+  String get chatYou;
+
+  /// No description provided for @chatNoMessages.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xabarlar hali yo\'q'**
+  String get chatNoMessages;
+
+  /// No description provided for @chatAttachment.
+  ///
+  /// In uz, this message translates to:
+  /// **'Fayl'**
+  String get chatAttachment;
+
+  /// No description provided for @chatInputHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xabar yozing...'**
+  String get chatInputHint;
+
+  /// No description provided for @chatSafetyNote.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xavfsizligingiz uchun telefon raqamlari va boshqa kontaktlar avtomatik yashiriladi.'**
+  String get chatSafetyNote;
+
+  /// No description provided for @chatMaskedNote.
+  ///
+  /// In uz, this message translates to:
+  /// **'tizim tomonidan o\'zgartirildi'**
+  String get chatMaskedNote;
+
+  /// No description provided for @chatYesterday.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kecha'**
+  String get chatYesterday;
+
+  /// No description provided for @chatTeacherNoChat.
+  ///
+  /// In uz, this message translates to:
+  /// **'O\'quvchi sizga hali yozmagan. Chat o\'quvchi birinchi xabar yuborganida ochiladi.'**
+  String get chatTeacherNoChat;
+
+  /// No description provided for @notificationsTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bildirishnomalar'**
+  String get notificationsTitle;
+
+  /// No description provided for @notificationsEmptyTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bildirishnomalar yo\'q'**
+  String get notificationsEmptyTitle;
+
+  /// No description provided for @notificationsEmptyBody.
+  ///
+  /// In uz, this message translates to:
+  /// **'Dars eslatmalari va muhim yangiliklar shu yerda ko\'rinadi.'**
+  String get notificationsEmptyBody;
+
+  /// No description provided for @notificationsMarkAll.
+  ///
+  /// In uz, this message translates to:
+  /// **'Barchasini o\'qish'**
+  String get notificationsMarkAll;
+
+  /// No description provided for @notifReminder24Title.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ertaga dars bor'**
+  String get notifReminder24Title;
+
+  /// No description provided for @notifReminder24Body.
+  ///
+  /// In uz, this message translates to:
+  /// **'Dars boshlanishiga 24 soatdan kam vaqt qoldi. Tafsilotlar — Darslarim bo\'limida.'**
+  String get notifReminder24Body;
+
+  /// No description provided for @notifReminder1hTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Dars tez orada boshlanadi'**
+  String get notifReminder1hTitle;
+
+  /// No description provided for @notifReminder1hBody.
+  ///
+  /// In uz, this message translates to:
+  /// **'Dars 1 soat ichida boshlanadi. Tayyorgarlikni unutmang!'**
+  String get notifReminder1hBody;
+
+  /// No description provided for @notifCancelledTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Dars bekor qilindi'**
+  String get notifCancelledTitle;
+
+  /// No description provided for @notifCancelledBody.
+  ///
+  /// In uz, this message translates to:
+  /// **'Darslaringizdan biri bekor qilindi. Tafsilotlar — Darslarim bo\'limida.'**
+  String get notifCancelledBody;
+
+  /// No description provided for @notifReviewTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Dars qanday o\'tdi?'**
+  String get notifReviewTitle;
+
+  /// No description provided for @notifReviewBody.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ustozga baho qo\'ying — bu boshqa o\'quvchilarga ham yordam beradi.'**
+  String get notifReviewBody;
+
+  /// No description provided for @notifGenericTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bildirishnoma'**
+  String get notifGenericTitle;
+
+  /// No description provided for @profileBalanceTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Balansim'**
+  String get profileBalanceTitle;
+
+  /// No description provided for @profileBalanceNote.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hisobni to\'ldirish onlayn to\'lov ulangach ishlaydi. To\'lov loyiha egasi tomonidan ulanmoqda.'**
+  String get profileBalanceNote;
+
+  /// No description provided for @gamificationLevel.
+  ///
+  /// In uz, this message translates to:
+  /// **'{level}-daraja'**
+  String gamificationLevel(int level);
+
+  /// No description provided for @gamificationXp.
+  ///
+  /// In uz, this message translates to:
+  /// **'{xp} XP'**
+  String gamificationXp(int xp);
+
+  /// No description provided for @gamificationStreak.
+  ///
+  /// In uz, this message translates to:
+  /// **'{count} kunlik seriya'**
+  String gamificationStreak(int count);
+
+  /// No description provided for @gamificationToNext.
+  ///
+  /// In uz, this message translates to:
+  /// **'Keyingi darajagacha {xp} XP'**
+  String gamificationToNext(int xp);
+
+  /// No description provided for @gamificationMaxLevel.
+  ///
+  /// In uz, this message translates to:
+  /// **'Eng yuqori daraja!'**
+  String get gamificationMaxLevel;
+
+  /// No description provided for @menuFavorites.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sevimli ustozlar'**
+  String get menuFavorites;
+
+  /// No description provided for @menuSupport.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yordam xizmati'**
+  String get menuSupport;
+
+  /// No description provided for @menuAbout.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ilova haqida'**
+  String get menuAbout;
+
+  /// No description provided for @aboutVersion.
+  ///
+  /// In uz, this message translates to:
+  /// **'Versiya {version}'**
+  String aboutVersion(String version);
+
+  /// No description provided for @aboutMadeIn.
+  ///
+  /// In uz, this message translates to:
+  /// **'O\'zbekistonda mehr bilan yaratilgan'**
+  String get aboutMadeIn;
+
+  /// No description provided for @signOutConfirmTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hisobdan chiqasizmi?'**
+  String get signOutConfirmTitle;
+
+  /// No description provided for @signOutConfirmBody.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qaytib kirish uchun telefon raqamingizga yana kod yuboriladi.'**
+  String get signOutConfirmBody;
+
+  /// No description provided for @becomeTeacherConfirmTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ustoz bo\'lasizmi?'**
+  String get becomeTeacherConfirmTitle;
+
+  /// No description provided for @becomeTeacherConfirmBody.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ustoz kabineti ochiladi: fanlar, narxlar va jadvalni o\'zingiz belgilaysiz. O\'quvchi sifatida o\'qishni ham davom ettira olasiz.'**
+  String get becomeTeacherConfirmBody;
+
+  /// No description provided for @favoritesEmptyTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sevimli ustozlar yo\'q'**
+  String get favoritesEmptyTitle;
+
+  /// No description provided for @favoritesEmptyBody.
+  ///
+  /// In uz, this message translates to:
+  /// **'Katalogda yoqqan ustozni yurakcha bilan belgilang — u shu yerda ko\'rinadi.'**
+  String get favoritesEmptyBody;
+
+  /// No description provided for @supportSubject.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mavzu'**
+  String get supportSubject;
+
+  /// No description provided for @supportMessage.
+  ///
+  /// In uz, this message translates to:
+  /// **'Murojaat matni'**
+  String get supportMessage;
+
+  /// No description provided for @supportSend.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yuborish'**
+  String get supportSend;
+
+  /// No description provided for @supportSuccessTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Murojaat yuborildi!'**
+  String get supportSuccessTitle;
+
+  /// No description provided for @supportSuccessBody.
+  ///
+  /// In uz, this message translates to:
+  /// **'Jamoamiz tez orada murojaatingizni ko\'rib chiqadi.'**
+  String get supportSuccessBody;
+
+  /// No description provided for @commonClose.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yopish'**
+  String get commonClose;
+
+  /// No description provided for @teacherTabDashboard.
+  ///
+  /// In uz, this message translates to:
+  /// **'Umumiy'**
+  String get teacherTabDashboard;
+
+  /// No description provided for @dashUpcomingTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yaqin darslar'**
+  String get dashUpcomingTitle;
+
+  /// No description provided for @dashNoUpcoming.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yaqin kunlarda darslar yo\'q'**
+  String get dashNoUpcoming;
+
+  /// No description provided for @dashMonthIncome.
+  ///
+  /// In uz, this message translates to:
+  /// **'Oylik daromad'**
+  String get dashMonthIncome;
+
+  /// No description provided for @dashLessonsTotal.
+  ///
+  /// In uz, this message translates to:
+  /// **'Jami darslar'**
+  String get dashLessonsTotal;
+
+  /// No description provided for @walletTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hamyon'**
+  String get walletTitle;
+
+  /// No description provided for @walletAvailable.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mavjud mablag\''**
+  String get walletAvailable;
+
+  /// No description provided for @walletFrozen.
+  ///
+  /// In uz, this message translates to:
+  /// **'Muzlatilgan: {amount}'**
+  String walletFrozen(String amount);
+
+  /// No description provided for @payoutRequest.
+  ///
+  /// In uz, this message translates to:
+  /// **'Pul yechish'**
+  String get payoutRequest;
+
+  /// No description provided for @payoutAmountLabel.
+  ///
+  /// In uz, this message translates to:
+  /// **'Summa (so\'m)'**
+  String get payoutAmountLabel;
+
+  /// No description provided for @payoutCardLabel.
+  ///
+  /// In uz, this message translates to:
+  /// **'Karta raqami'**
+  String get payoutCardLabel;
+
+  /// No description provided for @payoutMinHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kamida 50 000 so\'m'**
+  String get payoutMinHint;
+
+  /// No description provided for @payoutErrorMin.
+  ///
+  /// In uz, this message translates to:
+  /// **'Eng kam summa — 50 000 so\'m'**
+  String get payoutErrorMin;
+
+  /// No description provided for @payoutErrorInsufficient.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hamyonda mablag\' yetarli emas'**
+  String get payoutErrorInsufficient;
+
+  /// No description provided for @payoutErrorCard.
+  ///
+  /// In uz, this message translates to:
+  /// **'Karta raqami 16 ta raqamdan iborat bo\'lishi kerak'**
+  String get payoutErrorCard;
+
+  /// No description provided for @payoutSuccess.
+  ///
+  /// In uz, this message translates to:
+  /// **'So\'rov qabul qilindi. Administrator tasdiqlagach, pul kartangizga o\'tkaziladi.'**
+  String get payoutSuccess;
+
+  /// No description provided for @walletHistory.
+  ///
+  /// In uz, this message translates to:
+  /// **'So\'nggi amaliyotlar'**
+  String get walletHistory;
+
+  /// No description provided for @walletHistoryEmpty.
+  ///
+  /// In uz, this message translates to:
+  /// **'Amaliyotlar hali yo\'q'**
+  String get walletHistoryEmpty;
+
+  /// No description provided for @txLessonIncome.
+  ///
+  /// In uz, this message translates to:
+  /// **'Dars daromadi'**
+  String get txLessonIncome;
+
+  /// No description provided for @txPayout.
+  ///
+  /// In uz, this message translates to:
+  /// **'Pul yechildi'**
+  String get txPayout;
+
+  /// No description provided for @txPayoutFreeze.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yechish uchun muzlatildi'**
+  String get txPayoutFreeze;
+
+  /// No description provided for @txPayoutUnfreeze.
+  ///
+  /// In uz, this message translates to:
+  /// **'Muzlatish bekor qilindi'**
+  String get txPayoutUnfreeze;
+
+  /// No description provided for @txRefundIn.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qaytarildi'**
+  String get txRefundIn;
+
+  /// No description provided for @txBookingSpend.
+  ///
+  /// In uz, this message translates to:
+  /// **'Dars uchun to\'lov'**
+  String get txBookingSpend;
+
+  /// No description provided for @txAdminAdjust.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tuzatish'**
+  String get txAdminAdjust;
 }
 
 class _AppLocalizationsDelegate

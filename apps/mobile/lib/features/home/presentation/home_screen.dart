@@ -2,82 +2,478 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/providers/locale_provider.dart';
+import '../../../app/theme.dart';
+import '../../../common/datetime.dart';
+import '../../../common/format.dart';
+import '../../../common/widgets/app_avatar.dart';
+import '../../../common/widgets/app_card.dart';
+import '../../../common/widgets/badges.dart';
+import '../../../common/widgets/countdown_text.dart';
+import '../../../common/widgets/rating_stars.dart';
+import '../../../common/widgets/section_header.dart';
+import '../../../common/widgets/skeleton.dart';
+import '../../../common/widgets/status_chip.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../catalog/data/catalog_repository.dart';
+import '../../favorites/data/favorites_repository.dart';
+import '../../notifications/data/notifications_repository.dart';
+import '../../profile/data/profile_repository.dart';
+import '../data/home_repository.dart';
+
+const _popularFilters = CatalogFilters(limit: 5);
+const _trialFilters = CatalogFilters(trialOnly: true, limit: 5);
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
+  Future<void> _refresh(WidgetRef ref) async {
+    ref.invalidate(ownProfileProvider);
+    ref.invalidate(nextLessonProvider);
+    ref.invalidate(activeCategoriesProvider);
+    ref.invalidate(catalogCardsProvider);
+    ref.invalidate(favoriteCardsProvider);
+    ref.invalidate(teacherTodayCountProvider);
+    ref.invalidate(unreadNotificationsCountProvider);
+    await Future.wait([
+      ref.read(nextLessonProvider.future),
+      ref.read(activeCategoriesProvider.future),
+    ]).catchError((_) => <Object?>[]);
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    final locale = ref.watch(localeControllerProvider);
-    final scheme = Theme.of(context).colorScheme;
+    final profile = ref.watch(ownProfileProvider);
+    final favorites = ref.watch(favoriteCardsProvider);
+    final isTeacher = profile.value?['is_teacher'] == true;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.homeTitle),
-        actions: [
-          // uz/ru switcher — Phase 0 acceptance criterion
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: SegmentedButton<String>(
-              showSelectedIcon: false,
-              style: const ButtonStyle(visualDensity: VisualDensity.compact),
-              segments: const [
-                ButtonSegment(value: 'uz', label: Text('UZ')),
-                ButtonSegment(value: 'ru', label: Text('RU')),
+      body: SafeArea(
+        child: RefreshIndicator(
+          onRefresh: () => _refresh(ref),
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.only(bottom: AppTokens.s32),
+            children: [
+              const SizedBox(height: AppTokens.s12),
+              _Header(profile: profile),
+              const SizedBox(height: AppTokens.s16),
+              const _SearchBarStub(),
+              const _NextLessonSection(),
+              const SizedBox(height: AppTokens.s24),
+              SectionHeader(
+                title: l10n.homeCategories,
+                padding: const EdgeInsets.symmetric(horizontal: AppTokens.s16),
+              ),
+              const SizedBox(height: AppTokens.s8),
+              const _CategoriesRow(),
+              const SizedBox(height: AppTokens.s24),
+              SectionHeader(
+                title: l10n.homePopular,
+                padding: const EdgeInsets.symmetric(horizontal: AppTokens.s16),
+                onAction: () => context.go('/catalog'),
+              ),
+              const SizedBox(height: AppTokens.s8),
+              const _TeacherRow(filters: _popularFilters),
+              const SizedBox(height: AppTokens.s24),
+              SectionHeader(
+                title: l10n.homeTrialSection,
+                padding: const EdgeInsets.symmetric(horizontal: AppTokens.s16),
+                onAction: () => context.go('/catalog?trial=1'),
+              ),
+              const SizedBox(height: AppTokens.s8),
+              const _TeacherRow(filters: _trialFilters),
+              if ((favorites.value ?? const []).isNotEmpty) ...[
+                const SizedBox(height: AppTokens.s24),
+                SectionHeader(
+                  title: l10n.homeFavorites,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: AppTokens.s16),
+                ),
+                const SizedBox(height: AppTokens.s8),
+                _CardsRow(cards: favorites.value!),
               ],
-              selected: {locale.languageCode},
-              onSelectionChanged: (s) =>
-                  ref.read(localeControllerProvider.notifier).setLocale(Locale(s.first)),
+              const SizedBox(height: AppTokens.s24),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppTokens.s16),
+                child: isTeacher
+                    ? const _TeacherDashboardBanner()
+                    : const _BecomeTeacherBanner(),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// header: greeting by Tashkent time of day + name + avatar
+// ---------------------------------------------------------------------------
+
+class _Header extends ConsumerWidget {
+  const _Header({required this.profile});
+
+  final AsyncValue<Map<String, dynamic>?> profile;
+
+  String _greeting(AppLocalizations l10n) {
+    final hour = toTashkent(DateTime.now()).hour;
+    if (hour >= 5 && hour < 11) return l10n.homeGreetingMorning;
+    if (hour >= 11 && hour < 17) return l10n.homeGreetingDay;
+    if (hour >= 17 && hour < 22) return l10n.homeGreetingEvening;
+    return l10n.homeGreetingNight;
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final scheme = Theme.of(context).colorScheme;
+    final name = (profile.value?['full_name'] as String? ?? '').trim();
+    final firstName = name.isEmpty ? '' : name.split(RegExp(r'\s+')).first;
+    final unread = ref.watch(unreadNotificationsCountProvider).value ?? 0;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppTokens.s16),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _greeting(l10n),
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodyMedium
+                      ?.copyWith(color: scheme.onSurfaceVariant),
+                ),
+                const SizedBox(height: 2),
+                profile.isLoading
+                    ? const SkeletonPulse(
+                        child: SkeletonBox(width: 140, height: 22))
+                    : Text(
+                        firstName.isEmpty ? l10n.appTitle : firstName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+              ],
+            ),
+          ),
+          IconButton(
+            tooltip: l10n.notificationsTitle,
+            onPressed: () => context.push('/notifications'),
+            icon: Badge(
+              isLabelVisible: unread > 0,
+              label: Text('$unread'),
+              child: const Icon(Icons.notifications_none_rounded, size: 26),
+            ),
+          ),
+          const SizedBox(width: AppTokens.s4),
+          GestureDetector(
+            onTap: () => context.go('/profile'),
+            child: AppAvatar(
+              imageUrl: profile.value?['avatar_url'] as String?,
+              name: name,
+              size: 44,
             ),
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(24),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// search pill → catalog with focused search
+// ---------------------------------------------------------------------------
+
+class _SearchBarStub extends StatelessWidget {
+  const _SearchBarStub();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final scheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppTokens.s16),
+      child: Material(
+        color: scheme.surface,
+        borderRadius: BorderRadius.circular(AppTokens.radiusButton),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppTokens.radiusButton),
+          onTap: () => context.go('/catalog?focus=1'),
+          child: Container(
+            height: 48,
+            padding: const EdgeInsets.symmetric(horizontal: AppTokens.s12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppTokens.radiusButton),
+              border: Border.all(color: scheme.outlineVariant),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.search_rounded, color: scheme.onSurfaceVariant),
+                const SizedBox(width: AppTokens.s8),
+                Expanded(
+                  child: Text(
+                    l10n.homeSearchHint,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Theme.of(context).brightness == Brightness.light
+                          ? AppColors.zinc400
+                          : scheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// next lesson
+// ---------------------------------------------------------------------------
+
+class _NextLessonSection extends ConsumerWidget {
+  const _NextLessonSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final locale = Localizations.localeOf(context).languageCode;
+    final next = ref.watch(nextLessonProvider);
+
+    return next.when(
+      loading: () => const Padding(
+        padding: EdgeInsets.fromLTRB(
+            AppTokens.s16, AppTokens.s16, AppTokens.s16, 0),
+        child: SkeletonCard(height: 116),
+      ),
+      error: (e, _) => const SizedBox.shrink(),
+      data: (b) {
+        if (b == null) return const SizedBox.shrink();
+        final start = DateTime.parse(b['start_at'] as String);
+        final subj = ((b['teacher_subjects'] as Map?)?['subjects'] as Map?)
+                ?.cast<String, dynamic>() ??
+            const {};
+        final subjectName =
+            (locale == 'ru' ? subj['name_ru'] : subj['name_uz']) as String? ??
+                '';
+        final teacher = (b['teacher'] as Map?)?.cast<String, dynamic>();
+        final teacherProfile =
+            (teacher?['profiles'] as Map?)?.cast<String, dynamic>();
+        final teacherName = teacherProfile?['full_name'] as String? ?? '';
+        final pending = b['status'] == 'pending_payment';
+        final tokens = AppTokens.of(context);
+
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(
+              AppTokens.s16, AppTokens.s16, AppTokens.s16, 0),
+          child: AppCard(
+            onTap: () => context.go('/lessons'),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        l10n.homeNextLesson,
+                        style: Theme.of(context)
+                            .textTheme
+                            .labelLarge
+                            ?.copyWith(
+                                color:
+                                    Theme.of(context).colorScheme.onSurfaceVariant),
+                      ),
+                    ),
+                    StatusChip(status: b['status'] as String),
+                  ],
+                ),
+                const SizedBox(height: AppTokens.s12),
+                Row(
+                  children: [
+                    AppAvatar(
+                      imageUrl: teacherProfile?['avatar_url'] as String?,
+                      name: teacherName,
+                      size: 44,
+                    ),
+                    const SizedBox(width: AppTokens.s12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            subjectName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style:
+                                const TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            teacherName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppTokens.s12),
+                Row(
+                  children: [
+                    Icon(Icons.schedule_rounded,
+                        size: 16,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        formatTkDateTime(start, locale),
+                        style: const TextStyle(
+                            fontSize: 13, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                    if (pending)
+                      Text(
+                        l10n.statusPendingPayment,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: tokens.warning,
+                        ),
+                      )
+                    else
+                      CountdownText(target: start.toLocal()),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// categories
+// ---------------------------------------------------------------------------
+
+IconData categoryIcon(String? icon) => switch (icon) {
+      'languages' => Icons.translate_rounded,
+      'school' => Icons.school_outlined,
+      'code' => Icons.code_rounded,
+      'brain' => Icons.psychology_outlined,
+      'briefcase' => Icons.work_outline_rounded,
+      'music' => Icons.music_note_rounded,
+      'dumbbell' => Icons.fitness_center_rounded,
+      'sparkles' => Icons.auto_awesome_rounded,
+      _ => Icons.interests_outlined,
+    };
+
+class _CategoriesRow extends ConsumerWidget {
+  const _CategoriesRow();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final locale = Localizations.localeOf(context).languageCode;
+    final categories = ref.watch(activeCategoriesProvider);
+
+    return SizedBox(
+      height: 96,
+      child: categories.when(
+        loading: () => SkeletonPulse(
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: AppTokens.s16),
+            itemCount: 5,
+            separatorBuilder: (_, _) => const SizedBox(width: AppTokens.s12),
+            itemBuilder: (_, _) => const Column(
+              children: [
+                SkeletonBox.circle(size: 56),
+                SizedBox(height: AppTokens.s8),
+                SkeletonBox(width: 56, height: 10),
+              ],
+            ),
+          ),
+        ),
+        error: (e, _) => _InlineRetry(
+            onRetry: () => ref.invalidate(activeCategoriesProvider)),
+        data: (rows) => ListView.separated(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: AppTokens.s16),
+          itemCount: rows.length,
+          separatorBuilder: (_, _) => const SizedBox(width: AppTokens.s12),
+          itemBuilder: (context, i) {
+            final c = rows[i];
+            final name = (locale == 'ru' ? c['name_ru'] : c['name_uz'])
+                    as String? ??
+                '';
+            return _CategoryTile(
+              icon: categoryIcon(c['icon'] as String?),
+              label: name,
+              onTap: () => context.go('/catalog?category=${c['id']}'),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _CategoryTile extends StatelessWidget {
+  const _CategoryTile({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppTokens.radiusCard),
+      child: SizedBox(
+        width: 76,
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              l10n.homeGreeting,
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              l10n.homeSubtitle,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: scheme.onSurfaceVariant,
-                  ),
-            ),
-            const SizedBox(height: 32),
-            Expanded(
-              child: GridView.count(
-                crossAxisCount: 2,
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                children: [
-                  _StubCard(
-                    icon: Icons.grid_view_rounded,
-                    label: l10n.catalogTitle,
-                    onTap: () => context.push('/catalog'),
-                  ),
-                  _StubCard(
-                    icon: Icons.event_rounded,
-                    label: l10n.lessonsTitle,
-                    onTap: () => context.push('/lessons'),
-                  ),
-                  _StubCard(icon: Icons.chat_bubble_rounded, label: l10n.chatsTitle),
-                  _StubCard(
-                    icon: Icons.person_rounded,
-                    label: l10n.profileTitle,
-                    onTap: () => context.push('/profile'),
-                  ),
-                ],
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: isLight ? AppColors.primaryTint : scheme.primaryContainer,
+                shape: BoxShape.circle,
               ),
+              child: Icon(icon, color: scheme.primary, size: 26),
+            ),
+            const SizedBox(height: AppTokens.s8),
+            Text(
+              label,
+              maxLines: 2,
+              textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 11, height: 1.15),
             ),
           ],
         ),
@@ -86,29 +482,281 @@ class HomeScreen extends ConsumerWidget {
   }
 }
 
-/// Placeholder tiles for the Phase 1+ sections.
-class _StubCard extends StatelessWidget {
-  const _StubCard({required this.icon, required this.label, this.onTap});
+// ---------------------------------------------------------------------------
+// horizontal teacher rows
+// ---------------------------------------------------------------------------
 
-  final IconData icon;
-  final String label;
-  final VoidCallback? onTap;
+class _TeacherRow extends ConsumerWidget {
+  const _TeacherRow({required this.filters});
+
+  final CatalogFilters filters;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final cards = ref.watch(catalogCardsProvider(filters));
+    return cards.when(
+      loading: () => SizedBox(
+        height: 188,
+        child: SkeletonPulse(
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: AppTokens.s16),
+            itemCount: 3,
+            separatorBuilder: (_, _) => const SizedBox(width: AppTokens.s12),
+            itemBuilder: (_, _) => Container(
+              width: 156,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius: BorderRadius.circular(AppTokens.radiusCard),
+                border: Border.all(
+                    color: Theme.of(context).colorScheme.outlineVariant),
+              ),
+            ),
+          ),
+        ),
+      ),
+      error: (e, _) => SizedBox(
+        height: 90,
+        child: _InlineRetry(
+            onRetry: () => ref.invalidate(catalogCardsProvider(filters))),
+      ),
+      data: (rows) =>
+          rows.isEmpty ? const SizedBox.shrink() : _CardsRow(cards: rows),
+    );
+  }
+}
+
+class _CardsRow extends StatelessWidget {
+  const _CardsRow({required this.cards});
+
+  final List<Map<String, dynamic>> cards;
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Card(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+    return SizedBox(
+      height: 188,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: AppTokens.s16),
+        itemCount: cards.length,
+        separatorBuilder: (_, _) => const SizedBox(width: AppTokens.s12),
+        itemBuilder: (context, i) => _TeacherMiniCard(card: cards[i]),
+      ),
+    );
+  }
+}
+
+class _TeacherMiniCard extends StatelessWidget {
+  const _TeacherMiniCard({required this.card});
+
+  final Map<String, dynamic> card;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final locale = Localizations.localeOf(context);
+    final name = card['full_name'] as String? ?? '';
+    final rating = (card['rating_avg'] as num?)?.toDouble() ?? 0;
+    final minPrice = card['min_price_60'] as num?;
+    final priceLine = minPrice == null
+        ? null
+        : (locale.languageCode == 'ru'
+            ? '${l10n.catalogFrom} ${formatTiyin(minPrice, locale)}'
+            : '${formatTiyin(minPrice, locale)} ${l10n.catalogFrom}');
+
+    return SizedBox(
+      width: 156,
+      child: AppCard(
+        padding: const EdgeInsets.all(AppTokens.s12),
+        onTap: () => context.push('/t/${card['slug']}'),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Icon(icon, size: 40, color: scheme.primary),
-            const SizedBox(height: 12),
-            Text(label, style: Theme.of(context).textTheme.titleMedium),
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                AppAvatar(
+                  imageUrl: card['avatar_url'] as String?,
+                  name: name,
+                  size: 64,
+                ),
+                if (card['tier'] == 'pro')
+                  const Positioned(right: -10, top: -4, child: ProBadge()),
+              ],
+            ),
+            const SizedBox(height: AppTokens.s8),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(
+                  child: Text(
+                    name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        fontSize: 13, fontWeight: FontWeight.w700),
+                  ),
+                ),
+                if (card['is_verified'] == true) ...[
+                  const SizedBox(width: 3),
+                  const VerifiedBadge(size: 14),
+                ],
+              ],
+            ),
+            const SizedBox(height: AppTokens.s4),
+            RatingStars(rating: rating, size: 13, showValue: true),
+            const Spacer(),
+            if (priceLine != null)
+              Text(
+                priceLine,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+            if (card['has_free_trial'] == true) ...[
+              const SizedBox(height: AppTokens.s4),
+              const TrialBadge(),
+            ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// banners
+// ---------------------------------------------------------------------------
+
+class _BecomeTeacherBanner extends StatelessWidget {
+  const _BecomeTeacherBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Material(
+      borderRadius: BorderRadius.circular(AppTokens.radiusCard),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => context.go('/profile'),
+        child: Ink(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [AppColors.primary, AppColors.primaryDark],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          padding: const EdgeInsets.all(AppTokens.s16),
+          child: Row(
+            children: [
+              const Icon(Icons.school_rounded, color: Colors.white, size: 36),
+              const SizedBox(width: AppTokens.s12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l10n.becomeTeacherTitle,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: AppTokens.s4),
+                    Text(
+                      l10n.becomeTeacherBody,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.85),
+                        fontSize: 13,
+                        height: 1.3,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right_rounded, color: Colors.white),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TeacherDashboardBanner extends ConsumerWidget {
+  const _TeacherDashboardBanner();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final count = ref.watch(teacherTodayCountProvider);
+    return AppCard(
+      onTap: () => context.push('/teacher'),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: Theme.of(context).brightness == Brightness.light
+                  ? AppColors.primaryTint
+                  : Theme.of(context).colorScheme.primaryContainer,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.co_present_outlined,
+                color: Theme.of(context).colorScheme.primary, size: 22),
+          ),
+          const SizedBox(width: AppTokens.s12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.homeTeacherToday(count.value ?? 0),
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w700, fontSize: 15),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  l10n.homeTeacherPanelCta,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Icon(Icons.chevron_right_rounded),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// compact inline error for a single section
+// ---------------------------------------------------------------------------
+
+class _InlineRetry extends StatelessWidget {
+  const _InlineRetry({required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Center(
+      child: TextButton.icon(
+        onPressed: onRetry,
+        icon: const Icon(Icons.refresh_rounded, size: 18),
+        label: Text(l10n.commonRetry),
       ),
     );
   }

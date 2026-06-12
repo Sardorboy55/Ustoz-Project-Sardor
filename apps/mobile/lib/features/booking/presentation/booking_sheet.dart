@@ -2,28 +2,34 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app/theme.dart';
+import '../../../common/datetime.dart';
+import '../../../common/format.dart';
+import '../../../common/widgets/loading_button.dart';
 import '../../../core/providers/locale_provider.dart';
 import '../../../l10n/app_localizations.dart';
 import '../data/booking_repository.dart';
+import 'booking_success_screen.dart';
 
-String _fmtUzs(num tiyin) {
-  final uzs = (tiyin / 100).round().toString();
-  return uzs.replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+$)'), (m) => '${m[1]} ');
-}
-
-/// Books a lesson with [teacher] (docs/04 §4.3): subject → duration → slot.
-Future<void> showBookingSheet(BuildContext context, Map<String, dynamic> teacher) {
+/// Books a lesson with [teacher] (docs/04 §4.3): subject → time → confirm.
+/// [initialStart] preselects a slot (e.g. from the profile slots preview).
+Future<void> showBookingSheet(
+  BuildContext context,
+  Map<String, dynamic> teacher, {
+  DateTime? initialStart,
+}) {
   return showModalBottomSheet(
     context: context,
     isScrollControlled: true,
-    builder: (_) => BookingSheet(teacher: teacher),
+    builder: (_) => BookingSheet(teacher: teacher, initialStart: initialStart),
   );
 }
 
 class BookingSheet extends ConsumerStatefulWidget {
-  const BookingSheet({super.key, required this.teacher});
+  const BookingSheet({super.key, required this.teacher, this.initialStart});
 
   final Map<String, dynamic> teacher;
+  final DateTime? initialStart;
 
   @override
   ConsumerState<BookingSheet> createState() => _BookingSheetState();
@@ -37,6 +43,7 @@ class _BookingSheetState extends ConsumerState<BookingSheet> {
   DateTime _day = DateTime.now();
   List<DateTime>? _slots;
   DateTime? _slot;
+  DateTime? _pendingSlot; // preselected from the profile preview
   bool _booking = false;
   String? _error;
 
@@ -48,6 +55,15 @@ class _BookingSheetState extends ConsumerState<BookingSheet> {
         .where((s) => s['is_active'] == true)
         .toList();
     if (_subjects.length == 1) _subject = _subjects.first;
+
+    final start = widget.initialStart;
+    if (start != null && _subjects.isNotEmpty) {
+      _subject ??= _subjects.first;
+      _duration = 60;
+      _day = start.toLocal();
+      _pendingSlot = start;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _loadSlots());
+    }
   }
 
   List<int> get _durations {
@@ -67,6 +83,13 @@ class _BookingSheetState extends ConsumerState<BookingSheet> {
     return s['price_$_duration'] as num?;
   }
 
+  // 0 = subject, 1 = time (duration + slot), 2 = confirm
+  int get _step {
+    if (_subject == null) return 0;
+    if (_slot == null) return 1;
+    return 2;
+  }
+
   Future<void> _loadSlots() async {
     if (_subject == null || _duration == null) return;
     setState(() => _slots = null);
@@ -77,7 +100,20 @@ class _BookingSheetState extends ConsumerState<BookingSheet> {
             to: _day,
             durationMin: _trial ? 20 : _duration!,
           );
-      if (mounted) setState(() => _slots = all);
+      if (!mounted) return;
+      setState(() {
+        _slots = all;
+        final pending = _pendingSlot;
+        if (pending != null) {
+          _pendingSlot = null;
+          for (final s in all) {
+            if (s.millisecondsSinceEpoch == pending.millisecondsSinceEpoch) {
+              _slot = s;
+              break;
+            }
+          }
+        }
+      });
     } catch (_) {
       if (mounted) setState(() => _slots = const []);
     }
@@ -91,17 +127,26 @@ class _BookingSheetState extends ConsumerState<BookingSheet> {
       _error = null;
     });
     try {
-      await ref.read(bookingRepositoryProvider).createBooking(
+      final booking = await ref.read(bookingRepositoryProvider).createBooking(
             teacherSubjectId: _subject!['id'] as String,
             startAt: _slot!,
             durationMin: _trial ? 20 : _duration!,
             kind: _trial ? 'trial_free' : 'regular',
           );
       if (!mounted) return;
+      final subj =
+          (_subject!['subjects'] as Map?)?.cast<String, dynamic>() ?? const {};
+      final teacherProfile =
+          (widget.teacher['profiles'] as Map?)?.cast<String, dynamic>();
+      final args = BookingSuccessArgs(
+        booking: booking,
+        teacherId: widget.teacher['user_id'] as String,
+        teacherName: teacherProfile?['full_name'] as String? ?? '',
+        subjectNameUz: subj['name_uz'] as String? ?? '',
+        subjectNameRu: subj['name_ru'] as String? ?? '',
+      );
       Navigator.of(context).pop();
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(l10n.bookingCreated)));
-      context.push('/lessons');
+      context.go('/booking-success', extra: args);
     } on BookingException catch (e) {
       if (e.code == 'UNAUTHENTICATED') {
         // dead session (e.g. revoked server-side) — restart auth
@@ -119,6 +164,7 @@ class _BookingSheetState extends ConsumerState<BookingSheet> {
           _ => l10n.commonError,
         };
       });
+      _loadSlots(); // the chosen slot may be gone — refresh the grid
     } catch (_) {
       setState(() => _error = l10n.commonError);
     } finally {
@@ -148,6 +194,15 @@ class _BookingSheetState extends ConsumerState<BookingSheet> {
         children: [
           Text(l10n.bookingTitle, style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 12),
+          _StepIndicator(
+            current: _step,
+            labels: [
+              l10n.bookingStepSubject,
+              l10n.bookingStepTime,
+              l10n.bookingStepConfirm,
+            ],
+          ),
+          const SizedBox(height: 16),
           DropdownButtonFormField<Map<String, dynamic>>(
             initialValue: _subject,
             isExpanded: true,
@@ -223,7 +278,7 @@ class _BookingSheetState extends ConsumerState<BookingSheet> {
                       children: [
                         Text('${d.day}.${d.month.toString().padLeft(2, '0')}'),
                         Text(
-                          ['', 'Du', 'Se', 'Ch', 'Pa', 'Ju', 'Sh', 'Ya'][d.weekday],
+                          formatTkWeekdayShort(d, locale),
                           style: const TextStyle(fontSize: 11),
                         ),
                       ],
@@ -257,9 +312,7 @@ class _BookingSheetState extends ConsumerState<BookingSheet> {
                 children: [
                   for (final s in _slots!)
                     ChoiceChip(
-                      label: Text(
-                        '${s.toLocal().hour.toString().padLeft(2, '0')}:${s.toLocal().minute.toString().padLeft(2, '0')}',
-                      ),
+                      label: Text(formatTkTime(s)),
                       selected: _slot == s,
                       onSelected: (_) => setState(() => _slot = s),
                     ),
@@ -267,27 +320,202 @@ class _BookingSheetState extends ConsumerState<BookingSheet> {
               ),
             const SizedBox(height: 16),
           ],
-          if (_price != null && _slot != null)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Text(
-                _trial
-                    ? l10n.bookingFreeTrialLabel
-                    : '${l10n.bookingTotal}: ${_fmtUzs(_price!)} UZS',
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-              ),
+          if (_slot != null && _subject != null) ...[
+            _SummaryCard(
+              teacher: widget.teacher,
+              subject: _subject!,
+              slot: _slot!,
+              durationMin: _trial ? 20 : (_duration ?? 60),
+              price: _price,
+              trial: _trial,
             ),
+            const SizedBox(height: 12),
+          ],
           if (_error != null)
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: Text(_error!, style: TextStyle(color: scheme.error)),
             ),
-          FilledButton(
-            onPressed: _slot != null && !_booking ? _confirm : null,
-            child: _booking
-                ? const SizedBox(
-                    width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.5))
-                : Text(l10n.bookingConfirm),
+          LoadingButton(
+            loading: _booking,
+            onPressed: _slot != null ? _confirm : null,
+            child: Text(l10n.bookingConfirm),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// "1 Predmet — 2 Vaqt — 3 Tasdiqlash" progress strip.
+class _StepIndicator extends StatelessWidget {
+  const _StepIndicator({required this.current, required this.labels});
+
+  final int current; // 0-based
+  final List<String> labels;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final inactive = Theme.of(context).brightness == Brightness.light
+        ? AppColors.zinc300
+        : AppColors.zinc700;
+
+    return Row(
+      children: [
+        for (var i = 0; i < labels.length; i++) ...[
+          if (i > 0)
+            Expanded(
+              child: Container(
+                height: 2,
+                margin: const EdgeInsets.symmetric(horizontal: 6),
+                color: i <= current ? scheme.primary : inactive,
+              ),
+            ),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                width: 26,
+                height: 26,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: i <= current ? scheme.primary : Colors.transparent,
+                  border: Border.all(
+                      color: i <= current ? scheme.primary : inactive,
+                      width: 1.6),
+                ),
+                child: Center(
+                  child: i < current
+                      ? const Icon(Icons.check_rounded,
+                          size: 16, color: Colors.white)
+                      : Text(
+                          '${i + 1}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: i <= current
+                                ? Colors.white
+                                : scheme.onSurfaceVariant,
+                          ),
+                        ),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                labels[i],
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: i == current ? FontWeight.w700 : FontWeight.w500,
+                  color: i <= current
+                      ? scheme.primary
+                      : scheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+/// Order summary shown before confirming.
+class _SummaryCard extends StatelessWidget {
+  const _SummaryCard({
+    required this.teacher,
+    required this.subject,
+    required this.slot,
+    required this.durationMin,
+    required this.price,
+    required this.trial,
+  });
+
+  final Map<String, dynamic> teacher;
+  final Map<String, dynamic> subject;
+  final DateTime slot;
+  final int durationMin;
+  final num? price;
+  final bool trial;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final locale = Localizations.localeOf(context);
+    final scheme = Theme.of(context).colorScheme;
+    final teacherProfile =
+        (teacher['profiles'] as Map?)?.cast<String, dynamic>();
+    final subj = (subject['subjects'] as Map?)?.cast<String, dynamic>() ??
+        const <String, dynamic>{};
+    final subjectName = (locale.languageCode == 'ru'
+            ? subj['name_ru']
+            : subj['name_uz']) as String? ??
+        '';
+
+    Widget row(String label, String value, {bool bold = false}) => Padding(
+          padding: const EdgeInsets.symmetric(vertical: 3),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 120,
+                child: Text(
+                  label,
+                  style: TextStyle(
+                      fontSize: 13, color: scheme.onSurfaceVariant),
+                ),
+              ),
+              Expanded(
+                child: Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: bold ? FontWeight.w700 : FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+
+    return Container(
+      padding: const EdgeInsets.all(AppTokens.s12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).brightness == Brightness.light
+            ? AppColors.primaryTint
+            : scheme.primaryContainer,
+        borderRadius: BorderRadius.circular(AppTokens.radiusCard),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          row(l10n.roleTeacher,
+              teacherProfile?['full_name'] as String? ?? ''),
+          row(l10n.teacherSubject, subjectName),
+          row(l10n.bookingDateTime,
+              formatTkDateTime(slot, locale.languageCode)),
+          row(l10n.bookingDuration, '$durationMin ${l10n.minutes}'),
+          row(
+            l10n.bookingTotal,
+            trial
+                ? l10n.bookingFreeTrialLabel
+                : formatTiyin(price ?? 0, locale),
+            bold: true,
+          ),
+          const SizedBox(height: AppTokens.s8),
+          Row(
+            children: [
+              Icon(Icons.verified_user_outlined,
+                  size: 15, color: scheme.primary),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  l10n.bookingPolicyFree,
+                  style: TextStyle(fontSize: 12, color: scheme.primary),
+                ),
+              ),
+            ],
           ),
         ],
       ),

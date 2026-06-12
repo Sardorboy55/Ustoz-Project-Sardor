@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../app/theme.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../booking/data/booking_repository.dart';
 
@@ -157,12 +158,13 @@ class _AvailabilityTabState extends ConsumerState<AvailabilityTab> {
         onPressed: _addRule,
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppTokens.s16),
         children: [
           for (final d in [1, 2, 3, 4, 5, 6, 0])
             if (byDay.containsKey(d)) ...[
               Padding(
-                padding: const EdgeInsets.only(top: 8, bottom: 4),
+                padding: const EdgeInsets.only(
+                    top: AppTokens.s8, bottom: AppTokens.s4),
                 child: Text(names[d],
                     style: Theme.of(context).textTheme.titleSmall),
               ),

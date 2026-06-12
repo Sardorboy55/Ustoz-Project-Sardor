@@ -32,6 +32,8 @@ dependencies:
   shared_preferences: ^2.5.3
   image_picker: ^1.2.1
   cupertino_icons: ^1.0.8
+  cached_network_image: ^3.4.1
+  video_player: ^2.11.1
 
 dev_dependencies:
   flutter_test:
