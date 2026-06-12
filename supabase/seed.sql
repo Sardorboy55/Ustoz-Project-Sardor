@@ -116,6 +116,19 @@ values
    'authenticated', 'authenticated', '998900000010', now(), '',
    '{"provider":"phone","providers":["phone"]}', '{}', now(), now());
 
+-- GoTrue cannot scan NULL string columns on existing users ("Database error
+-- finding user") — blank them for all seeded accounts.
+update auth.users set
+  confirmation_token         = '',
+  recovery_token             = '',
+  email_change_token_new     = '',
+  email_change               = '',
+  phone_change               = '',
+  phone_change_token         = '',
+  email_change_token_current = '',
+  reauthentication_token     = ''
+where id in (select id from profiles);
+
 update profiles set full_name = 'Aziza Karimova',  is_teacher = true where id = '00000000-0000-4000-a000-000000000001';
 update profiles set full_name = 'Bobur Rahimov',   is_teacher = true where id = '00000000-0000-4000-a000-000000000002';
 update profiles set full_name = 'Nilufar Yusupova',is_teacher = true where id = '00000000-0000-4000-a000-000000000003';
