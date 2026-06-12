@@ -47,7 +47,7 @@ void main() {
     final router = GoRouter(
       initialLocation: '/auth/phone',
       routes: [
-        GoRoute(path: '/auth/phone', builder: (_, __) => const PhoneScreen()),
+        GoRoute(path: '/auth/phone', builder: (_, _) => const PhoneScreen()),
         GoRoute(
           path: '/auth/otp',
           builder: (_, state) {
