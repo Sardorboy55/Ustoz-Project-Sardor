@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/providers/locale_provider.dart';
 import '../../../l10n/app_localizations.dart';
@@ -62,7 +63,11 @@ class HomeScreen extends ConsumerWidget {
                   _StubCard(icon: Icons.grid_view_rounded, label: l10n.catalogTitle),
                   _StubCard(icon: Icons.event_rounded, label: l10n.lessonsTitle),
                   _StubCard(icon: Icons.chat_bubble_rounded, label: l10n.chatsTitle),
-                  _StubCard(icon: Icons.person_rounded, label: l10n.profileTitle),
+                  _StubCard(
+                    icon: Icons.person_rounded,
+                    label: l10n.profileTitle,
+                    onTap: () => context.push('/profile'),
+                  ),
                 ],
               ),
             ),
@@ -75,22 +80,27 @@ class HomeScreen extends ConsumerWidget {
 
 /// Placeholder tiles for the Phase 1+ sections.
 class _StubCard extends StatelessWidget {
-  const _StubCard({required this.icon, required this.label});
+  const _StubCard({required this.icon, required this.label, this.onTap});
 
   final IconData icon;
   final String label;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return Card(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 40, color: scheme.primary),
-          const SizedBox(height: 12),
-          Text(label, style: Theme.of(context).textTheme.titleMedium),
-        ],
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 40, color: scheme.primary),
+            const SizedBox(height: 12),
+            Text(label, style: Theme.of(context).textTheme.titleMedium),
+          ],
+        ),
       ),
     );
   }

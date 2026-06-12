@@ -38,9 +38,12 @@ function Landing() {
               {nav("forTeachers")}
             </span>
             <LocaleSwitcher />
-            <span className="rounded-lg bg-teal-700 px-4 py-2 font-medium text-white opacity-50">
+            <Link
+              href="/auth"
+              className="rounded-lg bg-teal-700 px-4 py-2 font-medium text-white hover:bg-teal-800"
+            >
               {nav("signIn")}
-            </span>
+            </Link>
           </nav>
         </div>
       </header>

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/config/env.dart';
 import '../../../l10n/app_localizations.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -25,7 +27,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('onboarding_seen', true);
     if (!mounted) return;
-    context.go('/home');
+    final authed =
+        Env.hasSupabase && Supabase.instance.client.auth.currentSession != null;
+    context.go(authed || !Env.hasSupabase ? '/home' : '/auth/phone');
   }
 
   @override

@@ -242,11 +242,245 @@ abstract class AppLocalizations {
   /// **'Saqlash'**
   String get commonSave;
 
+  /// No description provided for @commonSaved.
+  ///
+  /// In uz, this message translates to:
+  /// **'Saqlandi'**
+  String get commonSaved;
+
   /// No description provided for @commonError.
   ///
   /// In uz, this message translates to:
   /// **'Xatolik yuz berdi. Qayta urinib ko\'ring.'**
   String get commonError;
+
+  /// No description provided for @authPhoneTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kirish'**
+  String get authPhoneTitle;
+
+  /// No description provided for @authPhoneHeadline.
+  ///
+  /// In uz, this message translates to:
+  /// **'Telefon raqamingizni kiriting'**
+  String get authPhoneHeadline;
+
+  /// No description provided for @authPhoneHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'SMS orqali 6 xonali tasdiqlash kodini yuboramiz.'**
+  String get authPhoneHint;
+
+  /// No description provided for @authSendCode.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kod yuborish'**
+  String get authSendCode;
+
+  /// No description provided for @authRateLimited.
+  ///
+  /// In uz, this message translates to:
+  /// **'Juda ko\'p urinish. Birozdan keyin qayta urinib ko\'ring.'**
+  String get authRateLimited;
+
+  /// No description provided for @authOtpTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tasdiqlash kodi'**
+  String get authOtpTitle;
+
+  /// No description provided for @authOtpHeadline.
+  ///
+  /// In uz, this message translates to:
+  /// **'{phone} raqamiga yuborilgan 6 xonali kodni kiriting'**
+  String authOtpHeadline(String phone);
+
+  /// No description provided for @authResendIn.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qayta yuborish: {seconds} s'**
+  String authResendIn(int seconds);
+
+  /// No description provided for @authResend.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kodni qayta yuborish'**
+  String get authResend;
+
+  /// No description provided for @authVerify.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tasdiqlash'**
+  String get authVerify;
+
+  /// No description provided for @authCodeWrong.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kod noto\'g\'ri yoki muddati o\'tgan'**
+  String get authCodeWrong;
+
+  /// No description provided for @setupTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Profilni to\'ldirish'**
+  String get setupTitle;
+
+  /// No description provided for @setupNameLabel.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ismingiz'**
+  String get setupNameLabel;
+
+  /// No description provided for @setupNameHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ism Familiya'**
+  String get setupNameHint;
+
+  /// No description provided for @setupInterests.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qaysi yo\'nalishlar qiziqarli?'**
+  String get setupInterests;
+
+  /// No description provided for @setupContinue.
+  ///
+  /// In uz, this message translates to:
+  /// **'Davom etish'**
+  String get setupContinue;
+
+  /// No description provided for @teacherCabinet.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ustoz kabineti'**
+  String get teacherCabinet;
+
+  /// No description provided for @becomeTeacherTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ustoz bo\'ling'**
+  String get becomeTeacherTitle;
+
+  /// No description provided for @becomeTeacherBody.
+  ///
+  /// In uz, this message translates to:
+  /// **'Profil yarating, fanlar va narxlarni belgilang — o\'quvchilar sizni topadi.'**
+  String get becomeTeacherBody;
+
+  /// No description provided for @becomeTeacherCta.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ustoz bo\'lish'**
+  String get becomeTeacherCta;
+
+  /// No description provided for @signOut.
+  ///
+  /// In uz, this message translates to:
+  /// **'Chiqish'**
+  String get signOut;
+
+  /// No description provided for @teacherTabProfile.
+  ///
+  /// In uz, this message translates to:
+  /// **'Anketa'**
+  String get teacherTabProfile;
+
+  /// No description provided for @teacherTabSubjects.
+  ///
+  /// In uz, this message translates to:
+  /// **'Fanlar va narxlar'**
+  String get teacherTabSubjects;
+
+  /// No description provided for @teacherUploadPhoto.
+  ///
+  /// In uz, this message translates to:
+  /// **'Foto yuklash'**
+  String get teacherUploadPhoto;
+
+  /// No description provided for @teacherUploadVideo.
+  ///
+  /// In uz, this message translates to:
+  /// **'Video (90 s)'**
+  String get teacherUploadVideo;
+
+  /// No description provided for @teacherHeadlineUz.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sarlavha (uz)'**
+  String get teacherHeadlineUz;
+
+  /// No description provided for @teacherHeadlineRu.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sarlavha (ru)'**
+  String get teacherHeadlineRu;
+
+  /// No description provided for @teacherBioUz.
+  ///
+  /// In uz, this message translates to:
+  /// **'O\'zingiz haqida (uz)'**
+  String get teacherBioUz;
+
+  /// No description provided for @teacherBioRu.
+  ///
+  /// In uz, this message translates to:
+  /// **'O\'zingiz haqida (ru)'**
+  String get teacherBioRu;
+
+  /// No description provided for @teacherExperience.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tajriba (yil)'**
+  String get teacherExperience;
+
+  /// No description provided for @teacherLangs.
+  ///
+  /// In uz, this message translates to:
+  /// **'Dars tillari'**
+  String get teacherLangs;
+
+  /// No description provided for @teacherAddSubject.
+  ///
+  /// In uz, this message translates to:
+  /// **'Fan qo\'shish'**
+  String get teacherAddSubject;
+
+  /// No description provided for @teacherNoSubjects.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hozircha fanlar yo\'q. Birinchisini qo\'shing!'**
+  String get teacherNoSubjects;
+
+  /// No description provided for @teacherSubject.
+  ///
+  /// In uz, this message translates to:
+  /// **'Fan'**
+  String get teacherSubject;
+
+  /// No description provided for @teacherTrialToggle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bepul 20 daqiqalik sinov darsi'**
+  String get teacherTrialToggle;
+
+  /// No description provided for @teacherTrialOn.
+  ///
+  /// In uz, this message translates to:
+  /// **'sinov darsi bor'**
+  String get teacherTrialOn;
+
+  /// No description provided for @teacherSubjectLimit.
+  ///
+  /// In uz, this message translates to:
+  /// **'FREE tarifda faqat 1 ta fan. PRO — 5 tagacha.'**
+  String get teacherSubjectLimit;
+
+  /// No description provided for @minutes.
+  ///
+  /// In uz, this message translates to:
+  /// **'daq'**
+  String get minutes;
 }
 
 class _AppLocalizationsDelegate

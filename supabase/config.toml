@@ -198,7 +198,9 @@ password_requirements = ""
 # Number of emails that can be sent per hour. Requires auth.email.smtp to be enabled.
 email_sent = 2
 # Number of SMS messages that can be sent per hour. Requires auth.sms to be enabled.
-sms_sent = 30
+# Spec (docs/04 §4.1): 3 SMS / 10 min per number — enforced via auth.sms.max_frequency;
+# this is the global per-hour ceiling.
+sms_sent = 18
 # Number of anonymous sign-ins that can be made per hour per IP address. Requires enable_anonymous_sign_ins = true.
 anonymous_users = 30
 # Number of sessions that can be refreshed in a 5 minute interval per IP address.
@@ -256,17 +258,25 @@ otp_expiry = 3600
 
 [auth.sms]
 # Allow/disallow new user signups via SMS to your project.
-enable_signup = false
+enable_signup = true
 # If enabled, users need to confirm their phone number before signing in.
-enable_confirmations = false
-# Template for sending OTP to users
-template = "Your code is {{ .Code }}"
-# Controls the minimum amount of time that must pass before sending another sms otp.
-max_frequency = "5s"
+enable_confirmations = true
+# Template for sending OTP to users (Eskiz template wording — docs/07 §7.5)
+template = "Vash kod: {{ .Code }}"
+# Spec: 3 SMS / 10 min per number → min ~200s between sends to the same number.
+# (SMS OTP is 6 digits by GoTrue default; expiry is not configurable via CLI config.)
+max_frequency = "3m20s"
 
-# Use pre-defined map of phone number to OTP for testing.
-# [auth.sms.test_otp]
-# 4152127777 = "123456"
+# Fixed OTP for seeded demo users (local/staging only). The send_sms hook is
+# not invoked for these numbers.
+[auth.sms.test_otp]
+998900000099 = "123456"
+998900000010 = "123456"
+998900000001 = "123456"
+998900000002 = "123456"
+998900000003 = "123456"
+998900000004 = "123456"
+998900000005 = "123456"
 
 # Configure logged in session timeouts.
 # [auth.sessions]
@@ -285,13 +295,22 @@ max_frequency = "5s"
 # enabled = true
 # uri = "pg-functions://<database>/<schema>/<hook_name>"
 
-# Configure one of the supported SMS providers: `twilio`, `twilio_verify`, `messagebird`, `textlocal`, `vonage`.
+# OTP SMS goes through our Edge Function: SMS_MODE=mock → mock_sms table + logs,
+# SMS_MODE=live → Eskiz.uz (docs/07 §7.5). Secret below is LOCAL DEV ONLY —
+# production sets the hook secret in the dashboard / supabase secrets.
+[auth.hook.send_sms]
+enabled = true
+uri = "http://host.docker.internal:54321/functions/v1/sms-hook"
+secrets = "v1,whsec_bG9jYWwtZGV2LXNlY3JldC1mb3ItdXN0b3otc21zLWhvb2sh"
+
+# Dummy provider: GoTrue requires an enabled SMS provider for phone auth even
+# when the send_sms hook handles delivery. The hook intercepts every send, so
+# these Twilio credentials are never used.
 [auth.sms.twilio]
-enabled = false
-account_sid = ""
-message_service_sid = ""
-# DO NOT commit your Twilio auth token to git. Use environment variable substitution instead:
-auth_token = "env(SUPABASE_AUTH_SMS_TWILIO_AUTH_TOKEN)"
+enabled = true
+account_sid = "AC00000000000000000000000000000000"
+message_service_sid = "MG00000000000000000000000000000000"
+auth_token = "dummy-never-used-hook-takes-over"
 
 # Multi-factor-authentication is available to Supabase Pro plan.
 [auth.mfa]
@@ -384,6 +403,18 @@ deno_version = 2
 
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
+
+# Local dev env for Edge Functions (production: supabase secrets set ...)
+[edge_runtime.secrets]
+SMS_MODE = "mock"
+SEND_SMS_HOOK_SECRET = "v1,whsec_bG9jYWwtZGV2LXNlY3JldC1mb3ItdXN0b3otc21zLWhvb2sh"
+ESKIZ_EMAIL = ""
+ESKIZ_PASSWORD = ""
+
+# GoTrue authenticates to this function with the standardwebhooks signature,
+# not a user JWT.
+[functions.sms-hook]
+verify_jwt = false
 
 [analytics]
 enabled = true
