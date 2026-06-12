@@ -571,6 +571,240 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Band qilish — Faza 3 da'**
   String get bookComingSoon;
+
+  /// No description provided for @bookingCta.
+  ///
+  /// In uz, this message translates to:
+  /// **'Band qilish'**
+  String get bookingCta;
+
+  /// No description provided for @bookingTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Darsni band qilish'**
+  String get bookingTitle;
+
+  /// No description provided for @bookingTrialChoice.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bepul sinov (20 daq)'**
+  String get bookingTrialChoice;
+
+  /// No description provided for @bookingNoSlots.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu kunda bo\'sh vaqt yo\'q'**
+  String get bookingNoSlots;
+
+  /// No description provided for @bookingFreeTrialLabel.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bepul sinov darsi'**
+  String get bookingFreeTrialLabel;
+
+  /// No description provided for @bookingTotal.
+  ///
+  /// In uz, this message translates to:
+  /// **'Jami'**
+  String get bookingTotal;
+
+  /// No description provided for @bookingConfirm.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tasdiqlash'**
+  String get bookingConfirm;
+
+  /// No description provided for @bookingCreated.
+  ///
+  /// In uz, this message translates to:
+  /// **'Dars band qilindi!'**
+  String get bookingCreated;
+
+  /// No description provided for @bookingSlotTaken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu vaqt endi band. Boshqasini tanlang.'**
+  String get bookingSlotTaken;
+
+  /// No description provided for @bookingTrialUsed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bepul sinov darsidan allaqachon foydalangansiz.'**
+  String get bookingTrialUsed;
+
+  /// No description provided for @lessonsUpcoming.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kelgusi'**
+  String get lessonsUpcoming;
+
+  /// No description provided for @lessonsPast.
+  ///
+  /// In uz, this message translates to:
+  /// **'O\'tgan'**
+  String get lessonsPast;
+
+  /// No description provided for @lessonsEmpty.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hozircha darslar yo\'q'**
+  String get lessonsEmpty;
+
+  /// No description provided for @roleStudent.
+  ///
+  /// In uz, this message translates to:
+  /// **'O\'quvchi'**
+  String get roleStudent;
+
+  /// No description provided for @roleTeacher.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ustoz'**
+  String get roleTeacher;
+
+  /// No description provided for @statusPendingPayment.
+  ///
+  /// In uz, this message translates to:
+  /// **'To\'lov kutilmoqda'**
+  String get statusPendingPayment;
+
+  /// No description provided for @statusPaid.
+  ///
+  /// In uz, this message translates to:
+  /// **'To\'langan'**
+  String get statusPaid;
+
+  /// No description provided for @statusInProgress.
+  ///
+  /// In uz, this message translates to:
+  /// **'Davom etmoqda'**
+  String get statusInProgress;
+
+  /// No description provided for @statusCompleted.
+  ///
+  /// In uz, this message translates to:
+  /// **'O\'tkazildi'**
+  String get statusCompleted;
+
+  /// No description provided for @statusCancelled.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bekor qilindi'**
+  String get statusCancelled;
+
+  /// No description provided for @statusExpired.
+  ///
+  /// In uz, this message translates to:
+  /// **'Muddati o\'tdi'**
+  String get statusExpired;
+
+  /// No description provided for @cancelLessonTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Darsni bekor qilish?'**
+  String get cancelLessonTitle;
+
+  /// No description provided for @cancelLessonBody.
+  ///
+  /// In uz, this message translates to:
+  /// **'12 soatdan oldin bekor qilinsa — to\'lov balansga qaytadi, keyin — qaytmaydi.'**
+  String get cancelLessonBody;
+
+  /// No description provided for @cancelLessonConfirm.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bekor qilish'**
+  String get cancelLessonConfirm;
+
+  /// No description provided for @weekdaySun.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yakshanba'**
+  String get weekdaySun;
+
+  /// No description provided for @weekdayMon.
+  ///
+  /// In uz, this message translates to:
+  /// **'Dushanba'**
+  String get weekdayMon;
+
+  /// No description provided for @weekdayTue.
+  ///
+  /// In uz, this message translates to:
+  /// **'Seshanba'**
+  String get weekdayTue;
+
+  /// No description provided for @weekdayWed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Chorshanba'**
+  String get weekdayWed;
+
+  /// No description provided for @weekdayThu.
+  ///
+  /// In uz, this message translates to:
+  /// **'Payshanba'**
+  String get weekdayThu;
+
+  /// No description provided for @weekdayFri.
+  ///
+  /// In uz, this message translates to:
+  /// **'Juma'**
+  String get weekdayFri;
+
+  /// No description provided for @weekdaySat.
+  ///
+  /// In uz, this message translates to:
+  /// **'Shanba'**
+  String get weekdaySat;
+
+  /// No description provided for @teacherTabSchedule.
+  ///
+  /// In uz, this message translates to:
+  /// **'Jadval'**
+  String get teacherTabSchedule;
+
+  /// No description provided for @availabilityAdd.
+  ///
+  /// In uz, this message translates to:
+  /// **'Vaqt qo\'shish'**
+  String get availabilityAdd;
+
+  /// No description provided for @availabilityDay.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kun'**
+  String get availabilityDay;
+
+  /// No description provided for @availabilityFrom.
+  ///
+  /// In uz, this message translates to:
+  /// **'Boshlanishi'**
+  String get availabilityFrom;
+
+  /// No description provided for @availabilityTo.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tugashi'**
+  String get availabilityTo;
+
+  /// No description provided for @availabilityEmpty.
+  ///
+  /// In uz, this message translates to:
+  /// **'Jadval bo\'sh. Dars vaqtlaringizni qo\'shing!'**
+  String get availabilityEmpty;
+
+  /// No description provided for @availabilityExceptions.
+  ///
+  /// In uz, this message translates to:
+  /// **'Istisno kunlar (ta\'til)'**
+  String get availabilityExceptions;
+
+  /// No description provided for @availabilityAddException.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kun yopish'**
+  String get availabilityAddException;
 }
 
 class _AppLocalizationsDelegate

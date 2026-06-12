@@ -254,4 +254,122 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get bookComingSoon => 'Бронирование — в Фазе 3';
+
+  @override
+  String get bookingCta => 'Забронировать';
+
+  @override
+  String get bookingTitle => 'Бронирование урока';
+
+  @override
+  String get bookingTrialChoice => 'Бесплатный пробный (20 мин)';
+
+  @override
+  String get bookingNoSlots => 'На этот день свободных слотов нет';
+
+  @override
+  String get bookingFreeTrialLabel => 'Бесплатный пробный урок';
+
+  @override
+  String get bookingTotal => 'Итого';
+
+  @override
+  String get bookingConfirm => 'Подтвердить';
+
+  @override
+  String get bookingCreated => 'Урок забронирован!';
+
+  @override
+  String get bookingSlotTaken => 'Это время уже занято. Выберите другое.';
+
+  @override
+  String get bookingTrialUsed => 'Бесплатный пробный урок уже использован.';
+
+  @override
+  String get lessonsUpcoming => 'Предстоящие';
+
+  @override
+  String get lessonsPast => 'Прошедшие';
+
+  @override
+  String get lessonsEmpty => 'Пока нет уроков';
+
+  @override
+  String get roleStudent => 'Ученик';
+
+  @override
+  String get roleTeacher => 'Устоз';
+
+  @override
+  String get statusPendingPayment => 'Ждёт оплаты';
+
+  @override
+  String get statusPaid => 'Оплачен';
+
+  @override
+  String get statusInProgress => 'Идёт';
+
+  @override
+  String get statusCompleted => 'Проведён';
+
+  @override
+  String get statusCancelled => 'Отменён';
+
+  @override
+  String get statusExpired => 'Истёк';
+
+  @override
+  String get cancelLessonTitle => 'Отменить урок?';
+
+  @override
+  String get cancelLessonBody =>
+      'При отмене за 12+ часов оплата вернётся на баланс, позже — не вернётся.';
+
+  @override
+  String get cancelLessonConfirm => 'Отменить';
+
+  @override
+  String get weekdaySun => 'Воскресенье';
+
+  @override
+  String get weekdayMon => 'Понедельник';
+
+  @override
+  String get weekdayTue => 'Вторник';
+
+  @override
+  String get weekdayWed => 'Среда';
+
+  @override
+  String get weekdayThu => 'Четверг';
+
+  @override
+  String get weekdayFri => 'Пятница';
+
+  @override
+  String get weekdaySat => 'Суббота';
+
+  @override
+  String get teacherTabSchedule => 'Расписание';
+
+  @override
+  String get availabilityAdd => 'Добавить время';
+
+  @override
+  String get availabilityDay => 'День';
+
+  @override
+  String get availabilityFrom => 'Начало';
+
+  @override
+  String get availabilityTo => 'Конец';
+
+  @override
+  String get availabilityEmpty => 'Расписание пустое. Добавьте время занятий!';
+
+  @override
+  String get availabilityExceptions => 'Исключения (отпуск)';
+
+  @override
+  String get availabilityAddException => 'Закрыть день';
 }

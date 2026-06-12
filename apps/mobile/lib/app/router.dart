@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/config/env.dart';
 import '../features/auth/presentation/otp_screen.dart';
 import '../features/auth/presentation/phone_screen.dart';
+import '../features/booking/presentation/lessons_screen.dart';
 import '../features/catalog/presentation/catalog_screen.dart';
 import '../features/catalog/presentation/teacher_profile_screen.dart';
 import '../features/home/presentation/home_screen.dart';
@@ -17,7 +18,7 @@ import '../features/teacher/presentation/teacher_screen.dart';
 
 part 'router.g.dart';
 
-const _protectedPrefixes = ['/home', '/setup', '/profile', '/teacher'];
+const _protectedPrefixes = ['/home', '/setup', '/profile', '/teacher', '/lessons'];
 
 class _AuthRefresh extends ChangeNotifier {
   _AuthRefresh() {
@@ -80,6 +81,10 @@ GoRouter router(Ref ref) {
         path: '/t/:slug',
         builder: (context, state) =>
             TeacherProfileScreen(slug: state.pathParameters['slug']!),
+      ),
+      GoRoute(
+        path: '/lessons',
+        builder: (context, state) => const LessonsScreen(),
       ),
     ],
   );

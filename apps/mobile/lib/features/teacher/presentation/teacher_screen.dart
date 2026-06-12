@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../core/providers/locale_provider.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../profile/data/profile_repository.dart';
+import 'availability_tab.dart';
 
 /// Teacher cabinet: анкета (profile) + subjects & prices (docs/04, Phase 1).
 class TeacherScreen extends ConsumerWidget {
@@ -16,7 +17,7 @@ class TeacherScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Scaffold(
         appBar: AppBar(
           title: Text(l10n.teacherCabinet),
@@ -24,11 +25,12 @@ class TeacherScreen extends ConsumerWidget {
             tabs: [
               Tab(text: l10n.teacherTabProfile),
               Tab(text: l10n.teacherTabSubjects),
+              Tab(text: l10n.teacherTabSchedule),
             ],
           ),
         ),
         body: const TabBarView(
-          children: [_TeacherProfileTab(), _TeacherSubjectsTab()],
+          children: [_TeacherProfileTab(), _TeacherSubjectsTab(), AvailabilityTab()],
         ),
       ),
     );

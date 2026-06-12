@@ -257,4 +257,124 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get bookComingSoon => 'Band qilish — Faza 3 da';
+
+  @override
+  String get bookingCta => 'Band qilish';
+
+  @override
+  String get bookingTitle => 'Darsni band qilish';
+
+  @override
+  String get bookingTrialChoice => 'Bepul sinov (20 daq)';
+
+  @override
+  String get bookingNoSlots => 'Bu kunda bo\'sh vaqt yo\'q';
+
+  @override
+  String get bookingFreeTrialLabel => 'Bepul sinov darsi';
+
+  @override
+  String get bookingTotal => 'Jami';
+
+  @override
+  String get bookingConfirm => 'Tasdiqlash';
+
+  @override
+  String get bookingCreated => 'Dars band qilindi!';
+
+  @override
+  String get bookingSlotTaken => 'Bu vaqt endi band. Boshqasini tanlang.';
+
+  @override
+  String get bookingTrialUsed =>
+      'Bepul sinov darsidan allaqachon foydalangansiz.';
+
+  @override
+  String get lessonsUpcoming => 'Kelgusi';
+
+  @override
+  String get lessonsPast => 'O\'tgan';
+
+  @override
+  String get lessonsEmpty => 'Hozircha darslar yo\'q';
+
+  @override
+  String get roleStudent => 'O\'quvchi';
+
+  @override
+  String get roleTeacher => 'Ustoz';
+
+  @override
+  String get statusPendingPayment => 'To\'lov kutilmoqda';
+
+  @override
+  String get statusPaid => 'To\'langan';
+
+  @override
+  String get statusInProgress => 'Davom etmoqda';
+
+  @override
+  String get statusCompleted => 'O\'tkazildi';
+
+  @override
+  String get statusCancelled => 'Bekor qilindi';
+
+  @override
+  String get statusExpired => 'Muddati o\'tdi';
+
+  @override
+  String get cancelLessonTitle => 'Darsni bekor qilish?';
+
+  @override
+  String get cancelLessonBody =>
+      '12 soatdan oldin bekor qilinsa — to\'lov balansga qaytadi, keyin — qaytmaydi.';
+
+  @override
+  String get cancelLessonConfirm => 'Bekor qilish';
+
+  @override
+  String get weekdaySun => 'Yakshanba';
+
+  @override
+  String get weekdayMon => 'Dushanba';
+
+  @override
+  String get weekdayTue => 'Seshanba';
+
+  @override
+  String get weekdayWed => 'Chorshanba';
+
+  @override
+  String get weekdayThu => 'Payshanba';
+
+  @override
+  String get weekdayFri => 'Juma';
+
+  @override
+  String get weekdaySat => 'Shanba';
+
+  @override
+  String get teacherTabSchedule => 'Jadval';
+
+  @override
+  String get availabilityAdd => 'Vaqt qo\'shish';
+
+  @override
+  String get availabilityDay => 'Kun';
+
+  @override
+  String get availabilityFrom => 'Boshlanishi';
+
+  @override
+  String get availabilityTo => 'Tugashi';
+
+  @override
+  String get availabilityEmpty =>
+      'Jadval bo\'sh. Dars vaqtlaringizni qo\'shing!';
+
+  @override
+  String get availabilityExceptions => 'Istisno kunlar (ta\'til)';
+
+  @override
+  String get availabilityAddException => 'Kun yopish';
 }
