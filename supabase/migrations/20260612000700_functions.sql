@@ -127,7 +127,7 @@ begin
             select 1 from bookings b
             where b.teacher_id = p_teacher_id
               and b.status in ('pending_payment','paid','in_progress')
-              and tstzrange(b.start_at, b.start_at + make_interval(mins => b.duration_min)) && tstzrange(v_start, v_end)
+              and b.period && tstzrange(v_start, v_end)
           )
         then
           slot_start := v_start;

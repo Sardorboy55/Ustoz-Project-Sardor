@@ -9,6 +9,9 @@ create table bookings (
   status             booking_status not null default 'pending_payment',
   start_at           timestamptz not null,
   duration_min       int not null check (duration_min in (20,30,60,90)),
+  -- [start_at, start_at+duration) — kept in sync by bookings_set_period trigger;
+  -- a plain expression can't be used in the constraint (timestamptz+interval is STABLE)
+  period             tstzrange not null,
   price              bigint not null default 0 check (price >= 0),  -- tiyin; 0 for trial_free and package
   student_package_id uuid,                                          -- set when kind='package' (FK added below)
   cancel_reason      text,
@@ -17,9 +20,20 @@ create table bookings (
   -- double-booking protection: one teacher cannot have overlapping active bookings
   constraint bookings_no_overlap exclude using gist (
     teacher_id with =,
-    tstzrange(start_at, start_at + (duration_min || ' minutes')::interval) with &&
+    period with &&
   ) where (status in ('pending_payment','paid','in_progress'))
 );
+
+create or replace function public.bookings_set_period()
+returns trigger language plpgsql as $$
+begin
+  new.period := tstzrange(new.start_at, new.start_at + make_interval(mins => new.duration_min), '[)');
+  return new;
+end $$;
+
+create trigger bookings_period
+  before insert or update of start_at, duration_min on bookings
+  for each row execute function public.bookings_set_period();
 create index on bookings (student_id, start_at desc);
 create index on bookings (teacher_id, start_at desc);
 create index on bookings (status, start_at);
