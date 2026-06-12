@@ -1,26 +1,80 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/*
+ * USTOZ design tokens (Tailwind v4 @theme).
+ * Brand teal scale is derived from the primary #0E7C66:
+ *   600 = primary, 700 = hover/dark, 100 = light tint (#E6F4F1 from the design system).
+ * Accent amber (#F59E0B) is used for ratings and the PRO badge.
+ */
+@theme {
+  /* Brand (teal) */
+  --color-brand-50: #f0f9f7;
+  --color-brand-100: #e6f4f1;
+  --color-brand-200: #c4e6de;
+  --color-brand-300: #93d1c4;
+  --color-brand-400: #54b29d;
+  --color-brand-500: #1f9078;
+  --color-brand-600: #0e7c66;
+  --color-brand-700: #0a5f4e;
+  --color-brand-800: #094e41;
+  --color-brand-900: #073f35;
+
+  /* Accent (amber) */
+  --color-accent-50: #fffbeb;
+  --color-accent-100: #fef3c7;
+  --color-accent-200: #fde68a;
+  --color-accent-300: #fcd34d;
+  --color-accent-400: #fbbf24;
+  --color-accent-500: #f59e0b;
+  --color-accent-600: #d97706;
+  --color-accent-700: #b45309;
+
+  /* Surfaces */
+  --color-page: #fafafa;
+  --color-surface: #ffffff;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-page);
+  color: var(--color-zinc-900);
+  font-family: var(--font-sans), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Arial, sans-serif;
+}
+
+::selection {
+  background: var(--color-brand-200);
+  color: var(--color-zinc-900);
+}
+
+/* Success check pop (booking confirmation) */
+@keyframes pop-in {
+  0% {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-pop-in {
+  animation: pop-in 0.45s cubic-bezier(0.2, 0.8, 0.3, 1.1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-pop-in {
+    animation: none;
+  }
 }
