@@ -9,6 +9,10 @@ jobs:
   node:
     name: Web / Admin / Shared (lint + build)
     runs-on: ubuntu-latest
+    env:
+      # build-time only; real values come from the deploy platform
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-build-placeholder
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
