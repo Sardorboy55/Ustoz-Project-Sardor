@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/config/env.dart';
 import '../../../l10n/app_localizations.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -25,7 +27,33 @@ class _SplashScreenState extends State<SplashScreen> {
     final seenOnboarding = prefs.getBool('onboarding_seen') ?? false;
     await Future<void>.delayed(const Duration(milliseconds: 1200));
     if (!mounted) return;
-    context.go(seenOnboarding ? '/home' : '/onboarding');
+
+    if (!seenOnboarding) {
+      context.go('/onboarding');
+      return;
+    }
+    if (!Env.hasSupabase) {
+      context.go('/home'); // offline demo mode
+      return;
+    }
+    final client = Supabase.instance.client;
+    final session = client.auth.currentSession;
+    if (session == null) {
+      context.go('/auth/phone');
+      return;
+    }
+    // route to profile setup until the name is filled (docs/04 §4.1)
+    String name = '';
+    try {
+      final row = await client
+          .from('profiles')
+          .select('full_name')
+          .eq('id', session.user.id)
+          .maybeSingle();
+      name = (row?['full_name'] as String? ?? '').trim();
+    } catch (_) {/* network issues → home, guarded screens handle errors */}
+    if (!mounted) return;
+    context.go(name.isEmpty ? '/setup' : '/home');
   }
 
   @override

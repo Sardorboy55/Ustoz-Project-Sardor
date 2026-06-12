@@ -9,6 +9,10 @@ jobs:
   node:
     name: Web / Admin / Shared (lint + build)
     runs-on: ubuntu-latest
+    env:
+      # build-time only; real values come from the deploy platform
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-build-placeholder
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -39,6 +43,17 @@ jobs:
       - run: dart run build_runner build --delete-conflicting-outputs
       - run: flutter analyze
       - run: flutter test
+
+  edge:
+    name: Edge Functions (deno test)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - run: deno test --allow-env --allow-net --allow-import sms-hook/index_test.ts
+        working-directory: supabase/functions
 
   db:
     name: Supabase migrations + seed (db reset)

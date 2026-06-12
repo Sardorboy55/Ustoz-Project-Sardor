@@ -27,5 +27,37 @@
   "Common": {
     "loading": "Yuklanmoqda...",
     "error": "Xatolik yuz berdi"
+  },
+  "Auth": {
+    "title": "Kirish",
+    "subtitle": "Telefon raqamingizga SMS orqali 6 xonali kod yuboramiz.",
+    "phoneLabel": "Telefon raqami",
+    "sendCode": "Kod yuborish",
+    "otpSentTo": "{phone} raqamiga yuborilgan kodni kiriting",
+    "verify": "Tasdiqlash",
+    "changePhone": "Raqamni o'zgartirish",
+    "rateLimited": "Juda ko'p urinish. Birozdan keyin urinib ko'ring.",
+    "sendFailed": "Kod yuborilmadi. Qayta urinib ko'ring.",
+    "codeWrong": "Kod noto'g'ri yoki muddati o'tgan"
+  },
+  "Cabinet": {
+    "title": "Kabinet",
+    "loading": "Yuklanmoqda...",
+    "signOut": "Chiqish",
+    "nameTitle": "Ismingiz",
+    "namePlaceholder": "Ism Familiya",
+    "save": "Saqlash",
+    "saved": "Saqlandi",
+    "error": "Xatolik yuz berdi",
+    "becomeTitle": "Ustoz bo'ling",
+    "becomeBody": "Profil yarating, fan va narxlarni belgilang — o'quvchilar sizni topadi.",
+    "becomeCta": "Ustoz bo'lish",
+    "subjectsTitle": "Fanlarim va narxlar",
+    "noSubjects": "Hozircha fanlar yo'q — birinchisini qo'shing.",
+    "pickSubject": "Fanni tanlang",
+    "pricePlaceholder": "60 daqiqa narxi, UZS",
+    "add": "Qo'shish",
+    "min": "daq",
+    "subjectLimit": "FREE tarifda faqat 1 ta fan. PRO — 5 tagacha."
   }
 }

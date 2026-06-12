@@ -85,5 +85,131 @@ class AppLocalizationsUz extends AppLocalizations {
   String get commonSave => 'Saqlash';
 
   @override
+  String get commonSaved => 'Saqlandi';
+
+  @override
   String get commonError => 'Xatolik yuz berdi. Qayta urinib ko\'ring.';
+
+  @override
+  String get authPhoneTitle => 'Kirish';
+
+  @override
+  String get authPhoneHeadline => 'Telefon raqamingizni kiriting';
+
+  @override
+  String get authPhoneHint =>
+      'SMS orqali 6 xonali tasdiqlash kodini yuboramiz.';
+
+  @override
+  String get authSendCode => 'Kod yuborish';
+
+  @override
+  String get authRateLimited =>
+      'Juda ko\'p urinish. Birozdan keyin qayta urinib ko\'ring.';
+
+  @override
+  String get authOtpTitle => 'Tasdiqlash kodi';
+
+  @override
+  String authOtpHeadline(String phone) {
+    return '$phone raqamiga yuborilgan 6 xonali kodni kiriting';
+  }
+
+  @override
+  String authResendIn(int seconds) {
+    return 'Qayta yuborish: $seconds s';
+  }
+
+  @override
+  String get authResend => 'Kodni qayta yuborish';
+
+  @override
+  String get authVerify => 'Tasdiqlash';
+
+  @override
+  String get authCodeWrong => 'Kod noto\'g\'ri yoki muddati o\'tgan';
+
+  @override
+  String get setupTitle => 'Profilni to\'ldirish';
+
+  @override
+  String get setupNameLabel => 'Ismingiz';
+
+  @override
+  String get setupNameHint => 'Ism Familiya';
+
+  @override
+  String get setupInterests => 'Qaysi yo\'nalishlar qiziqarli?';
+
+  @override
+  String get setupContinue => 'Davom etish';
+
+  @override
+  String get teacherCabinet => 'Ustoz kabineti';
+
+  @override
+  String get becomeTeacherTitle => 'Ustoz bo\'ling';
+
+  @override
+  String get becomeTeacherBody =>
+      'Profil yarating, fanlar va narxlarni belgilang — o\'quvchilar sizni topadi.';
+
+  @override
+  String get becomeTeacherCta => 'Ustoz bo\'lish';
+
+  @override
+  String get signOut => 'Chiqish';
+
+  @override
+  String get teacherTabProfile => 'Anketa';
+
+  @override
+  String get teacherTabSubjects => 'Fanlar va narxlar';
+
+  @override
+  String get teacherUploadPhoto => 'Foto yuklash';
+
+  @override
+  String get teacherUploadVideo => 'Video (90 s)';
+
+  @override
+  String get teacherHeadlineUz => 'Sarlavha (uz)';
+
+  @override
+  String get teacherHeadlineRu => 'Sarlavha (ru)';
+
+  @override
+  String get teacherBioUz => 'O\'zingiz haqida (uz)';
+
+  @override
+  String get teacherBioRu => 'O\'zingiz haqida (ru)';
+
+  @override
+  String get teacherExperience => 'Tajriba (yil)';
+
+  @override
+  String get teacherLangs => 'Dars tillari';
+
+  @override
+  String get teacherAddSubject => 'Fan qo\'shish';
+
+  @override
+  String get teacherNoSubjects =>
+      'Hozircha fanlar yo\'q. Birinchisini qo\'shing!';
+
+  @override
+  String get teacherSubject => 'Fan';
+
+  @override
+  String get teacherTrialToggle => 'Bepul 20 daqiqalik sinov darsi';
+
+  @override
+  String get teacherTrialOn => 'sinov darsi bor';
+
+  @override
+  String get teacherSubjectLimit =>
+      'FREE tarifda faqat 1 ta fan. PRO — 5 tagacha.';
+
+  @override
+  String get minutes => 'daq';
 }
