@@ -33,7 +33,9 @@ function Landing() {
             USTOZ
           </Link>
           <nav className="flex items-center gap-6 text-sm text-zinc-600">
-            <span className="cursor-not-allowed opacity-50">{nav("catalog")}</span>
+            <Link href="/catalog" className="hover:text-zinc-900">
+              {nav("catalog")}
+            </Link>
             <span className="hidden cursor-not-allowed opacity-50 sm:inline">
               {nav("forTeachers")}
             </span>
@@ -55,14 +57,19 @@ function Landing() {
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg text-zinc-600">{t("subtitle")}</p>
           <div className="mt-10 flex justify-center gap-4">
-            <span className="cursor-not-allowed rounded-xl bg-teal-700 px-8 py-3 font-semibold text-white opacity-60">
+            <Link
+              href="/catalog"
+              className="rounded-xl bg-teal-700 px-8 py-3 font-semibold text-white hover:bg-teal-800"
+            >
               {t("ctaFind")}
-            </span>
-            <span className="cursor-not-allowed rounded-xl border border-teal-700 px-8 py-3 font-semibold text-teal-700 opacity-60">
+            </Link>
+            <Link
+              href="/auth"
+              className="rounded-xl border border-teal-700 px-8 py-3 font-semibold text-teal-700 hover:bg-teal-50"
+            >
               {t("ctaBecome")}
-            </span>
+            </Link>
           </div>
-          <p className="mt-4 text-xs text-zinc-400">Phase 0 — каркас / skelet</p>
         </section>
 
         <section className="bg-zinc-50 py-16">

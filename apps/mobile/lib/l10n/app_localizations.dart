@@ -481,6 +481,96 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'daq'**
   String get minutes;
+
+  /// No description provided for @catalogSearchHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ism, fan yoki yo\'nalish...'**
+  String get catalogSearchHint;
+
+  /// No description provided for @catalogAll.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hammasi'**
+  String get catalogAll;
+
+  /// No description provided for @sortRecommended.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tavsiya'**
+  String get sortRecommended;
+
+  /// No description provided for @sortCheap.
+  ///
+  /// In uz, this message translates to:
+  /// **'Arzon'**
+  String get sortCheap;
+
+  /// No description provided for @sortRating.
+  ///
+  /// In uz, this message translates to:
+  /// **'Reyting'**
+  String get sortRating;
+
+  /// No description provided for @catalogTrialChip.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bepul sinov'**
+  String get catalogTrialChip;
+
+  /// No description provided for @catalogEmpty.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hech narsa topilmadi'**
+  String get catalogEmpty;
+
+  /// No description provided for @catalogFrom.
+  ///
+  /// In uz, this message translates to:
+  /// **'dan'**
+  String get catalogFrom;
+
+  /// No description provided for @catalogTrialBadge.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bepul sinov darsi'**
+  String get catalogTrialBadge;
+
+  /// No description provided for @teacherProfileTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ustoz profili'**
+  String get teacherProfileTitle;
+
+  /// No description provided for @teacherAbout.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ustoz haqida'**
+  String get teacherAbout;
+
+  /// No description provided for @minutesLessons.
+  ///
+  /// In uz, this message translates to:
+  /// **'dars'**
+  String get minutesLessons;
+
+  /// No description provided for @years.
+  ///
+  /// In uz, this message translates to:
+  /// **'yil'**
+  String get years;
+
+  /// No description provided for @minShort.
+  ///
+  /// In uz, this message translates to:
+  /// **' daq'**
+  String get minShort;
+
+  /// No description provided for @bookComingSoon.
+  ///
+  /// In uz, this message translates to:
+  /// **'Band qilish — Faza 3 da'**
+  String get bookComingSoon;
 }
 
 class _AppLocalizationsDelegate

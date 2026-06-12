@@ -44,15 +44,23 @@ class _SplashScreenState extends State<SplashScreen> {
     }
     // route to profile setup until the name is filled (docs/04 §4.1)
     String name = '';
+    var profileMissing = false;
     try {
       final row = await client
           .from('profiles')
           .select('full_name')
           .eq('id', session.user.id)
           .maybeSingle();
+      profileMissing = row == null;
       name = (row?['full_name'] as String? ?? '').trim();
     } catch (_) {/* network issues → home, guarded screens handle errors */}
     if (!mounted) return;
+    if (profileMissing) {
+      // session for a deleted account (or wiped dev DB) — sign out
+      await client.auth.signOut();
+      if (mounted) context.go('/auth/phone');
+      return;
+    }
     context.go(name.isEmpty ? '/setup' : '/home');
   }
 

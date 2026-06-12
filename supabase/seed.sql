@@ -26,15 +26,15 @@ insert into app_settings (key, value) values
 on conflict (key) do update set value = excluded.value;
 
 -- ---------- categories ----------
-insert into categories (id, name_uz, name_ru, icon, sort) values
-  ('10000000-0000-4000-a000-000000000001', 'Tillar',                 'Языки',                'languages', 1),
-  ('10000000-0000-4000-a000-000000000002', 'Maktab fanlari',         'Школьные предметы',    'school',    2),
-  ('10000000-0000-4000-a000-000000000003', 'IT va dasturlash',       'IT и программирование','code',      3),
-  ('10000000-0000-4000-a000-000000000004', 'Psixologiya va kouching','Психология и коучинг', 'brain',     4),
-  ('10000000-0000-4000-a000-000000000005', 'Biznes va moliya',       'Бизнес и финансы',     'briefcase', 5),
-  ('10000000-0000-4000-a000-000000000006', 'Ijod va musiqa',         'Творчество и музыка',  'music',     6),
-  ('10000000-0000-4000-a000-000000000007', 'Sport va salomatlik',    'Спорт и здоровье',     'dumbbell',  7),
-  ('10000000-0000-4000-a000-000000000008', 'Boshqa',                 'Другое',               'sparkles',  8);
+insert into categories (id, name_uz, name_ru, icon, sort, slug) values
+  ('10000000-0000-4000-a000-000000000001', 'Tillar',                 'Языки',                'languages', 1, 'tillar'),
+  ('10000000-0000-4000-a000-000000000002', 'Maktab fanlari',         'Школьные предметы',    'school',    2, 'maktab-fanlari'),
+  ('10000000-0000-4000-a000-000000000003', 'IT va dasturlash',       'IT и программирование','code',      3, 'it'),
+  ('10000000-0000-4000-a000-000000000004', 'Psixologiya va kouching','Психология и коучинг', 'brain',     4, 'psixologiya'),
+  ('10000000-0000-4000-a000-000000000005', 'Biznes va moliya',       'Бизнес и финансы',     'briefcase', 5, 'biznes'),
+  ('10000000-0000-4000-a000-000000000006', 'Ijod va musiqa',         'Творчество и музыка',  'music',     6, 'ijod-musiqa'),
+  ('10000000-0000-4000-a000-000000000007', 'Sport va salomatlik',    'Спорт и здоровье',     'dumbbell',  7, 'sport'),
+  ('10000000-0000-4000-a000-000000000008', 'Boshqa',                 'Другое',               'sparkles',  8, 'boshqa');
 
 -- ---------- subjects ----------
 insert into subjects (category_id, name_uz, name_ru, slug) values
@@ -115,6 +115,19 @@ values
   ('00000000-0000-0000-0000-000000000000', '00000000-0000-4000-a000-0000000000ff',
    'authenticated', 'authenticated', '998900000010', now(), '',
    '{"provider":"phone","providers":["phone"]}', '{}', now(), now());
+
+-- GoTrue cannot scan NULL string columns on existing users ("Database error
+-- finding user") — blank them for all seeded accounts.
+update auth.users set
+  confirmation_token         = '',
+  recovery_token             = '',
+  email_change_token_new     = '',
+  email_change               = '',
+  phone_change               = '',
+  phone_change_token         = '',
+  email_change_token_current = '',
+  reauthentication_token     = ''
+where id in (select id from profiles);
 
 update profiles set full_name = 'Aziza Karimova',  is_teacher = true where id = '00000000-0000-4000-a000-000000000001';
 update profiles set full_name = 'Bobur Rahimov',   is_teacher = true where id = '00000000-0000-4000-a000-000000000002';

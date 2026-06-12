@@ -6,6 +6,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/config/env.dart';
 import '../features/auth/presentation/otp_screen.dart';
 import '../features/auth/presentation/phone_screen.dart';
+import '../features/catalog/presentation/catalog_screen.dart';
+import '../features/catalog/presentation/teacher_profile_screen.dart';
 import '../features/home/presentation/home_screen.dart';
 import '../features/onboarding/presentation/onboarding_screen.dart';
 import '../features/profile/presentation/profile_screen.dart';
@@ -69,6 +71,15 @@ GoRouter router(Ref ref) {
       GoRoute(
         path: '/teacher',
         builder: (context, state) => const TeacherScreen(),
+      ),
+      GoRoute(
+        path: '/catalog',
+        builder: (context, state) => const CatalogScreen(),
+      ),
+      GoRoute(
+        path: '/t/:slug',
+        builder: (context, state) =>
+            TeacherProfileScreen(slug: state.pathParameters['slug']!),
       ),
     ],
   );
