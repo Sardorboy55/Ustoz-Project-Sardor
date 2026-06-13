@@ -1,221 +1,303 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import {
+  CalendarDays,
+  CalendarPlus,
+  ChevronRight,
+  Search,
+  Wallet,
+} from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { useRouter } from "@/i18n/navigation";
+import type { BookingStatus, Locale } from "@ustoz/shared";
+import { Link } from "@/i18n/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { fetchCatalog, type CatalogCard } from "@/lib/catalog";
+import { formatFullDate, formatTime } from "@/lib/datetime";
+import { Avatar } from "@/components/ui/avatar";
+import { ButtonLink } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
+import { Price } from "@/components/ui/price";
+import { RatingStars } from "@/components/ui/rating-stars";
+import { Skeleton, SkeletonCard } from "@/components/ui/skeleton";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { useCabinet } from "@/components/cabinet/cabinet-shell";
 
-type Profile = {
+type NextBooking = {
   id: string;
-  phone: string;
-  full_name: string;
-  is_teacher: boolean;
+  status: BookingStatus;
+  start_at: string;
+  duration_min: number;
+  teacher_subjects: { subjects: { name_uz: string; name_ru: string } | null } | null;
+  teacher: {
+    slug: string;
+    profiles: { full_name: string; avatar_url: string | null } | null;
+  } | null;
 };
 
-type Subject = { id: string; name_uz: string; name_ru: string };
+const NEXT_SELECT = `
+  id, status, start_at, duration_min,
+  teacher_subjects ( subjects ( name_uz, name_ru ) ),
+  teacher:teacher_profiles!bookings_teacher_id_fkey (
+    slug, profiles!teacher_profiles_user_id_fkey ( full_name, avatar_url ) )
+`;
 
-type TeacherSubject = {
-  id: string;
-  price_60: number;
-  trial_free_enabled: boolean;
-  subjects: { name_uz: string; name_ru: string } | null;
-};
+export default function CabinetHomePage() {
+  const t = useTranslations("Cabinet.home");
+  const tCommon = useTranslations("Cabinet.common");
+  const locale = useLocale() as Locale;
+  const { userId, profile } = useCabinet();
 
-export default function CabinetPage() {
-  const t = useTranslations("Cabinet");
-  const locale = useLocale();
-  const router = useRouter();
-  const supabase = createClient();
-
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [name, setName] = useState("");
-  const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [mine, setMine] = useState<TeacherSubject[]>([]);
-  const [subjectId, setSubjectId] = useState("");
-  const [price, setPrice] = useState("");
-  const [msg, setMsg] = useState<string | null>(null);
+  const [phase, setPhase] = useState<"loading" | "error" | "ready">("loading");
+  const [next, setNext] = useState<NextBooking | null>(null);
+  const [hasBookings, setHasBookings] = useState(false);
+  const [recommended, setRecommended] = useState<CatalogCard[]>([]);
 
   const load = useCallback(async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      router.push("/auth");
-      return;
+    const supabase = createClient();
+    const nowIso = new Date().toISOString();
+    try {
+      const [nextRes, countRes, cards] = await Promise.all([
+        supabase
+          .from("bookings")
+          .select(NEXT_SELECT)
+          .eq("student_id", userId)
+          .in("status", ["pending_payment", "paid"])
+          .gte("start_at", nowIso)
+          .order("start_at", { ascending: true })
+          .limit(1),
+        supabase
+          .from("bookings")
+          .select("id", { count: "exact", head: true })
+          .eq("student_id", userId),
+        fetchCatalog({ perPage: 3, sort: "recommended" }).catch(
+          () => [] as CatalogCard[],
+        ),
+      ]);
+      if (nextRes.error || countRes.error) {
+        setPhase("error");
+        return;
+      }
+      setNext((nextRes.data?.[0] ?? null) as unknown as NextBooking | null);
+      setHasBookings((countRes.count ?? 0) > 0);
+      setRecommended(cards);
+      setPhase("ready");
+    } catch {
+      setPhase("error");
     }
-    const { data: p } = await supabase.from("profiles").select("*").eq("id", user.id).single();
-    setProfile(p as Profile);
-    setName((p as Profile | null)?.full_name ?? "");
-    if ((p as Profile | null)?.is_teacher) {
-      const { data: ts } = await supabase
-        .from("teacher_subjects")
-        .select("id, price_60, trial_free_enabled, subjects(name_uz, name_ru)")
-        .eq("teacher_id", user.id);
-      setMine((ts ?? []) as unknown as TeacherSubject[]);
-    }
-    const { data: subj } = await supabase
-      .from("subjects")
-      .select("id, name_uz, name_ru")
-      .eq("is_active", true)
-      .order("name_uz", { ascending: true });
-    setSubjects((subj ?? []) as Subject[]);
-    setLoading(false);
-  }, [router, supabase]);
+  }, [userId]);
 
   useEffect(() => {
     queueMicrotask(() => void load());
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [load]);
 
-  const saveName = async () => {
-    if (!profile || name.trim().length < 2) return;
-    await supabase.from("profiles").update({ full_name: name.trim() }).eq("id", profile.id);
-    setMsg(t("saved"));
-  };
+  const firstName = profile.full_name.trim().split(/\s+/)[0] ?? "";
 
-  const becomeTeacher = async () => {
-    const { error } = await supabase.rpc("become_teacher");
-    if (!error) await load();
-  };
-
-  const addSubject = async () => {
-    if (!profile || !subjectId || !price) return;
-    setMsg(null);
-    const { error } = await supabase.from("teacher_subjects").insert({
-      teacher_id: profile.id,
-      subject_id: subjectId,
-      price_60: Number(price) * 100, // UZS → tiyin
-    });
-    if (error) {
-      setMsg(error.message.includes("SUBJECT_LIMIT") ? t("subjectLimit") : t("error"));
-      return;
-    }
-    setSubjectId("");
-    setPrice("");
-    await load();
-  };
-
-  const signOut = async () => {
-    await supabase.auth.signOut();
-    router.push("/");
-  };
-
-  if (loading) {
-    return <main className="p-10 text-zinc-500">{t("loading")}</main>;
+  if (phase === "loading") {
+    return (
+      <div aria-busy="true" className="space-y-5">
+        <Skeleton className="h-8 w-64" />
+        <div className="grid gap-4 md:grid-cols-2">
+          <Skeleton className="h-44 rounded-2xl" />
+          <Skeleton className="h-44 rounded-2xl" />
+        </div>
+        <SkeletonCard />
+      </div>
+    );
   }
-  if (!profile) return null;
 
-  const subjectName = (s: { name_uz: string; name_ru: string } | null) =>
-    s ? (locale === "ru" ? s.name_ru : s.name_uz) : "";
+  if (phase === "error") {
+    return <ErrorState description={tCommon("loadError")} onRetry={() => void load()} />;
+  }
 
   return (
-    <main className="mx-auto w-full max-w-2xl px-6 py-10">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">{t("title")}</h1>
-        <button onClick={signOut} className="text-sm text-zinc-500 hover:text-zinc-800">
-          {t("signOut")}
-        </button>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight text-zinc-900">
+          {firstName ? t("greeting", { name: firstName }) : t("greetingFallback")}
+        </h1>
+        <p className="mt-1 text-sm text-zinc-500">{t("subtitle")}</p>
       </div>
-      <p className="mt-1 text-sm text-zinc-500">+{profile.phone}</p>
 
-      {/* name */}
-      <section className="mt-8 rounded-2xl border border-zinc-200 p-5">
-        <h2 className="font-semibold">{t("nameTitle")}</h2>
-        <div className="mt-3 flex gap-2">
-          <input
-            data-testid="name-input"
-            className="w-full rounded-xl border border-zinc-300 px-4 py-2.5 outline-none focus:border-teal-600"
-            value={name}
-            placeholder={t("namePlaceholder")}
-            onChange={(e) => setName(e.target.value)}
+      <div className="grid gap-4 md:grid-cols-2">
+        {/* Next lesson / empty states */}
+        {!hasBookings ? (
+          <EmptyState
+            icon={CalendarPlus}
+            title={t("noLessonsTitle")}
+            description={t("noLessonsBody")}
+            action={<ButtonLink href="/catalog">{t("goCatalog")}</ButtonLink>}
+            className="md:col-span-2 lg:col-span-1"
           />
-          <button
-            data-testid="save-name"
-            onClick={saveName}
-            className="rounded-xl bg-teal-700 px-5 font-medium text-white disabled:opacity-40"
-            disabled={name.trim().length < 2}
+        ) : next ? (
+          <NextLessonCard booking={next} locale={locale} />
+        ) : (
+          <Card className="flex flex-col items-start justify-center gap-3 p-5">
+            <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
+              {t("nextLesson")}
+            </p>
+            <p className="font-semibold text-zinc-900">{t("noUpcomingTitle")}</p>
+            <p className="text-sm text-zinc-500">{t("noUpcomingBody")}</p>
+            <ButtonLink href="/catalog" variant="secondary" size="sm">
+              {t("findTeacher")}
+            </ButtonLink>
+          </Card>
+        )}
+
+        {/* Balance */}
+        <Card className="flex flex-col p-5">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
+              {t("balance")}
+            </p>
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-50 text-brand-600">
+              <Wallet size={18} aria-hidden="true" />
+            </span>
+          </div>
+          <Price tiyin={profile.student_balance} className="mt-1 text-3xl font-bold" />
+          <p className="mt-2 text-xs leading-relaxed text-zinc-500">
+            {t("topupNote")}
+          </p>
+          <Link
+            href="/cabinet/payments"
+            className="mt-auto inline-flex items-center gap-1 pt-3 text-sm font-semibold text-brand-700 hover:text-brand-800"
           >
-            {t("save")}
-          </button>
+            {t("history")}
+            <ChevronRight size={15} aria-hidden="true" />
+          </Link>
+        </Card>
+      </div>
+
+      {/* Quick actions */}
+      <section>
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-400">
+          {t("quick")}
+        </h2>
+        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <Link
+            href="/catalog"
+            className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm outline-none transition hover:border-brand-300 hover:shadow-md focus-visible:ring-2 focus-visible:ring-brand-600"
+          >
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
+              <Search size={19} aria-hidden="true" />
+            </span>
+            <span className="font-semibold text-zinc-900">{t("findTeacher")}</span>
+            <ChevronRight size={16} className="ml-auto text-zinc-400" aria-hidden="true" />
+          </Link>
+          <Link
+            href="/cabinet/lessons"
+            className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm outline-none transition hover:border-brand-300 hover:shadow-md focus-visible:ring-2 focus-visible:ring-brand-600"
+          >
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
+              <CalendarDays size={19} aria-hidden="true" />
+            </span>
+            <span className="font-semibold text-zinc-900">{t("myLessons")}</span>
+            <ChevronRight size={16} className="ml-auto text-zinc-400" aria-hidden="true" />
+          </Link>
         </div>
       </section>
 
-      {/* teacher */}
-      <section className="mt-6 rounded-2xl border border-zinc-200 p-5">
-        {!profile.is_teacher ? (
-          <>
-            <h2 className="font-semibold">{t("becomeTitle")}</h2>
-            <p className="mt-1 text-sm text-zinc-600">{t("becomeBody")}</p>
-            <button
-              data-testid="become-teacher"
-              onClick={becomeTeacher}
-              className="mt-4 rounded-xl bg-teal-700 px-5 py-2.5 font-medium text-white"
-            >
-              {t("becomeCta")}
-            </button>
-          </>
-        ) : (
-          <>
-            <h2 className="font-semibold">{t("subjectsTitle")}</h2>
-            <ul className="mt-3 space-y-2">
-              {mine.map((tsRow) => (
-                <li
-                  key={tsRow.id}
-                  data-testid="my-subject"
-                  className="flex items-center justify-between rounded-xl bg-zinc-50 px-4 py-2.5 text-sm"
-                >
-                  <span>{subjectName(tsRow.subjects)}</span>
-                  <span className="font-medium">
-                    {Math.round(tsRow.price_60 / 100).toLocaleString()} UZS / 60{" "}
-                    {t("min")}
-                  </span>
-                </li>
-              ))}
-              {mine.length === 0 && (
-                <li className="text-sm text-zinc-500">{t("noSubjects")}</li>
-              )}
-            </ul>
-            <div className="mt-4 flex flex-wrap gap-2">
-              <select
-                data-testid="subject-select"
-                className="min-w-44 flex-1 rounded-xl border border-zinc-300 px-3 py-2.5"
-                value={subjectId}
-                onChange={(e) => setSubjectId(e.target.value)}
+      {/* Recommended teachers */}
+      {recommended.length > 0 && (
+        <section>
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-400">
+            {t("recommended")}
+          </h2>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {recommended.map((card) => (
+              <Link
+                key={card.user_id}
+                href={`/t/${card.slug}`}
+                className="flex flex-col gap-2.5 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm outline-none transition hover:border-brand-300 hover:shadow-md focus-visible:ring-2 focus-visible:ring-brand-600"
               >
-                <option value="">{t("pickSubject")}</option>
-                {subjects.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {subjectName(s)}
-                  </option>
-                ))}
-              </select>
-              <input
-                data-testid="price-input"
-                className="w-40 rounded-xl border border-zinc-300 px-3 py-2.5"
-                placeholder={t("pricePlaceholder")}
-                inputMode="numeric"
-                value={price}
-                onChange={(e) => setPrice(e.target.value.replace(/\D/g, ""))}
-              />
-              <button
-                data-testid="add-subject"
-                onClick={addSubject}
-                disabled={!subjectId || !price}
-                className="rounded-xl bg-teal-700 px-5 py-2.5 font-medium text-white disabled:opacity-40"
-              >
-                {t("add")}
-              </button>
-            </div>
-          </>
-        )}
-      </section>
-
-      {msg && (
-        <p data-testid="cabinet-msg" className="mt-4 text-sm text-teal-700">
-          {msg}
-        </p>
+                <div className="flex items-center gap-3">
+                  <Avatar src={card.avatar_url} name={card.full_name} size="md" />
+                  <div className="min-w-0">
+                    <p className="truncate font-bold text-zinc-900">
+                      {card.full_name}
+                    </p>
+                    <p className="truncate text-xs text-zinc-500">
+                      {(locale === "ru" ? card.subjects_ru : card.subjects_uz).join(
+                        " · ",
+                      )}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <RatingStars
+                    value={Number(card.rating_avg)}
+                    count={card.rating_count}
+                    size={13}
+                  />
+                  <Price tiyin={card.min_price_60} from className="text-sm" />
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
       )}
-    </main>
+    </div>
+  );
+}
+
+function NextLessonCard({
+  booking,
+  locale,
+}: {
+  booking: NextBooking;
+  locale: Locale;
+}) {
+  const t = useTranslations("Cabinet.home");
+  const subjectRow = booking.teacher_subjects?.subjects ?? null;
+  const subject = subjectRow
+    ? locale === "ru"
+      ? subjectRow.name_ru
+      : subjectRow.name_uz
+    : "";
+  const teacherName = booking.teacher?.profiles?.full_name ?? "";
+  const start = new Date(booking.start_at);
+  const end = new Date(start.getTime() + booking.duration_min * 60_000);
+
+  const [nowTs] = useState(() => Date.now());
+  const minutesLeft = Math.max(1, Math.round((start.getTime() - nowTs) / 60_000));
+  const countdown =
+    minutesLeft < 60
+      ? t("startsInM", { minutes: minutesLeft })
+      : minutesLeft < 48 * 60
+        ? t("startsInH", { hours: Math.round(minutesLeft / 60) })
+        : t("startsInD", { days: Math.round(minutesLeft / 1440) });
+
+  return (
+    <Card className="flex flex-col p-5">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
+          {t("nextLesson")}
+        </p>
+        <StatusBadge status={booking.status} />
+      </div>
+      <div className="mt-3 flex items-center gap-3">
+        <Avatar
+          src={booking.teacher?.profiles?.avatar_url}
+          name={teacherName}
+          size="md"
+        />
+        <div className="min-w-0">
+          <p className="truncate font-bold text-zinc-900">{teacherName}</p>
+          <p className="truncate text-sm text-zinc-500">{subject}</p>
+        </div>
+      </div>
+      <p className="mt-3 text-sm font-semibold text-zinc-900">
+        {formatFullDate(start, locale)} · {formatTime(start, locale)}–
+        {formatTime(end, locale)}
+      </p>
+      <p className="mt-1 text-sm font-medium text-brand-700">{countdown}</p>
+      <div className="mt-auto pt-4">
+        <ButtonLink href={`/booking/${booking.id}`} size="sm" variant="secondary">
+          {t("details")}
+        </ButtonLink>
+      </div>
+    </Card>
   );
 }

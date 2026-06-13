@@ -4,12 +4,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../app/theme.dart';
+import '../../../common/format.dart';
+import '../../../common/widgets/app_card.dart';
 import '../../../core/providers/locale_provider.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../profile/data/profile_repository.dart';
 import 'availability_tab.dart';
+import 'teacher_dashboard_tab.dart';
 
-/// Teacher cabinet: анкета (profile) + subjects & prices (docs/04, Phase 1).
+/// Teacher cabinet: overview dashboard + анкета + subjects & prices + schedule.
 class TeacherScreen extends ConsumerWidget {
   const TeacherScreen({super.key});
 
@@ -17,12 +21,15 @@ class TeacherScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     return DefaultTabController(
-      length: 3,
+      length: 4,
       child: Scaffold(
         appBar: AppBar(
           title: Text(l10n.teacherCabinet),
           bottom: TabBar(
+            isScrollable: true,
+            tabAlignment: TabAlignment.start,
             tabs: [
+              Tab(text: l10n.teacherTabDashboard),
               Tab(text: l10n.teacherTabProfile),
               Tab(text: l10n.teacherTabSubjects),
               Tab(text: l10n.teacherTabSchedule),
@@ -30,7 +37,12 @@ class TeacherScreen extends ConsumerWidget {
           ),
         ),
         body: const TabBarView(
-          children: [_TeacherProfileTab(), _TeacherSubjectsTab(), AvailabilityTab()],
+          children: [
+            TeacherDashboardTab(),
+            _TeacherProfileTab(),
+            _TeacherSubjectsTab(),
+            AvailabilityTab(),
+          ],
         ),
       ),
     );
@@ -165,7 +177,7 @@ class _TeacherProfileTabState extends ConsumerState<_TeacherProfileTab> {
     }
 
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppTokens.s16),
       children: [
         Row(
           children: [
@@ -290,18 +302,24 @@ class _TeacherSubjectsTabState extends ConsumerState<_TeacherSubjectsTab> {
       body: _mine!.isEmpty
           ? Center(child: Text(l10n.teacherNoSubjects))
           : ListView(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppTokens.s16),
               children: [
                 for (final ts in _mine!)
-                  Card(
+                  AppCard(
+                    margin: const EdgeInsets.only(bottom: AppTokens.s12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppTokens.s4,
+                      vertical: AppTokens.s4,
+                    ),
                     child: ListTile(
                       title: Text(
                         locale == 'ru'
                             ? (ts['subjects']?['name_ru'] ?? '') as String
                             : (ts['subjects']?['name_uz'] ?? '') as String,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
                       ),
                       subtitle: Text(
-                        '60 ${l10n.minutes}: ${(ts['price_60'] as int) ~/ 100} UZS'
+                        '60 ${l10n.minutes}: ${formatTiyin(ts['price_60'] as int, Localizations.localeOf(context))}'
                         '${ts['trial_free_enabled'] == true ? ' · ${l10n.teacherTrialOn}' : ''}',
                       ),
                       trailing: IconButton(

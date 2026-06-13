@@ -102,6 +102,37 @@ class ProfileRepository {
     await _client.from('teacher_subjects').delete().eq('id', id);
   }
 
+  /// Own gamification row (XP, level, streak); created on signup by trigger.
+  Future<Map<String, dynamic>?> fetchGamification() async {
+    return _client
+        .from('gamification')
+        .select('xp, level, streak_days')
+        .eq('user_id', _uid)
+        .maybeSingle();
+  }
+
+  /// `app_settings` rows used by gamification UI:
+  /// level_names {uz:[..],ru:[..]} and level_thresholds [0,100,...].
+  Future<Map<String, dynamic>> fetchLevelSettings() async {
+    final rows = await _client
+        .from('app_settings')
+        .select('key, value')
+        .inFilter('key', ['level_names', 'level_thresholds']);
+    return {for (final r in rows) r['key'] as String: r['value']};
+  }
+
+  /// Support request (`support_tickets`, RLS: insert own).
+  Future<void> submitSupportTicket({
+    required String subject,
+    required String body,
+  }) async {
+    await _client.from('support_tickets').insert({
+      'user_id': _uid,
+      'subject': subject,
+      'body': body,
+    });
+  }
+
   /// Uploads into the user's folder (`<uid>/...`) per storage RLS.
   Future<String> uploadToBucket(String bucket, String path, List<int> bytes,
       {required String contentType}) async {
@@ -131,4 +162,17 @@ Future<Map<String, dynamic>?> ownProfile(Ref ref) async {
 @riverpod
 Future<List<Map<String, dynamic>>> activeCategories(Ref ref) {
   return ref.watch(profileRepositoryProvider).fetchCategories();
+}
+
+/// XP / level / streak together with level names & thresholds.
+/// Null while signed out or when the row is missing.
+@riverpod
+Future<Map<String, dynamic>?> gamificationInfo(Ref ref) async {
+  final session = ref.watch(sessionControllerProvider);
+  if (session == null) return null;
+  final repo = ref.watch(profileRepositoryProvider);
+  final row = await repo.fetchGamification();
+  if (row == null) return null;
+  final settings = await repo.fetchLevelSettings();
+  return {...row, 'settings': settings};
 }

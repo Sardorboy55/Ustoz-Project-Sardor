@@ -213,3 +213,139 @@ final class TeacherBySlugFamily extends $Family
   @override
   String toString() => r'teacherBySlugProvider';
 }
+
+/// All active subjects (for the filters sheet dropdown).
+
+@ProviderFor(activeSubjects)
+const activeSubjectsProvider = ActiveSubjectsProvider._();
+
+/// All active subjects (for the filters sheet dropdown).
+
+final class ActiveSubjectsProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<Map<String, dynamic>>>,
+          List<Map<String, dynamic>>,
+          FutureOr<List<Map<String, dynamic>>>
+        >
+    with
+        $FutureModifier<List<Map<String, dynamic>>>,
+        $FutureProvider<List<Map<String, dynamic>>> {
+  /// All active subjects (for the filters sheet dropdown).
+  const ActiveSubjectsProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'activeSubjectsProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$activeSubjectsHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<List<Map<String, dynamic>>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<Map<String, dynamic>>> create(Ref ref) {
+    return activeSubjects(ref);
+  }
+}
+
+String _$activeSubjectsHash() => r'7c6c3f371b7aa6ce60cbad02d939aa1ef42d689f';
+
+/// Next 6 free 60-minute slots within 3 days — the availability preview on
+/// the public teacher profile (get_free_slots works for anonymous users too).
+
+@ProviderFor(teacherSlotPreview)
+const teacherSlotPreviewProvider = TeacherSlotPreviewFamily._();
+
+/// Next 6 free 60-minute slots within 3 days — the availability preview on
+/// the public teacher profile (get_free_slots works for anonymous users too).
+
+final class TeacherSlotPreviewProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<DateTime>>,
+          List<DateTime>,
+          FutureOr<List<DateTime>>
+        >
+    with $FutureModifier<List<DateTime>>, $FutureProvider<List<DateTime>> {
+  /// Next 6 free 60-minute slots within 3 days — the availability preview on
+  /// the public teacher profile (get_free_slots works for anonymous users too).
+  const TeacherSlotPreviewProvider._({
+    required TeacherSlotPreviewFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'teacherSlotPreviewProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$teacherSlotPreviewHash();
+
+  @override
+  String toString() {
+    return r'teacherSlotPreviewProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<List<DateTime>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<DateTime>> create(Ref ref) {
+    final argument = this.argument as String;
+    return teacherSlotPreview(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is TeacherSlotPreviewProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$teacherSlotPreviewHash() =>
+    r'976fe73e4fbe9836a91aa378cff8e3350b764cd3';
+
+/// Next 6 free 60-minute slots within 3 days — the availability preview on
+/// the public teacher profile (get_free_slots works for anonymous users too).
+
+final class TeacherSlotPreviewFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<List<DateTime>>, String> {
+  const TeacherSlotPreviewFamily._()
+    : super(
+        retry: null,
+        name: r'teacherSlotPreviewProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// Next 6 free 60-minute slots within 3 days — the availability preview on
+  /// the public teacher profile (get_free_slots works for anonymous users too).
+
+  TeacherSlotPreviewProvider call(String teacherId) =>
+      TeacherSlotPreviewProvider._(argument: teacherId, from: this);
+
+  @override
+  String toString() => r'teacherSlotPreviewProvider';
+}

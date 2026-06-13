@@ -1,78 +1,124 @@
+import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import type { CatalogCard } from "@/lib/catalog";
+import { Avatar } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Price } from "@/components/ui/price";
+import { RatingStars } from "@/components/ui/rating-stars";
+import { buttonClasses } from "@/components/ui/button";
+import { FavoriteButton } from "@/components/favorites";
 
-const fmt = (tiyin: number) => Math.round(tiyin / 100).toLocaleString("ru-RU");
+/**
+ * Marketplace teacher card (v2). The whole card is a link to /t/[slug]
+ * (stretched-link pattern); the favorite heart floats above it.
+ * Render inside a FavoritesProvider.
+ */
+export function TeacherCard({ card }: { card: CatalogCard }) {
+  const locale = useLocale();
+  const t = useTranslations("TeacherCard");
 
-export function TeacherCard({ card, locale, t }: {
-  card: CatalogCard;
-  locale: string;
-  t: {
-    from: string;
-    perHour: string;
-    freeTrial: string;
-    lessons: string;
-  };
-}) {
   const headline = locale === "ru" ? card.headline_ru : card.headline_uz;
   const subjects = locale === "ru" ? card.subjects_ru : card.subjects_uz;
-  const initials = card.full_name
-    .trim()
-    .split(/\s+/)
-    .map((w) => w[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
+
+  const langLabel = (code: string) =>
+    t.has(`langs.${code}`) ? t(`langs.${code}`) : code.toUpperCase();
 
   return (
-    <Link
-      href={`/t/${card.slug}`}
+    <article
       data-testid="teacher-card"
-      className="flex gap-4 rounded-2xl border border-zinc-200 bg-white p-5 transition hover:border-teal-600 hover:shadow-md"
+      className="relative rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm transition hover:border-brand-300 hover:shadow-md"
     >
-      {card.avatar_url ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
+      {/* Stretched link: makes the whole card clickable */}
+      <Link
+        href={`/t/${card.slug}`}
+        aria-label={card.full_name}
+        className="absolute inset-0 z-[1] rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2"
+      />
+      <FavoriteButton
+        teacherId={card.user_id}
+        className="absolute right-4 top-4 z-10"
+      />
+
+      <div className="flex gap-4 sm:gap-5">
+        <Avatar
           src={card.avatar_url}
-          alt={card.full_name}
-          className="h-16 w-16 shrink-0 rounded-full object-cover"
+          name={card.full_name}
+          size="lg"
+          className="h-20 w-20 text-xl"
         />
-      ) : (
-        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-teal-100 text-lg font-bold text-teal-800">
-          {initials}
-        </div>
-      )}
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <span className="truncate font-semibold">{card.full_name}</span>
-          {card.tier === "pro" && (
-            <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold uppercase text-amber-700">
-              PRO
+
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2 pr-10">
+            <h3 className="truncate text-base font-bold text-zinc-900">
+              {card.full_name}
+            </h3>
+            {card.is_verified && <Badge variant="verified" />}
+            {card.tier === "pro" && <Badge variant="pro" />}
+          </div>
+
+          {headline && (
+            <p className="mt-1 line-clamp-2 text-sm text-zinc-600">{headline}</p>
+          )}
+
+          {subjects.length > 0 && (
+            <p className="mt-1.5 line-clamp-1 text-xs text-zinc-400">
+              {subjects.join(" · ")}
+            </p>
+          )}
+
+          {card.teaching_langs.length > 0 && (
+            <div className="mt-2.5 flex flex-wrap gap-1.5">
+              {card.teaching_langs.map((code) => (
+                <span
+                  key={code}
+                  className="rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-medium text-zinc-600"
+                >
+                  {langLabel(code)}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* Mobile: rating + price below the info block */}
+          <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 sm:hidden">
+            <RatingStars
+              value={Number(card.rating_avg)}
+              count={card.rating_count}
+              size={14}
+            />
+            <span className="text-xs text-zinc-400">
+              {t("lessons", { count: card.lessons_done })}
             </span>
-          )}
-          {card.is_verified && (
-            <span className="text-teal-600" title="Verified">✓</span>
-          )}
+            <Price tiyin={card.min_price_60} from suffix={t("perLesson")} />
+            {card.has_free_trial && <Badge variant="trial" />}
+          </div>
         </div>
-        <p className="mt-0.5 line-clamp-1 text-sm text-zinc-600">{headline}</p>
-        <p className="mt-1 line-clamp-1 text-xs text-zinc-400">{subjects.join(" · ")}</p>
-        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-          <span className="font-semibold text-zinc-900">
-            {t.from} {fmt(card.min_price_60)} UZS{t.perHour}
+
+        {/* Desktop: right column with rating, price and the profile "button" */}
+        <div className="hidden w-48 shrink-0 flex-col items-end gap-2 pr-1 pt-9 sm:flex">
+          <RatingStars
+            value={Number(card.rating_avg)}
+            count={card.rating_count}
+            size={15}
+          />
+          <span className="text-xs text-zinc-400">
+            {t("lessons", { count: card.lessons_done })}
           </span>
-          <span className="text-amber-600">
-            ★ {Number(card.rating_avg).toFixed(1)}
-            <span className="text-zinc-400"> ({card.rating_count})</span>
+          <Price
+            tiyin={card.min_price_60}
+            from
+            suffix={t("perLesson")}
+            className="text-right"
+          />
+          {card.has_free_trial && <Badge variant="trial" />}
+          <span
+            aria-hidden="true"
+            className={buttonClasses("secondary", "sm", "mt-1 w-full")}
+          >
+            {t("profile")}
           </span>
-          <span className="text-zinc-400">
-            {card.lessons_done} {t.lessons}
-          </span>
-          {card.has_free_trial && (
-            <span className="rounded-full bg-teal-50 px-2 py-0.5 text-xs font-medium text-teal-700">
-              {t.freeTrial}
-            </span>
-          )}
         </div>
       </div>
-    </Link>
+    </article>
   );
 }

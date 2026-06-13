@@ -222,6 +222,12 @@ export interface Review {
   created_at: string;
 }
 
+export interface StudentFavorite {
+  student_id: string;
+  teacher_id: string;
+  created_at: string;
+}
+
 export interface Gamification {
   user_id: string;
   xp: number;

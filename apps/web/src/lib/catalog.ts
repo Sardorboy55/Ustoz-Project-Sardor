@@ -97,8 +97,11 @@ export type TeacherPublic = {
     price_90: number | null;
     trial_free_enabled: boolean;
     trial_discount_pct: number;
+    pkg5_discount_pct: number;
+    pkg10_discount_pct: number;
+    pkg20_discount_pct: number;
     is_active: boolean;
-    subjects: { name_uz: string; name_ru: string; slug: string } | null;
+    subjects: { id: string; name_uz: string; name_ru: string; slug: string } | null;
   }>;
 };
 
@@ -109,14 +112,48 @@ export async function fetchTeacherBySlug(slug: string): Promise<TeacherPublic | 
       `user_id, slug, headline_uz, headline_ru, bio_uz, bio_ru, intro_video_url,
        experience_years, teaching_langs, is_verified, tier, rating_avg, rating_count,
        lessons_done,
-       profiles ( full_name, avatar_url ),
+       profiles!teacher_profiles_user_id_fkey ( full_name, avatar_url ),
        teacher_subjects ( id, price_30, price_60, price_90, trial_free_enabled,
-                          trial_discount_pct, is_active,
-                          subjects ( name_uz, name_ru, slug ) )`,
+                          trial_discount_pct, pkg5_discount_pct, pkg10_discount_pct,
+                          pkg20_discount_pct, is_active,
+                          subjects ( id, name_uz, name_ru, slug ) )`,
     )
     .eq("slug", slug)
     .maybeSingle();
   return data as unknown as TeacherPublic | null;
+}
+
+export type TeacherReview = {
+  booking_id: string;
+  stars: number;
+  body: string | null;
+  created_at: string;
+};
+
+/** Public (non-hidden) reviews. RLS hides author names — render anonymously. */
+export async function fetchTeacherReviews(
+  teacherId: string,
+  limit = 10,
+): Promise<TeacherReview[]> {
+  const { data, error } = await publicClient()
+    .from("reviews")
+    .select("booking_id, stars, body, created_at")
+    .eq("teacher_id", teacherId)
+    .eq("is_hidden", false)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return (data ?? []) as TeacherReview[];
+}
+
+/** Teachers of the same subject, excluding the current profile. */
+export async function fetchSimilarTeachers(
+  subjectId: string,
+  excludeUserId: string,
+  limit = 3,
+): Promise<CatalogCard[]> {
+  const cards = await fetchCatalog({ subjectId, perPage: limit + 1 });
+  return cards.filter((c) => c.user_id !== excludeUserId).slice(0, limit);
 }
 
 export async function fetchSubjectBySlug(slug: string) {

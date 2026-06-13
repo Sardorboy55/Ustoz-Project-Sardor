@@ -11,7 +11,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [{ data: teachers }, { data: subjects }, { data: categories }] = await Promise.all([
     supabase
       .from("teacher_profiles")
-      .select("slug, created_at, moderation_flag, profiles!inner(is_banned)")
+      .select("slug, created_at, moderation_flag, profiles!teacher_profiles_user_id_fkey!inner(is_banned)")
       .eq("moderation_flag", false)
       .eq("profiles.is_banned", false),
     supabase.from("subjects").select("slug").eq("is_active", true),
@@ -29,6 +29,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   return [
     ...both("", 1),
     ...both("/catalog", 0.9),
+    ...both("/become-teacher", 0.8),
     ...(teachers ?? []).flatMap((t) => both(`/t/${t.slug}`, 0.8)),
     ...(subjects ?? []).flatMap((s) => both(`/s/${s.slug}`, 0.7)),
     ...(categories ?? []).flatMap((c) =>

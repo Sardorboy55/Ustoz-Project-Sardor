@@ -45,7 +45,7 @@ export async function handleBookingCreate(req: Request): Promise<Response> {
   // teacher not banned / not flagged
   const { data: teacher } = await db
     .from("teacher_profiles")
-    .select("user_id, tier, moderation_flag, profiles!inner(is_banned)")
+    .select("user_id, tier, moderation_flag, profiles!teacher_profiles_user_id_fkey!inner(is_banned)")
     .eq("user_id", ts.teacher_id)
     .maybeSingle();
   const teacherBanned =

@@ -83,10 +83,12 @@ class BookingRepository {
         .from('bookings')
         .select('''
           id, kind, status, start_at, duration_min, price,
+          teacher_id, student_id,
           teacher_subjects ( subjects ( name_uz, name_ru ) ),
-          student:profiles!bookings_student_id_fkey ( full_name ),
+          student:profiles!bookings_student_id_fkey ( full_name, avatar_url ),
           teacher:teacher_profiles!bookings_teacher_id_fkey (
-            slug, profiles ( full_name ) )
+            slug, profiles!teacher_profiles_user_id_fkey ( full_name, avatar_url ) ),
+          review:reviews ( stars )
         ''')
         .eq(asTeacher ? 'teacher_id' : 'student_id', _uid)
         .order('start_at', ascending: false)

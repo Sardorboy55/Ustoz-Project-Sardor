@@ -142,3 +142,52 @@ final class ActiveCategoriesProvider
 }
 
 String _$activeCategoriesHash() => r'425cf9198233b0a2e2debcb85c4eb48a4ecfd39c';
+
+/// XP / level / streak together with level names & thresholds.
+/// Null while signed out or when the row is missing.
+
+@ProviderFor(gamificationInfo)
+const gamificationInfoProvider = GamificationInfoProvider._();
+
+/// XP / level / streak together with level names & thresholds.
+/// Null while signed out or when the row is missing.
+
+final class GamificationInfoProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<Map<String, dynamic>?>,
+          Map<String, dynamic>?,
+          FutureOr<Map<String, dynamic>?>
+        >
+    with
+        $FutureModifier<Map<String, dynamic>?>,
+        $FutureProvider<Map<String, dynamic>?> {
+  /// XP / level / streak together with level names & thresholds.
+  /// Null while signed out or when the row is missing.
+  const GamificationInfoProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'gamificationInfoProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$gamificationInfoHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<Map<String, dynamic>?> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<Map<String, dynamic>?> create(Ref ref) {
+    return gamificationInfo(ref);
+  }
+}
+
+String _$gamificationInfoHash() => r'a0b6dbf75f7017b82a13142d1bdde20e51b8a755';
