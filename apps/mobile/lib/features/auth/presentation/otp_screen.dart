@@ -114,6 +114,9 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                 textAlign: TextAlign.center,
                 decoration: const InputDecoration(counterText: ''),
                 onChanged: (v) {
+                  // Rebuild so the Verify button's enabled state tracks the
+                  // live input length, not just the next unrelated setState.
+                  setState(() {});
                   if (v.length == 6 && !_verifying) _verify();
                 },
               ),

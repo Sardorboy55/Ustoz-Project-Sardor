@@ -458,6 +458,10 @@ class _ReviewSheetState extends ConsumerState<_ReviewSheet> {
 
   Future<void> _submit() async {
     final l10n = AppLocalizations.of(context)!;
+    // Capture before popping: after Navigator.pop the sheet's context is gone,
+    // so ScaffoldMessenger.of(context) would fail to surface the confirmation.
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
     setState(() => _sending = true);
     final text = [
       if (_tags.isNotEmpty) _tags.join(', '),
@@ -471,19 +475,16 @@ class _ReviewSheetState extends ConsumerState<_ReviewSheet> {
             body: text,
           );
       if (!mounted) return;
-      Navigator.pop(context, true);
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(l10n.reviewThanks)));
+      navigator.pop(true);
+      messenger.showSnackBar(SnackBar(content: Text(l10n.reviewThanks)));
     } on DuplicateReviewException {
       if (!mounted) return;
-      Navigator.pop(context, true); // refresh — the card will show the stars
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(l10n.reviewAlready)));
+      navigator.pop(true); // refresh — the card will show the stars
+      messenger.showSnackBar(SnackBar(content: Text(l10n.reviewAlready)));
     } catch (_) {
       if (mounted) {
         setState(() => _sending = false);
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(l10n.commonError)));
+        messenger.showSnackBar(SnackBar(content: Text(l10n.commonError)));
       }
     }
   }

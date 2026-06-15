@@ -271,7 +271,9 @@ class _BookingSheetState extends ConsumerState<BookingSheet> {
                 separatorBuilder: (_, _) => const SizedBox(width: 8),
                 itemBuilder: (context, i) {
                   final d = days[i];
-                  final selected = d.day == _day.day && d.month == _day.month;
+                  final selected = d.year == _day.year &&
+                      d.month == _day.month &&
+                      d.day == _day.day;
                   return ChoiceChip(
                     label: Column(
                       mainAxisSize: MainAxisSize.min,

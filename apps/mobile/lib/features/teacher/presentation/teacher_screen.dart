@@ -319,7 +319,7 @@ class _TeacherSubjectsTabState extends ConsumerState<_TeacherSubjectsTab> {
                         style: const TextStyle(fontWeight: FontWeight.w600),
                       ),
                       subtitle: Text(
-                        '60 ${l10n.minutes}: ${formatTiyin(ts['price_60'] as int, Localizations.localeOf(context))}'
+                        '60 ${l10n.minutes}: ${formatTiyin((ts['price_60'] as num?) ?? 0, Localizations.localeOf(context))}'
                         '${ts['trial_free_enabled'] == true ? ' · ${l10n.teacherTrialOn}' : ''}',
                       ),
                       trailing: IconButton(
