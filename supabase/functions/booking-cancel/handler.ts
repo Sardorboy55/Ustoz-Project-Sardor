@@ -60,14 +60,21 @@ export async function handleBookingCancel(req: Request): Promise<Response> {
     else refundPct = hoursLeft >= windowH ? 100 : 0;
   }
 
-  const { error: updErr } = await db
+  const { data: updated, error: updErr } = await db
     .from("bookings")
     .update({ status: newStatus, cancel_reason: input.reason ?? null })
     .eq("id", booking.id)
-    .eq("status", booking.status); // optimistic: no double-cancel
+    .eq("status", booking.status) // optimistic: no double-cancel
+    .select("id");
   if (updErr) {
     console.error("booking-cancel update failed", updErr);
     return err(500, "UPDATE_FAILED", updErr.message);
+  }
+  // PostgREST returns no error when zero rows match the optimistic filter.
+  // A concurrent/retried cancel already transitioned the booking — bail before
+  // refunding again (student_balance_refund is the source of truth on amount).
+  if (!updated || updated.length === 0) {
+    return err(409, "ALREADY_CANCELLED", "booking is no longer cancellable");
   }
 
   if (refundPct > 0) {
@@ -75,7 +82,13 @@ export async function handleBookingCancel(req: Request): Promise<Response> {
       p_booking_id: booking.id,
       p_pct: refundPct,
     });
-    if (refundErr) console.error("refund failed", refundErr);
+    if (refundErr) {
+      // The booking is already cancelled but the student was not credited.
+      // Surface a hard error so the failure is visible and retryable, rather
+      // than returning 200 with a refundPct that never happened.
+      console.error("refund failed", refundErr);
+      return err(500, "REFUND_FAILED", "cancellation saved but refund failed; contact support");
+    }
   }
 
   if (isTeacher) {

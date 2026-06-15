@@ -95,7 +95,8 @@ export async function handleBookingCreate(req: Request): Promise<Response> {
       db.rpc("teacher_lessons_this_month", { p_teacher_id: ts.teacher_id }),
     ]);
     const limit = Number(limitRow?.value ?? 10);
-    if ((cnt as unknown as number ?? 0) >= limit) {
+    const used = Number(Array.isArray(cnt) ? cnt[0] : cnt) || 0;
+    if (used >= limit) {
       return err(409, "TEACHER_LIMIT", "teacher reached the monthly lesson limit");
     }
   }
