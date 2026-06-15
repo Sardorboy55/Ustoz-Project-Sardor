@@ -68,9 +68,18 @@ class _ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
           await ref.read(chatRepositoryProvider).fetchMessages(widget.chatId);
       if (!mounted) return;
       setState(() {
+        // The subscription is live during this fetch — a message can arrive and
+        // be inserted before rows resolve. Keep those early arrivals instead of
+        // clobbering them with clear(), then re-sort newest-first.
+        final fetchedIds = rows.map((r) => r['id']).toSet();
+        final earlyArrivals =
+            _messages.where((m) => !fetchedIds.contains(m['id'])).toList();
         _messages
           ..clear()
-          ..addAll(rows);
+          ..addAll(rows)
+          ..addAll(earlyArrivals)
+          ..sort((a, b) => (b['created_at'] as String)
+              .compareTo(a['created_at'] as String));
         _hasMore = rows.length == _pageSize;
         _loading = false;
       });
