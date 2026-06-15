@@ -1,6 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../common/datetime.dart';
 import '../../../core/providers/supabase_providers.dart';
 
 part 'booking_repository.g.dart';
@@ -18,10 +19,13 @@ class BookingRepository {
     required DateTime to,
     required int durationMin,
   }) async {
+    // Date keys must be in Tashkent (the TZ the RPC buckets slots by), not the
+    // device's local/UTC date — otherwise a device west of UTC+5 shifts the
+    // window a day and hides availability.
     final rows = await _client.rpc('get_free_slots', params: {
       'p_teacher_id': teacherId,
-      'p_from': from.toIso8601String().substring(0, 10),
-      'p_to': to.toIso8601String().substring(0, 10),
+      'p_from': tashkentDateKey(from),
+      'p_to': tashkentDateKey(to),
       'p_duration_min': durationMin,
     });
     return (rows as List)

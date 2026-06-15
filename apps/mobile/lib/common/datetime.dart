@@ -8,6 +8,11 @@ const tashkentOffset = Duration(hours: 5);
 /// (The result is only for formatting — do not compare it with local times.)
 DateTime toTashkent(DateTime dt) => dt.toUtc().add(tashkentOffset);
 
+/// "YYYY-MM-DD" calendar date of [dt] in Tashkent — timezone-independent key
+/// for date-bounded RPCs (e.g. get_free_slots). Mirrors web's tashkentDateKey.
+String tashkentDateKey(DateTime dt) =>
+    toTashkent(dt).toIso8601String().substring(0, 10);
+
 /// "12.06" — short day.month.
 String formatTkDayMonth(DateTime dt) {
   final t = toTashkent(dt);
