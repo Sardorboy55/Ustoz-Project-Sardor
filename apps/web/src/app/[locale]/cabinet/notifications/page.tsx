@@ -62,7 +62,7 @@ export default function NotificationsPage() {
   const tCommon = useTranslations("Cabinet.common");
   const locale = useLocale() as Locale;
   const router = useRouter();
-  const { userId, unreadCount, setUnreadCount } = useCabinet();
+  const { userId, setUnreadCount } = useCabinet();
 
   const [phase, setPhase] = useState<"loading" | "error" | "ready">("loading");
   const [rows, setRows] = useState<NotificationRow[]>([]);
@@ -91,15 +91,24 @@ export default function NotificationsPage() {
   const markRead = async (row: NotificationRow) => {
     if (!row.read_at) {
       const readAt = new Date().toISOString();
+      // Optimistic: functional updates so concurrent taps each decrement once
+      // (a stale closed-over count would collapse multiple reads into one).
       setRows((prev) =>
         prev.map((r) => (r.id === row.id ? { ...r, read_at: readAt } : r)),
       );
-      setUnreadCount(Math.max(0, unreadCount - 1));
+      setUnreadCount((c) => Math.max(0, c - 1));
       const supabase = createClient();
-      await supabase
+      const { error } = await supabase
         .from("notifications")
         .update({ read_at: readAt })
         .eq("id", row.id);
+      if (error) {
+        // Roll the optimistic update back so the badge and row stay truthful.
+        setRows((prev) =>
+          prev.map((r) => (r.id === row.id ? { ...r, read_at: null } : r)),
+        );
+        setUnreadCount((c) => c + 1);
+      }
     }
     const bookingId = row.payload?.booking_id;
     if (bookingId) router.push(`/booking/${bookingId}`);

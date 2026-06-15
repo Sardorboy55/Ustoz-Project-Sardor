@@ -6,7 +6,9 @@ import {
   useContext,
   useEffect,
   useState,
+  type Dispatch,
   type ReactNode,
+  type SetStateAction,
 } from "react";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -30,7 +32,7 @@ type CabinetContextValue = {
   /** Re-reads the profile row (e.g. after become_teacher or avatar change). */
   refreshProfile: () => Promise<void>;
   unreadCount: number;
-  setUnreadCount: (n: number) => void;
+  setUnreadCount: Dispatch<SetStateAction<number>>;
 };
 
 const CabinetContext = createContext<CabinetContextValue | null>(null);
@@ -73,6 +75,7 @@ export function CabinetShell({ children }: { children: ReactNode }) {
       supabase
         .from("notifications")
         .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
         .is("read_at", null),
     ]);
     if (profileRes.error || !profileRes.data) {
