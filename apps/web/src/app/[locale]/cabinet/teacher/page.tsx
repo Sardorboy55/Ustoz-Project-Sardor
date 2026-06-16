@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { GraduationCap } from "lucide-react";
+import { CheckCircle2, ExternalLink, GraduationCap } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/cn";
 import { Button } from "@/components/ui/button";
@@ -17,9 +18,9 @@ import { TeacherWallet } from "./teacher-wallet";
 import { TeacherReviews } from "./teacher-reviews";
 
 const TABS = [
+  "dashboard",
   "anketa",
   "subjects",
-  "dashboard",
   "schedule",
   "wallet",
   "reviews",
@@ -38,16 +39,25 @@ const TAB_LABEL: Record<TabKey, string> = {
 export default function TeacherCabinetPage() {
   const t = useTranslations("Cabinet.teacher");
   const { profile, userId, refreshProfile } = useCabinet();
-  const [tab, setTab] = useState<TabKey>("anketa");
+  const [tab, setTab] = useState<TabKey>("dashboard");
   const [hasLessons, setHasLessons] = useState<boolean | null>(null);
+  const [slug, setSlug] = useState<string | null>(null);
 
   const checkSetup = useCallback(async () => {
     const supabase = createClient();
-    const { count } = await supabase
-      .from("teacher_subjects")
-      .select("id", { count: "exact", head: true })
-      .eq("teacher_id", userId);
+    const [{ count }, { data: prof }] = await Promise.all([
+      supabase
+        .from("teacher_subjects")
+        .select("id", { count: "exact", head: true })
+        .eq("teacher_id", userId),
+      supabase
+        .from("teacher_profiles")
+        .select("slug")
+        .eq("user_id", userId)
+        .maybeSingle(),
+    ]);
     setHasLessons((count ?? 0) > 0);
+    setSlug((prof?.slug as string | null) ?? null);
   }, [userId]);
 
   useEffect(() => {
@@ -73,6 +83,22 @@ export default function TeacherCabinetPage() {
       <h1 className="text-2xl font-bold tracking-tight text-zinc-900">
         {t("title")}
       </h1>
+
+      {slug && (
+        <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm">
+          <span className="flex items-center gap-1.5 font-medium text-emerald-800">
+            <CheckCircle2 size={16} aria-hidden="true" />
+            {t("liveInCatalog")}
+          </span>
+          <Link
+            href={`/t/${slug}`}
+            className="inline-flex items-center gap-1 font-semibold text-emerald-700 underline-offset-2 hover:underline"
+          >
+            {t("viewProfile")}
+            <ExternalLink size={13} aria-hidden="true" />
+          </Link>
+        </div>
+      )}
 
       <div
         role="tablist"

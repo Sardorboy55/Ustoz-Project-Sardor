@@ -145,6 +145,7 @@ function SubjectRow({
   const [trial, setTrial] = useState(row.trial_free_enabled);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [confirmDel, setConfirmDel] = useState(false);
   const [state, setState] = useState<"idle" | "saved" | "error">("idle");
   const [editing, setEditing] = useState(false);
 
@@ -246,18 +247,39 @@ function SubjectRow({
               Изменить
             </Button>
           )}
-          <Button
-            variant="ghost"
-            size="sm"
-            loading={deleting}
-            onClick={remove}
-            className="border border-red-300 text-red-600 hover:border-red-400 hover:bg-red-50 active:bg-red-100"
-          >
-            {!deleting && <Trash2 size={15} aria-hidden="true" />}
-            {t("subjectDelete")}
-          </Button>
+          {confirmDel ? (
+            <div className="flex items-center gap-1.5">
+              <Button variant="danger" size="sm" loading={deleting} onClick={remove}>
+                {t("subjectDeleteYes")}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={deleting}
+                onClick={() => setConfirmDel(false)}
+              >
+                {t("subjectDeleteNo")}
+              </Button>
+            </div>
+          ) : (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setConfirmDel(true)}
+              className="border border-red-300 text-red-600 hover:border-red-400 hover:bg-red-50 active:bg-red-100"
+            >
+              <Trash2 size={15} aria-hidden="true" />
+              {t("subjectDelete")}
+            </Button>
+          )}
         </div>
       </div>
+
+      {confirmDel && (
+        <p className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-800">
+          {t("subjectDeleteWarn")}
+        </p>
+      )}
 
       {editing ? (
         <>

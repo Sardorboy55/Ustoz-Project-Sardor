@@ -175,7 +175,7 @@ export default async function LandingPage({
             </Form>
 
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-              <ButtonLink href="/onboarding" size="lg" className="w-full sm:w-auto">
+              <ButtonLink href="/catalog" size="lg" className="w-full sm:w-auto">
                 {t("ctaFind")}
               </ButtonLink>
               <ButtonLink

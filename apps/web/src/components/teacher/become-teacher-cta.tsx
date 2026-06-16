@@ -22,10 +22,12 @@ export function BecomeTeacherCta({
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [already, setAlready] = useState(false);
+  const [failed, setFailed] = useState(false);
 
   const go = async () => {
     setBusy(true);
     setAlready(false);
+    setFailed(false);
     const supabase = createClient();
     const {
       data: { user },
@@ -44,6 +46,15 @@ export function BecomeTeacherCta({
       setBusy(false);
       return;
     }
+    // Actually create the teacher profile (idempotent: become_teacher inserts
+    // teacher_profiles + wallet and flips is_teacher), then drop the user
+    // straight into the setup wizard — no second "become a teacher" button.
+    const { error } = await supabase.rpc("become_teacher");
+    if (error) {
+      setBusy(false);
+      setFailed(true);
+      return;
+    }
     router.push("/cabinet/teacher");
   };
 
@@ -52,6 +63,12 @@ export function BecomeTeacherCta({
       <Button size="lg" loading={busy} onClick={go} className={className}>
         {label}
       </Button>
+
+      {failed && (
+        <p role="alert" className="mt-2 text-sm font-medium text-red-200">
+          Не удалось создать профиль. Попробуйте ещё раз.
+        </p>
+      )}
 
       <Toast open={already} onClose={() => setAlready(false)}>
         <div className="flex items-start gap-3">

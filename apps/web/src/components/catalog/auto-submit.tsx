@@ -17,7 +17,16 @@ export function AutoSubmit() {
       const el = event.target;
       const isSelect = el instanceof HTMLSelectElement;
       const isCheckbox = el instanceof HTMLInputElement && el.type === "checkbox";
-      if (isSelect || isCheckbox) form.requestSubmit();
+      if (isSelect || isCheckbox) {
+        // Subjects belong to a category — changing the category invalidates the
+        // chosen subject, so clear it instead of carrying a stale one in the URL.
+        if (isSelect && el.name === "category") {
+          const subject =
+            form.querySelector<HTMLSelectElement>('select[name="subject"]');
+          if (subject) subject.value = "";
+        }
+        form.requestSubmit();
+      }
     };
     form.addEventListener("change", onChange);
     return () => form.removeEventListener("change", onChange);

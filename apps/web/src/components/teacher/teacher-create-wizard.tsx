@@ -174,6 +174,15 @@ export function TeacherCreateWizard({
     setError(null);
     const supabase = createClient();
 
+    // Make sure the teacher_profiles row exists (idempotent) — otherwise the
+    // update below silently matches 0 rows and the profile data is lost.
+    const { error: btErr } = await supabase.rpc("become_teacher");
+    if (btErr) {
+      setSaving(false);
+      setError(`Не удалось создать профиль: ${btErr.message}`);
+      return;
+    }
+
     const headline = f.headline.trim();
     const bio = f.bio.trim();
     const { error: pErr } = await supabase
@@ -216,7 +225,7 @@ export function TeacherCreateWizard({
     }
 
     if (f.schedule.length > 0) {
-      await supabase.from("availability_rules").insert(
+      const { error: aErr } = await supabase.from("availability_rules").insert(
         f.schedule.map((w) => ({
           teacher_id: userId,
           weekday: w.weekday,
@@ -224,6 +233,11 @@ export function TeacherCreateWizard({
           end_min: w.end_min,
         })),
       );
+      if (aErr) {
+        setSaving(false);
+        setError("Не удалось сохранить расписание. Попробуйте ещё раз.");
+        return;
+      }
     }
 
     if (onComplete) {
