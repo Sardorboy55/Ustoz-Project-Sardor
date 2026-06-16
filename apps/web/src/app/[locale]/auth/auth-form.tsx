@@ -22,19 +22,60 @@ function maskPhone(digits: string): string {
   return parts.join(" ");
 }
 
+function GoogleIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className={className}>
+      <path fill="#4285F4" d="M23.52 12.27c0-.79-.07-1.54-.2-2.27H12v4.51h6.47a5.5 5.5 0 0 1-2.4 3.6v3h3.86c2.26-2.09 3.56-5.17 3.56-8.84z" />
+      <path fill="#34A853" d="M12 24c3.24 0 5.96-1.08 7.95-2.91l-3.86-3c-1.08.72-2.45 1.16-4.09 1.16-3.14 0-5.8-2.12-6.76-4.98H1.26v3.09A12 12 0 0 0 12 24z" />
+      <path fill="#FBBC05" d="M5.24 14.27a7.2 7.2 0 0 1 0-4.54V6.64H1.26a12 12 0 0 0 0 10.72l3.98-3.09z" />
+      <path fill="#EA4335" d="M12 4.77c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.96 1.19 15.24 0 12 0A12 12 0 0 0 1.26 6.64l3.98 3.09C6.2 6.89 8.86 4.77 12 4.77z" />
+    </svg>
+  );
+}
+
+function TelegramIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className={className}>
+      <path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71L12.6 16.3l-1.99 1.93c-.23.23-.42.42-.83.42z" />
+    </svg>
+  );
+}
+
+const inputClass =
+  "h-12 w-full rounded-xl border border-zinc-300 bg-white px-3.5 text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-100";
+
+/** Seeded demo numbers (+998 90 000 00 XX) have a fixed OTP 123456, no real SMS. */
+const isTestPhone = (digits: string) =>
+  digits.length === 9 && digits.startsWith("9000000");
+
 export function AuthForm({ next }: { next: string }) {
   const t = useTranslations("Auth");
   const router = useRouter();
 
+  const [mode, setMode] = useState<"login" | "register">("login");
+  const [method, setMethod] = useState<"phone" | "email">("phone");
+
+  // phone
   const [step, setStep] = useState<"phone" | "otp">("phone");
-  const [digits, setDigits] = useState(""); // 9 digits after +998
+  const [digits, setDigits] = useState("");
   const [code, setCode] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [resendIn, setResendIn] = useState(0);
   const verifyingRef = useRef(false);
 
+  // email + shared
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+
   const phone = `+998${digits}`;
+  const reset = () => {
+    setError(null);
+    setNotice(null);
+  };
 
   // Already signed in? Straight to the destination.
   useEffect(() => {
@@ -55,16 +96,35 @@ export function AuthForm({ next }: { next: string }) {
     return () => clearInterval(id);
   }, [step, resendIn]);
 
+  // ---------- Social ----------
+  // Google OAuth needs an /auth/callback route (to exchange the code for a
+  // session) plus the provider enabled in Supabase. Neither exists yet, so a
+  // real signInWithOAuth would bounce the user to a dead /auth/callback (404)
+  // and never sign them in. Until that's wired, show the same "coming soon"
+  // notice as Telegram instead of starting a broken redirect.
+  const loginGoogle = () => setNotice(t("googleSoon"));
+  const loginTelegram = () => setNotice(t("tgSoon"));
+
+  // ---------- Phone OTP ----------
   const sendCode = async () => {
     setBusy(true);
-    setError(null);
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithOtp({ phone });
+    reset();
+    const { error } = await createClient().auth.signInWithOtp({
+      phone,
+      options:
+        mode === "register" && name.trim()
+          ? { data: { full_name: name.trim() } }
+          : undefined,
+    });
     setBusy(false);
-    if (error) {
+    const test = isTestPhone(digits);
+    // Test numbers use a fixed OTP (no SMS), so proceed to code entry even if
+    // the provider errors. Real numbers still surface the error.
+    if (error && !test) {
       setError(error.status === 429 ? t("rateLimited") : t("sendFailed"));
       return;
     }
+    if (test) setNotice("Тестовый номер — введите код 123456.");
     setCode("");
     setResendIn(RESEND_SECONDS);
     setStep("otp");
@@ -74,9 +134,8 @@ export function AuthForm({ next }: { next: string }) {
     if (verifyingRef.current) return;
     verifyingRef.current = true;
     setBusy(true);
-    setError(null);
-    const supabase = createClient();
-    const { error } = await supabase.auth.verifyOtp({
+    reset();
+    const { error } = await createClient().auth.verifyOtp({
       type: "sms",
       phone,
       token,
@@ -87,7 +146,7 @@ export function AuthForm({ next }: { next: string }) {
       setError(t("codeWrong"));
       return;
     }
-    router.push(next); // keep the button in its loading state while navigating
+    router.push(next);
   };
 
   const onCodeChange = (raw: string) => {
@@ -97,28 +156,120 @@ export function AuthForm({ next }: { next: string }) {
     if (value.length === 6) void verify(value);
   };
 
+  // ---------- Email + password ----------
+  const submitEmail = async () => {
+    setBusy(true);
+    reset();
+    const supabase = createClient();
+    if (mode === "register") {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: name.trim() ? { full_name: name.trim() } : undefined },
+      });
+      setBusy(false);
+      if (error) {
+        setError(t("emailFailed"));
+        return;
+      }
+      if (data.session) router.push(next);
+      else setNotice(t("checkEmail"));
+    } else {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      setBusy(false);
+      if (error) {
+        setError(t("emailFailed"));
+        return;
+      }
+      router.push(next);
+    }
+  };
+
+  const isRegister = mode === "register";
+
   return (
     <Card className="w-full max-w-md p-6 sm:p-8">
       <div className="flex justify-center">
         <Wordmark />
       </div>
       <h1 className="mt-6 text-center text-2xl font-bold tracking-tight">
-        {t("title")}
+        {t("welcomeTitle")}
       </h1>
-      <p className="mt-2 text-center text-sm text-zinc-500">{t("subtitle")}</p>
+      <p className="mt-2 text-center text-sm text-zinc-500">
+        {isRegister ? t("welcomeSubtitleReg") : t("welcomeSubtitle")}
+      </p>
 
-      {step === "phone" ? (
-        <form
-          className="mt-8 space-y-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (!busy && digits.length === 9) void sendCode();
-          }}
+      {/* Social */}
+      <div className="mt-6 space-y-2.5">
+        <button
+          type="button"
+          onClick={() => void loginGoogle()}
+          disabled={busy}
+          className="flex h-12 w-full items-center justify-center gap-2.5 rounded-xl border border-zinc-300 bg-white font-semibold text-zinc-700 shadow-sm outline-none transition hover:bg-zinc-50 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2 disabled:opacity-60"
         >
-          <label className="block">
-            <span className="mb-1.5 block text-sm font-medium text-zinc-700">
-              {t("phoneLabel")}
-            </span>
+          <GoogleIcon className="h-5 w-5" />
+          {t("continueGoogle")}
+        </button>
+        <button
+          type="button"
+          onClick={loginTelegram}
+          className="flex h-12 w-full items-center justify-center gap-2.5 rounded-xl bg-[#229ED9] font-semibold text-white shadow-sm outline-none transition hover:bg-[#1d8ec4] focus-visible:ring-2 focus-visible:ring-[#229ED9] focus-visible:ring-offset-2"
+        >
+          <TelegramIcon className="h-5 w-5" />
+          {t("continueTelegram")}
+        </button>
+      </div>
+
+      <div className="my-5 flex items-center gap-3 text-xs text-zinc-400">
+        <span className="h-px flex-1 bg-zinc-200" />
+        {t("or")}
+        <span className="h-px flex-1 bg-zinc-200" />
+      </div>
+
+      {/* Method tabs */}
+      <div className="grid grid-cols-2 gap-1 rounded-xl bg-zinc-100 p-1 text-sm font-semibold">
+        {(["phone", "email"] as const).map((m) => (
+          <button
+            key={m}
+            type="button"
+            onClick={() => {
+              setMethod(m);
+              reset();
+            }}
+            className={cn(
+              "rounded-lg py-2 transition",
+              method === m
+                ? "bg-white text-brand-700 shadow-sm"
+                : "text-zinc-500 hover:text-zinc-700",
+            )}
+          >
+            {m === "phone" ? t("tabPhone") : t("tabEmail")}
+          </button>
+        ))}
+      </div>
+
+      {/* Form */}
+      {method === "phone" ? (
+        step === "phone" ? (
+          <form
+            className="mt-4 space-y-4"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!busy && digits.length === 9) void sendCode();
+            }}
+          >
+            {isRegister && (
+              <input
+                className={inputClass}
+                placeholder={t("nameLabel")}
+                autoComplete="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+            )}
             <div
               className={cn(
                 "flex items-center rounded-xl border bg-white transition-colors",
@@ -143,80 +294,173 @@ export function AuthForm({ next }: { next: string }) {
                 }}
               />
             </div>
-          </label>
+            <Button
+              data-testid="send-code"
+              type="submit"
+              size="lg"
+              className="w-full"
+              loading={busy}
+              disabled={digits.length !== 9}
+            >
+              {t("sendCode")}
+            </Button>
+
+            {process.env.NODE_ENV !== "production" && (
+              <div className="rounded-xl border border-dashed border-zinc-300 bg-zinc-50 p-3 text-xs text-zinc-500">
+                <p className="font-medium text-zinc-600">Тест-вход (код 123456):</p>
+                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDigits("900000099");
+                      setError(null);
+                    }}
+                    className="rounded-md border border-zinc-200 bg-white px-2 py-1 font-medium text-zinc-700 transition hover:border-brand-300 hover:text-brand-700"
+                  >
+                    Админ
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDigits("900000010");
+                      setError(null);
+                    }}
+                    className="rounded-md border border-zinc-200 bg-white px-2 py-1 font-medium text-zinc-700 transition hover:border-brand-300 hover:text-brand-700"
+                  >
+                    Ученик
+                  </button>
+                </div>
+              </div>
+            )}
+          </form>
+        ) : (
+          <div className="mt-4 space-y-4">
+            <p className="text-center text-sm text-zinc-600">
+              {t("otpSentTo", { phone: `+998 ${maskPhone(digits)}` })}
+            </p>
+            <label className="block">
+              <span className="sr-only">{t("codeLabel")}</span>
+              <input
+                data-testid="otp-input"
+                className={cn(
+                  "h-14 w-full rounded-xl border bg-white text-center text-2xl font-bold tracking-[0.45em] text-zinc-900 outline-none transition-colors",
+                  error
+                    ? "border-red-400"
+                    : "border-zinc-300 focus:border-brand-500 focus:ring-2 focus:ring-brand-100",
+                )}
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                maxLength={7}
+                autoFocus
+                value={code}
+                onChange={(e) => onCodeChange(e.target.value)}
+              />
+            </label>
+            <Button
+              data-testid="verify"
+              size="lg"
+              className="w-full"
+              loading={busy}
+              disabled={code.length !== 6}
+              onClick={() => void verify(code)}
+            >
+              {t("verify")}
+            </Button>
+            <div className="flex items-center justify-between text-sm">
+              <button
+                type="button"
+                onClick={() => {
+                  setStep("phone");
+                  setCode("");
+                  reset();
+                }}
+                className="rounded-lg py-1 text-zinc-500 outline-none transition-colors hover:text-zinc-800 focus-visible:ring-2 focus-visible:ring-brand-600"
+              >
+                {t("changePhone")}
+              </button>
+              {resendIn > 0 ? (
+                <span className="tabular-nums text-zinc-400">
+                  {t("resendIn", { sec: resendIn })}
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void sendCode()}
+                  className="rounded-lg py-1 font-semibold text-brand-700 outline-none transition-colors hover:text-brand-800 focus-visible:ring-2 focus-visible:ring-brand-600 disabled:text-zinc-400"
+                >
+                  {t("resend")}
+                </button>
+              )}
+            </div>
+          </div>
+        )
+      ) : (
+        <form
+          className="mt-4 space-y-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!busy && email && password.length >= 6) void submitEmail();
+          }}
+        >
+          {isRegister && (
+            <input
+              className={inputClass}
+              placeholder={t("nameLabel")}
+              autoComplete="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          )}
+          <input
+            className={inputClass}
+            type="email"
+            placeholder={t("emailLabel")}
+            autoComplete="email"
+            value={email}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              setError(null);
+            }}
+          />
+          <input
+            className={inputClass}
+            type="password"
+            placeholder={t("passwordLabel")}
+            autoComplete={isRegister ? "new-password" : "current-password"}
+            value={password}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              setError(null);
+            }}
+          />
           <Button
-            data-testid="send-code"
             type="submit"
             size="lg"
             className="w-full"
             loading={busy}
-            disabled={digits.length !== 9}
+            disabled={!email || password.length < 6}
           >
-            {t("sendCode")}
+            {isRegister ? t("btnRegister") : t("btnLogin")}
           </Button>
         </form>
-      ) : (
-        <div className="mt-8 space-y-4">
-          <p className="text-center text-sm text-zinc-600">
-            {t("otpSentTo", { phone: `+998 ${maskPhone(digits)}` })}
-          </p>
-          <label className="block">
-            <span className="sr-only">{t("codeLabel")}</span>
-            <input
-              data-testid="otp-input"
-              className={cn(
-                "h-14 w-full rounded-xl border bg-white text-center text-2xl font-bold tracking-[0.45em] text-zinc-900 outline-none transition-colors",
-                error
-                  ? "border-red-400"
-                  : "border-zinc-300 focus:border-brand-500 focus:ring-2 focus:ring-brand-100",
-              )}
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              maxLength={7} // 6 digits + a pasted space survives the strip
-              autoFocus
-              value={code}
-              onChange={(e) => onCodeChange(e.target.value)}
-            />
-          </label>
-          <Button
-            data-testid="verify"
-            size="lg"
-            className="w-full"
-            loading={busy}
-            disabled={code.length !== 6}
-            onClick={() => void verify(code)}
-          >
-            {t("verify")}
-          </Button>
-          <div className="flex items-center justify-between text-sm">
-            <button
-              type="button"
-              onClick={() => {
-                setStep("phone");
-                setCode("");
-                setError(null);
-              }}
-              className="rounded-lg py-1 text-zinc-500 outline-none transition-colors hover:text-zinc-800 focus-visible:ring-2 focus-visible:ring-brand-600"
-            >
-              {t("changePhone")}
-            </button>
-            {resendIn > 0 ? (
-              <span className="tabular-nums text-zinc-400">
-                {t("resendIn", { sec: resendIn })}
-              </span>
-            ) : (
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => void sendCode()}
-                className="rounded-lg py-1 font-semibold text-brand-700 outline-none transition-colors hover:text-brand-800 focus-visible:ring-2 focus-visible:ring-brand-600 disabled:text-zinc-400"
-              >
-                {t("resend")}
-              </button>
-            )}
-          </div>
-        </div>
       )}
+
+      {/* Mode toggle */}
+      <p className="mt-5 text-center text-sm text-zinc-500">
+        {isRegister ? t("haveAccountQ") : t("noAccountQ")}{" "}
+        <button
+          type="button"
+          onClick={() => {
+            setMode(isRegister ? "login" : "register");
+            setStep("phone");
+            reset();
+          }}
+          className="font-semibold text-brand-700 outline-none transition-colors hover:text-brand-800 focus-visible:underline"
+        >
+          {isRegister ? t("btnLogin") : t("btnRegister")}
+        </button>
+      </p>
 
       {error && (
         <p
@@ -225,6 +469,12 @@ export function AuthForm({ next }: { next: string }) {
           className="mt-4 rounded-xl bg-red-50 px-4 py-2.5 text-center text-sm text-red-700"
         >
           {error}
+        </p>
+      )}
+
+      {notice && (
+        <p className="mt-4 rounded-xl bg-brand-50 px-4 py-2.5 text-center text-sm text-brand-800">
+          {notice}
         </p>
       )}
     </Card>

@@ -1,20 +1,18 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { BookOpen, Plus, Trash2 } from "lucide-react";
+import { BookOpen, Pencil, Plus, Trash2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import type { Locale } from "@ustoz/shared";
+import { formatUzs, type Locale } from "@ustoz/shared";
 import { createClient } from "@/lib/supabase/client";
-import { Button } from "@/components/ui/button";
+import { Button, ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
+import { localizeContent } from "@/lib/content-i18n";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCabinet } from "@/components/cabinet/cabinet-shell";
-
-type SubjectOption = { id: string; name_uz: string; name_ru: string };
 
 type MyRow = {
   id: string;
@@ -23,6 +21,9 @@ type MyRow = {
   price_60: number;
   price_90: number | null;
   trial_free_enabled: boolean;
+  pkg5_discount_pct: number;
+  pkg10_discount_pct: number;
+  pkg20_discount_pct: number;
   subjects: { name_uz: string; name_ru: string } | null;
 };
 
@@ -42,75 +43,30 @@ export function TeacherSubjects() {
   const { userId } = useCabinet();
 
   const [phase, setPhase] = useState<"loading" | "error" | "ready">("loading");
-  const [allSubjects, setAllSubjects] = useState<SubjectOption[]>([]);
   const [mine, setMine] = useState<MyRow[]>([]);
 
-  // add-form state
-  const [newSubjectId, setNewSubjectId] = useState("");
-  const [newPrice60, setNewPrice60] = useState("");
-  const [newTrial, setNewTrial] = useState(false);
-  const [adding, setAdding] = useState(false);
-  const [addError, setAddError] = useState<string | null>(null);
-
   const name = (s: { name_uz: string; name_ru: string } | null) =>
-    s ? (locale === "ru" ? s.name_ru : s.name_uz) : "";
+    s ? localizeContent(locale, s.name_uz, s.name_ru) : "";
 
   const load = useCallback(async () => {
     const supabase = createClient();
-    const [subjRes, mineRes] = await Promise.all([
-      supabase
-        .from("subjects")
-        .select("id, name_uz, name_ru")
-        .eq("is_active", true)
-        .order(locale === "ru" ? "name_ru" : "name_uz", { ascending: true }),
-      supabase
-        .from("teacher_subjects")
-        .select(
-          "id, subject_id, price_30, price_60, price_90, trial_free_enabled, subjects(name_uz, name_ru)",
-        )
-        .eq("teacher_id", userId),
-    ]);
-    if (subjRes.error || mineRes.error) {
+    const { data, error } = await supabase
+      .from("teacher_subjects")
+      .select(
+        "id, subject_id, price_30, price_60, price_90, trial_free_enabled, pkg5_discount_pct, pkg10_discount_pct, pkg20_discount_pct, subjects(name_uz, name_ru)",
+      )
+      .eq("teacher_id", userId);
+    if (error) {
       setPhase("error");
       return;
     }
-    setAllSubjects((subjRes.data ?? []) as SubjectOption[]);
-    setMine((mineRes.data ?? []) as unknown as MyRow[]);
+    setMine((data ?? []) as unknown as MyRow[]);
     setPhase("ready");
-  }, [userId, locale]);
+  }, [userId]);
 
   useEffect(() => {
     queueMicrotask(() => void load());
   }, [load]);
-
-  const available = allSubjects.filter(
-    (s) => !mine.some((m) => m.subject_id === s.id),
-  );
-
-  const add = async () => {
-    const price60 = toTiyin(newPrice60);
-    if (!newSubjectId || !price60) return;
-    setAdding(true);
-    setAddError(null);
-    const supabase = createClient();
-    const { error } = await supabase.from("teacher_subjects").insert({
-      teacher_id: userId,
-      subject_id: newSubjectId,
-      price_60: price60,
-      trial_free_enabled: newTrial,
-    });
-    setAdding(false);
-    if (error) {
-      setAddError(
-        error.message.includes("SUBJECT_LIMIT") ? t("subjectLimit") : t("subjectError"),
-      );
-      return;
-    }
-    setNewSubjectId("");
-    setNewPrice60("");
-    setNewTrial(false);
-    await load();
-  };
 
   if (phase === "loading") {
     return (
@@ -132,54 +88,15 @@ export function TeacherSubjects() {
         <p className="mt-0.5 text-sm text-zinc-500">{t("subjectsSubtitle")}</p>
       </div>
 
-      {/* Add form */}
-      <Card className="p-5">
-        <p className="text-sm font-semibold text-zinc-800">{t("addSubject")}</p>
-        <div className="mt-3 flex flex-wrap items-end gap-3">
-          <Select
-            label={t("pickSubject")}
-            value={newSubjectId}
-            onChange={(e) => setNewSubjectId(e.target.value)}
-            wrapperClassName="min-w-44 flex-1"
-          >
-            <option value="">—</option>
-            {available.map((s) => (
-              <option key={s.id} value={s.id}>
-                {name(s)}
-              </option>
-            ))}
-          </Select>
-          <Input
-            label={t("price60")}
-            inputMode="numeric"
-            value={newPrice60}
-            onChange={(e) => setNewPrice60(e.target.value.replace(/\D/g, ""))}
-            wrapperClassName="w-44"
-          />
-          <Button
-            onClick={add}
-            loading={adding}
-            disabled={!newSubjectId || !toTiyin(newPrice60)}
-          >
-            <Plus size={16} aria-hidden="true" />
-            {t("subjectAdd")}
-          </Button>
-        </div>
-        <label className="mt-3 flex w-fit cursor-pointer items-center gap-2 text-sm text-zinc-700">
-          <input
-            type="checkbox"
-            checked={newTrial}
-            onChange={(e) => setNewTrial(e.target.checked)}
-            className="h-4 w-4 rounded border-zinc-300 accent-brand-600"
-          />
-          {t("trialToggle")}
-        </label>
-        {addError && (
-          <p role="alert" className="mt-3 text-sm text-red-600">
-            {addError}
-          </p>
-        )}
-      </Card>
+      {/* Add a lesson on a dedicated page */}
+      <ButtonLink
+        href="/cabinet/teacher/subjects/new"
+        size="lg"
+        className="w-full justify-center"
+      >
+        <Plus size={18} aria-hidden="true" />
+        Добавить урок
+      </ButtonLink>
 
       {/* My subjects */}
       {mine.length === 0 ? (
@@ -194,6 +111,7 @@ export function TeacherSubjects() {
             key={row.id}
             row={row}
             title={name(row.subjects)}
+            locale={locale}
             onChanged={load}
           />
         ))
@@ -205,26 +123,44 @@ export function TeacherSubjects() {
 function SubjectRow({
   row,
   title,
+  locale,
   onChanged,
 }: {
   row: MyRow;
   title: string;
+  locale: Locale;
   onChanged: () => Promise<void>;
 }) {
   const t = useTranslations("Cabinet.teacher");
+  const pctStr = (n: number) => (n > 0 ? String(n) : "");
+  // DB caps discounts at 90% (check constraint).
+  const pctInt = (s: string) => Math.min(90, Number(s.replace(/\D/g, "")) || 0);
+
   const [p30, setP30] = useState(toUzsStr(row.price_30));
   const [p60, setP60] = useState(toUzsStr(row.price_60));
   const [p90, setP90] = useState(toUzsStr(row.price_90));
+  const [pkg5, setPkg5] = useState(pctStr(row.pkg5_discount_pct));
+  const [pkg10, setPkg10] = useState(pctStr(row.pkg10_discount_pct));
+  const [pkg20, setPkg20] = useState(pctStr(row.pkg20_discount_pct));
   const [trial, setTrial] = useState(row.trial_free_enabled);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [state, setState] = useState<"idle" | "saved" | "error">("idle");
+  const [editing, setEditing] = useState(false);
 
   const dirty =
     p30 !== toUzsStr(row.price_30) ||
     p60 !== toUzsStr(row.price_60) ||
     p90 !== toUzsStr(row.price_90) ||
+    pctInt(pkg5) !== row.pkg5_discount_pct ||
+    pctInt(pkg10) !== row.pkg10_discount_pct ||
+    pctInt(pkg20) !== row.pkg20_discount_pct ||
     trial !== row.trial_free_enabled;
+
+  const num = (set: (v: string) => void) => (e: { target: { value: string } }) => {
+    set(e.target.value.replace(/\D/g, ""));
+    setState("idle");
+  };
 
   const save = async () => {
     const price60 = toTiyin(p60);
@@ -238,6 +174,9 @@ function SubjectRow({
         price_30: toTiyin(p30),
         price_60: price60,
         price_90: toTiyin(p90),
+        pkg5_discount_pct: pctInt(pkg5),
+        pkg10_discount_pct: pctInt(pkg10),
+        pkg20_discount_pct: pctInt(pkg20),
         trial_free_enabled: trial,
       })
       .eq("id", row.id);
@@ -248,6 +187,7 @@ function SubjectRow({
     }
     setState("saved");
     await onChanged();
+    setEditing(false);
   };
 
   const remove = async () => {
@@ -265,86 +205,240 @@ function SubjectRow({
     await onChanged();
   };
 
+  const cancel = () => {
+    setP30(toUzsStr(row.price_30));
+    setP60(toUzsStr(row.price_60));
+    setP90(toUzsStr(row.price_90));
+    setPkg5(pctStr(row.pkg5_discount_pct));
+    setPkg10(pctStr(row.pkg10_discount_pct));
+    setPkg20(pctStr(row.pkg20_discount_pct));
+    setTrial(row.trial_free_enabled);
+    setState("idle");
+    setEditing(false);
+  };
+
+  const preview = (
+    <LessonPreviewCard
+      subjectName={title}
+      p30={toTiyin(p30)}
+      p60={toTiyin(p60)}
+      p90={toTiyin(p90)}
+      trial={trial}
+      pkg5={pctInt(pkg5)}
+      pkg10={pctInt(pkg10)}
+      pkg20={pctInt(pkg20)}
+      locale={locale}
+    />
+  );
+
   return (
     <Card className="p-5">
       <div className="flex items-center justify-between gap-3">
         <p className="font-bold text-zinc-900">{title}</p>
-        <Button
-          variant="ghost"
-          size="sm"
-          loading={deleting}
-          onClick={remove}
-          className="text-red-600 hover:bg-red-50 active:bg-red-100"
-        >
-          {!deleting && <Trash2 size={15} aria-hidden="true" />}
-          {t("subjectDelete")}
-        </Button>
-      </div>
-      <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <Input
-          label={t("price30")}
-          helper={t("optional")}
-          inputMode="numeric"
-          value={p30}
-          onChange={(e) => {
-            setP30(e.target.value.replace(/\D/g, ""));
-            setState("idle");
-          }}
-        />
-        <Input
-          label={t("price60")}
-          inputMode="numeric"
-          value={p60}
-          onChange={(e) => {
-            setP60(e.target.value.replace(/\D/g, ""));
-            setState("idle");
-          }}
-        />
-        <Input
-          label={t("price90")}
-          helper={t("optional")}
-          inputMode="numeric"
-          value={p90}
-          onChange={(e) => {
-            setP90(e.target.value.replace(/\D/g, ""));
-            setState("idle");
-          }}
-        />
-      </div>
-      <div className="mt-3 flex flex-wrap items-center gap-4">
-        <label className="flex cursor-pointer items-center gap-2 text-sm text-zinc-700">
-          <input
-            type="checkbox"
-            checked={trial}
-            onChange={(e) => {
-              setTrial(e.target.checked);
-              setState("idle");
-            }}
-            className="h-4 w-4 rounded border-zinc-300 accent-brand-600"
-          />
-          {t("trialToggle")}
-        </label>
-        <div className="ml-auto flex items-center gap-3">
-          {state === "saved" && (
-            <span className="text-sm font-medium text-brand-700">
-              {t("subjectSaved")}
-            </span>
-          )}
-          {state === "error" && (
-            <span role="alert" className="text-sm text-red-600">
-              {t("subjectError")}
-            </span>
+        <div className="flex items-center gap-1.5">
+          {!editing && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setEditing(true)}
+            >
+              <Pencil size={15} aria-hidden="true" />
+              Изменить
+            </Button>
           )}
           <Button
+            variant="ghost"
             size="sm"
-            loading={saving}
-            disabled={!dirty || !toTiyin(p60)}
-            onClick={save}
+            loading={deleting}
+            onClick={remove}
+            className="border border-red-300 text-red-600 hover:border-red-400 hover:bg-red-50 active:bg-red-100"
           >
-            {t("save")}
+            {!deleting && <Trash2 size={15} aria-hidden="true" />}
+            {t("subjectDelete")}
           </Button>
         </div>
       </div>
+
+      {editing ? (
+        <>
+          <p className="mt-3 text-sm font-medium text-zinc-700">
+            Цены по длительности
+          </p>
+          <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <Input label={t("price30")} helper={t("optional")} inputMode="numeric" value={p30} onChange={num(setP30)} />
+            <Input label={t("price60")} inputMode="numeric" value={p60} onChange={num(setP60)} />
+            <Input label={t("price90")} helper={t("optional")} inputMode="numeric" value={p90} onChange={num(setP90)} />
+          </div>
+
+          <p className="mt-4 text-sm font-medium text-zinc-700">
+            Скидки на пакеты{" "}
+            <span className="font-normal text-zinc-400">(%, необязательно)</span>
+          </p>
+          <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <Input label="5 уроков" helper="%" inputMode="numeric" value={pkg5} onChange={num(setPkg5)} />
+            <Input label="10 уроков" helper="%" inputMode="numeric" value={pkg10} onChange={num(setPkg10)} />
+            <Input label="20 уроков" helper="%" inputMode="numeric" value={pkg20} onChange={num(setPkg20)} />
+          </div>
+
+          <div className="mt-3 flex flex-wrap items-center gap-4">
+            <label className="flex cursor-pointer items-center gap-2 text-sm text-zinc-700">
+              <input
+                type="checkbox"
+                checked={trial}
+                onChange={(e) => {
+                  setTrial(e.target.checked);
+                  setState("idle");
+                }}
+                className="h-4 w-4 rounded border-zinc-300 accent-brand-600"
+              />
+              {t("trialToggle")}
+            </label>
+            <div className="ml-auto flex items-center gap-3">
+              {state === "error" && (
+                <span role="alert" className="text-sm text-red-600">
+                  {t("subjectError")}
+                </span>
+              )}
+              <Button variant="ghost" size="sm" onClick={cancel}>
+                Отмена
+              </Button>
+              <Button size="sm" loading={saving} disabled={!dirty || !toTiyin(p60)} onClick={save}>
+                {t("save")}
+              </Button>
+            </div>
+          </div>
+
+          {/* Live preview — how the lesson appears to students */}
+          <div className="mt-4 border-t border-zinc-100 pt-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
+              Так увидят ученики
+            </p>
+            <div className="mt-2">{preview}</div>
+          </div>
+        </>
+      ) : (
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          {(
+            [
+              ["30", p30],
+              ["60", p60],
+              ["90", p90],
+            ] as const
+          ).map(([min, v]) => {
+            const tiyin = toTiyin(v);
+            return tiyin ? (
+              <span
+                key={min}
+                className="flex flex-col items-center rounded-lg bg-zinc-50 px-3.5 py-2"
+              >
+                <span className="text-xs text-zinc-500">{min} мин</span>
+                <span className="mt-0.5 text-sm font-bold text-zinc-900">
+                  {formatUzs(tiyin, locale)} сум
+                </span>
+              </span>
+            ) : null;
+          })}
+          {trial && (
+            <span className="rounded-full bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-700">
+              Бесплатный пробный
+            </span>
+          )}
+          {(
+            [
+              ["5", pkg5],
+              ["10", pkg10],
+              ["20", pkg20],
+            ] as const
+          ).map(([n, v]) => {
+            const pct = pctInt(v);
+            return pct > 0 ? (
+              <span
+                key={n}
+                className="rounded-full bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-700"
+              >
+                {n} уроков −{pct}%
+              </span>
+            ) : null;
+          })}
+        </div>
+      )}
     </Card>
+  );
+}
+
+/** Read-only mirror of the catalog lesson card, fed by the live form values. */
+function LessonPreviewCard({
+  subjectName,
+  p30,
+  p60,
+  p90,
+  trial,
+  pkg5,
+  pkg10,
+  pkg20,
+  locale,
+}: {
+  subjectName: string;
+  p30: number | null;
+  p60: number | null;
+  p90: number | null;
+  trial: boolean;
+  pkg5: number;
+  pkg10: number;
+  pkg20: number;
+  locale: Locale;
+}) {
+  const durations = [
+    { min: 30, tiyin: p30 },
+    { min: 60, tiyin: p60 },
+    { min: 90, tiyin: p90 },
+  ].filter((d): d is { min: number; tiyin: number } => (d.tiyin ?? 0) > 0);
+  const pkgs = [
+    { n: 5, pct: pkg5 },
+    { n: 10, pct: pkg10 },
+    { n: 20, pct: pkg20 },
+  ].filter((p) => p.pct > 0);
+
+  return (
+    <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+      <p className="text-base font-bold text-zinc-900">
+        {subjectName || "Предмет"}
+      </p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {durations.length === 0 ? (
+          <span className="text-sm text-zinc-400">Укажите цену за 60 мин</span>
+        ) : (
+          durations.map((d) => (
+            <span
+              key={d.min}
+              className="rounded-lg bg-zinc-50 px-3 py-1.5 text-sm text-zinc-500"
+            >
+              {d.min} мин{" "}
+              <span className="font-bold text-zinc-900">
+                {formatUzs(d.tiyin, locale)} сум
+              </span>
+            </span>
+          ))
+        )}
+      </div>
+      {(trial || pkgs.length > 0) && (
+        <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs">
+          {trial && (
+            <span className="font-medium text-brand-700">
+              Бесплатный пробный 20 мин
+            </span>
+          )}
+          {pkgs.length > 0 && <span className="text-zinc-400">Пакеты:</span>}
+          {pkgs.map((p) => (
+            <span
+              key={p.n}
+              className="rounded-full bg-brand-50 px-2.5 py-1 font-medium text-brand-700"
+            >
+              {p.n} уроков −{p.pct}%
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

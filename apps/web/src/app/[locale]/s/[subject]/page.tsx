@@ -15,6 +15,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { FilterChip } from "@/components/ui/chip";
 import { FavoritesProvider } from "@/components/favorites";
 import { TeacherCard } from "@/components/teacher-card";
+import { localizeContent } from "@/lib/content-i18n";
 
 // SEO landing «репетитор {предмет}» (docs/04 §4.8)
 export const revalidate = 300;
@@ -30,13 +31,20 @@ export async function generateMetadata({
   const subject = await fetchSubjectBySlug(slug);
   if (!subject) return {};
   const t = await getTranslations({ locale, namespace: "SubjectPage" });
-  const name = locale === "ru" ? subject.name_ru : subject.name_uz;
+  const name = localizeContent(locale, subject.name_uz, subject.name_ru);
+  // 'en' is a real locale — prefix every non-default locale so /en doesn't
+  // declare a /ru canonical.
+  const prefix = locale === "uz" ? "" : `/${locale}`;
   return {
     title: t("metaTitle", { subject: name }),
     description: t("metaDescription", { subject: name }),
     alternates: {
-      canonical: `${SITE}${locale === "uz" ? "" : "/ru"}/s/${slug}`,
-      languages: { uz: `${SITE}/s/${slug}`, ru: `${SITE}/ru/s/${slug}` },
+      canonical: `${SITE}${prefix}/s/${slug}`,
+      languages: {
+        uz: `${SITE}/s/${slug}`,
+        ru: `${SITE}/ru/s/${slug}`,
+        en: `${SITE}/en/s/${slug}`,
+      },
     },
   };
 }
@@ -53,7 +61,7 @@ export default async function SubjectPage({
 
   const t = await getTranslations({ locale, namespace: "SubjectPage" });
   const tc = await getTranslations({ locale, namespace: "Catalog" });
-  const name = locale === "ru" ? subject.name_ru : subject.name_uz;
+  const name = localizeContent(locale, subject.name_uz, subject.name_ru);
 
   let cards: CatalogCard[] = [];
   let failed = false;
@@ -133,7 +141,7 @@ export default async function SubjectPage({
           <div className="mt-4 flex flex-wrap gap-2">
             {neighbors.map((s) => (
               <FilterChip key={s.id} href={`/s/${s.slug}`}>
-                {locale === "ru" ? s.name_ru : s.name_uz}
+                {localizeContent(locale, s.name_uz, s.name_ru)}
               </FilterChip>
             ))}
           </div>

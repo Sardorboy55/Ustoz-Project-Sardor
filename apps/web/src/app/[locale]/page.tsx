@@ -1,15 +1,12 @@
 import {
-  ArrowRight,
   BookOpen,
   Brain,
   Briefcase,
   CalendarCheck,
   Check,
-  ClipboardCheck,
   Code2,
   Dumbbell,
   GraduationCap,
-  Headset,
   Languages,
   LayoutGrid,
   MessagesSquare,
@@ -18,20 +15,23 @@ import {
   Search,
   ShieldCheck,
   Sparkles,
-  Star,
-  Wallet,
   type LucideIcon,
 } from "lucide-react";
 import Form from "next/form";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { getPathname, Link } from "@/i18n/navigation";
-import { fetchCatalog, fetchCategories, type CatalogCard } from "@/lib/catalog";
-import { Avatar } from "@/components/ui/avatar";
-import { ButtonLink, buttonClasses } from "@/components/ui/button";
-import { RatingStars } from "@/components/ui/rating-stars";
-import { SectionHeading } from "@/components/ui/section-heading";
+import {
+  fetchCatalog,
+  fetchCategories,
+  fetchTeacherVideos,
+  type CatalogCard,
+} from "@/lib/catalog";
+import { HeroCollage, type HeroTeacher } from "@/components/hero-collage";
+import { Testimonials } from "@/components/testimonials";
+import { ButtonLink, buttonClasses } from "@/components/ui/button";import { SectionHeading } from "@/components/ui/section-heading";
 import { FavoritesProvider } from "@/components/favorites";
-import { TeacherCard } from "@/components/teacher-card";
+import { TeacherTile } from "@/components/teacher-tile";
+import { localizeContent, localizeList } from "@/lib/content-i18n";
 import { FaqItem } from "@/components/faq";
 
 export const revalidate = 300;
@@ -86,20 +86,20 @@ export default async function LandingPage({
 
   let topTeachers: CatalogCard[] = [];
   try {
-    topTeachers = await fetchCatalog({ sort: "recommended", perPage: 4 });
+    topTeachers = await fetchCatalog({ sort: "recommended", perPage: 6 });
   } catch {
     // graceful: hero falls back to a static mock, the section hides itself
   }
 
-  const heroTeachers: Array<{
-    name: string;
-    subject: string;
-    rating: number;
-    avatarUrl: string | null;
-  }> = topTeachers.slice(0, 2).map((card) => ({
+  const teacherVideos = await fetchTeacherVideos(
+    topTeachers.map((c) => c.user_id),
+  );
+
+  const heroTeachers: HeroTeacher[] = topTeachers.map((card) => ({
+    slug: card.slug,
     name: card.full_name,
     subject:
-      (locale === "ru" ? card.subjects_ru : card.subjects_uz)[0] ??
+      localizeList(locale, card.subjects_uz, card.subjects_ru)[0] ??
       (locale === "ru" ? card.headline_ru : card.headline_uz),
     rating: Number(card.rating_avg),
     avatarUrl: card.avatar_url,
@@ -108,12 +108,12 @@ export default async function LandingPage({
     heroTeachers.splice(
       0,
       heroTeachers.length,
-      { name: t("mock1Name"), subject: t("mock1Subject"), rating: 4.9, avatarUrl: null },
-      { name: t("mock2Name"), subject: t("mock2Subject"), rating: 4.8, avatarUrl: null },
+      { slug: "", name: t("mock1Name"), subject: t("mock1Subject"), rating: 4.9, avatarUrl: null },
+      { slug: "", name: t("mock2Name"), subject: t("mock2Subject"), rating: 4.8, avatarUrl: null },
     );
   }
 
-  const catName = (c: Category) => (locale === "ru" ? c.name_ru : c.name_uz);
+  const catName = (c: Category) => localizeContent(locale, c.name_uz, c.name_ru);
   const catalogPath = getPathname({ locale, href: "/catalog" });
 
   const trustItems: Array<{ icon: LucideIcon; label: string }> = [
@@ -129,12 +129,14 @@ export default async function LandingPage({
     { icon: MonitorPlay, title: t("how3Title"), body: t("how3Body") },
   ];
 
-  const whyItems: Array<{ icon: LucideIcon; title: string; body: string }> = [
-    { icon: ClipboardCheck, title: t("why1Title"), body: t("why1Body") },
-    { icon: ShieldCheck, title: t("why2Title"), body: t("why2Body") },
-    { icon: Star, title: t("why3Title"), body: t("why3Body") },
-    { icon: Headset, title: t("why4Title"), body: t("why4Body") },
-  ];
+  const reviews = [
+    { name: t("rev1Name"), role: t("rev1Role"), text: t("rev1Text") },
+    { name: t("rev2Name"), role: t("rev2Role"), text: t("rev2Text") },
+    { name: t("rev3Name"), role: t("rev3Role"), text: t("rev3Text") },
+    { name: t("rev4Name"), role: t("rev4Role"), text: t("rev4Text") },
+    { name: t("rev5Name"), role: t("rev5Role"), text: t("rev5Text") },
+    { name: t("rev6Name"), role: t("rev6Role"), text: t("rev6Text") },
+  ].map((r) => ({ ...r, rating: 5 }));
 
   const faq = [1, 2, 3, 4, 5, 6].map((i) => ({
     q: t(`faq${i}Q` as "faq1Q"),
@@ -172,72 +174,23 @@ export default async function LandingPage({
               </button>
             </Form>
 
-            <div className="mt-6 flex flex-wrap gap-3">
-              <ButtonLink href="/catalog" size="lg">
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+              <ButtonLink href="/onboarding" size="lg" className="w-full sm:w-auto">
                 {t("ctaFind")}
               </ButtonLink>
-              <ButtonLink href="/become-teacher" size="lg" variant="secondary">
+              <ButtonLink
+                href="/become-teacher"
+                size="lg"
+                variant="secondary"
+                className="w-full sm:w-auto"
+              >
                 {t("ctaBecome")}
               </ButtonLink>
             </div>
           </div>
 
-          {/* CSS collage: teacher mini-cards + floating chips + mini calendar */}
-          <div className="relative hidden h-[420px] select-none lg:block" aria-hidden="true">
-            <div className="absolute -right-10 top-6 h-72 w-72 rounded-full bg-brand-200/50 blur-3xl" />
-            <div className="absolute bottom-10 left-0 h-56 w-56 rounded-full bg-accent-200/40 blur-3xl" />
-
-            <div className="absolute left-0 top-8 w-64 rounded-2xl border border-zinc-100 bg-white p-4 shadow-lg">
-              <div className="flex items-center gap-3">
-                <Avatar src={heroTeachers[0].avatarUrl} name={heroTeachers[0].name} size="md" />
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-bold text-zinc-900">{heroTeachers[0].name}</p>
-                  <p className="truncate text-xs text-zinc-500">{heroTeachers[0].subject}</p>
-                </div>
-              </div>
-              <RatingStars value={heroTeachers[0].rating} size={13} className="mt-3" />
-            </div>
-
-            <div className="absolute bottom-6 right-0 w-64 rounded-2xl border border-zinc-100 bg-white p-4 shadow-lg">
-              <div className="flex items-center gap-3">
-                <Avatar src={heroTeachers[1].avatarUrl} name={heroTeachers[1].name} size="md" />
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-bold text-zinc-900">{heroTeachers[1].name}</p>
-                  <p className="truncate text-xs text-zinc-500">{heroTeachers[1].subject}</p>
-                </div>
-              </div>
-              <RatingStars value={heroTeachers[1].rating} size={13} className="mt-3" />
-            </div>
-
-            <div className="absolute right-6 top-2 flex items-center gap-1.5 rounded-full bg-white px-3.5 py-2 text-sm font-bold text-zinc-900 shadow-md">
-              <Star size={15} className="text-accent-500" fill="currentColor" strokeWidth={0} />
-              4.9
-              <span className="font-normal text-zinc-400">{t("heroRatingLabel")}</span>
-            </div>
-
-            <div className="absolute left-10 bottom-24 flex items-center gap-2 rounded-full bg-white px-3.5 py-2 text-sm font-semibold text-zinc-700 shadow-md">
-              <span className="h-2 w-2 rounded-full bg-emerald-500" />
-              {t("heroAvailableToday")}
-            </div>
-
-            <div className="absolute right-2 top-1/2 w-44 -translate-y-1/2 rounded-2xl border border-zinc-100 bg-white p-4 shadow-lg">
-              <p className="text-xs font-semibold text-zinc-700">{t("heroSchedule")}</p>
-              <div className="mt-3 grid grid-cols-7 gap-1.5">
-                {Array.from({ length: 28 }, (_, i) => (
-                  <span
-                    key={i}
-                    className={`h-3.5 w-3.5 rounded-md ${
-                      [9, 12, 17, 22].includes(i)
-                        ? "bg-brand-600"
-                        : i === 15
-                          ? "bg-accent-400"
-                          : "bg-zinc-100"
-                    }`}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
+          {/* Hero collage: rotating teacher cards + animated blobs (client island) */}
+          <HeroCollage teachers={heroTeachers} />
         </div>
       </section>
 
@@ -310,79 +263,66 @@ export default async function LandingPage({
       {/* ========================== Top teachers =========================== */}
       {topTeachers.length > 0 && (
         <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
-          <SectionHeading
-            title={t("topTitle")}
-            subtitle={t("topSubtitle")}
-            action={
-              <Link
-                href="/catalog"
-                className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand-700 hover:text-brand-800"
-              >
-                {t("topAll")}
-                <ArrowRight size={16} aria-hidden="true" />
-              </Link>
-            }
-          />
+          {/* Centered title + subtitle (italki-style) */}
+          <div className="text-center">
+            <h2 className="text-2xl font-extrabold tracking-tight text-zinc-900 sm:text-3xl">
+              {t("topTitle")}
+            </h2>
+            <p className="mx-auto mt-3 max-w-2xl text-zinc-500">
+              {t("topSubtitle")}
+            </p>
+          </div>
+
+          {/* Two rows of teacher tiles */}
           <FavoritesProvider>
-            <div className="mt-8 grid gap-4 lg:grid-cols-2">
-              {topTeachers.map((card) => (
-                <TeacherCard key={card.user_id} card={card} />
+            <div className="mt-9 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {topTeachers.slice(0, 6).map((card) => (
+                <TeacherTile
+                  key={card.user_id}
+                  card={card}
+                  videoUrl={teacherVideos[card.user_id]}
+                />
               ))}
             </div>
           </FavoritesProvider>
+
+          {/* White "find more teachers" CTA */}
+          <div className="mt-10 flex justify-center">
+            <ButtonLink href="/catalog" size="lg" variant="secondary">
+              {t("findMore")}
+            </ButtonLink>
+          </div>
         </section>
       )}
 
-      {/* ============================ Why trust ============================ */}
-      <section className="bg-white py-16">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <SectionHeading title={t("whyTitle")} />
-          <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {whyItems.map(({ icon: Icon, title, body }) => (
-              <div key={title} className="rounded-2xl border border-zinc-200 bg-page p-6">
-                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
-                  <Icon size={20} aria-hidden="true" />
-                </span>
-                <h3 className="mt-4 font-bold text-zinc-900">{title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-zinc-600">{body}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* =========================== Testimonials ========================== */}
+      <Testimonials title={t("reviewsTitle")} items={reviews} />
 
       {/* ========================= For teachers band ======================== */}
       <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
         <div className="overflow-hidden rounded-3xl bg-gradient-to-br from-brand-700 to-brand-900 px-6 py-12 text-white sm:px-12">
-          <div className="grid items-center gap-10 lg:grid-cols-[1fr_auto]">
-            <div>
-              <h2 className="max-w-lg text-2xl font-extrabold tracking-tight sm:text-3xl">
-                {t("teachersTitle")}
-              </h2>
-              <p className="mt-3 max-w-lg text-brand-100">{t("teachersSubtitle")}</p>
-              <ul className="mt-6 space-y-3">
-                {[t("tBullet1"), t("tBullet2"), t("tBullet3")].map((bullet) => (
-                  <li key={bullet} className="flex items-start gap-3">
-                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-500/60">
-                      <Check size={13} aria-hidden="true" />
-                    </span>
-                    <span className="text-sm text-brand-50">{bullet}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="flex flex-col items-start gap-3 lg:items-end">
-              <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10">
-                <Wallet size={26} aria-hidden="true" />
-              </span>
-              <ButtonLink
-                href="/become-teacher"
-                size="lg"
-                className="bg-white text-brand-800 shadow-md hover:bg-brand-50 active:bg-brand-100"
-              >
-                {t("teachersCta")}
-              </ButtonLink>
-            </div>
+          <div className="max-w-2xl">
+            <h2 className="text-2xl font-extrabold tracking-tight sm:text-3xl">
+              {t("teachersTitle")}
+            </h2>
+            <p className="mt-3 text-brand-100">{t("teachersSubtitle")}</p>
+            <ul className="mt-6 space-y-3">
+              {[t("tBullet1"), t("tBullet2"), t("tBullet3")].map((bullet) => (
+                <li key={bullet} className="flex items-start gap-3">
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-500/60">
+                    <Check size={13} aria-hidden="true" />
+                  </span>
+                  <span className="text-sm text-brand-50">{bullet}</span>
+                </li>
+              ))}
+            </ul>
+            <ButtonLink
+              href="/become-teacher"
+              size="lg"
+              className="mt-8 bg-brand-500 text-white shadow-md hover:bg-brand-400 active:bg-brand-600"
+            >
+              {t("teachersCta")}
+            </ButtonLink>
           </div>
         </div>
       </section>

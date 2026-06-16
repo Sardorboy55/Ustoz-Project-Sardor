@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { GraduationCap } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/cn";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useCabinet } from "@/components/cabinet/cabinet-shell";
+import { TeacherCreateWizard } from "@/components/teacher/teacher-create-wizard";
 import { TeacherDashboard } from "./teacher-dashboard";
 import { TeacherAnketa } from "./teacher-anketa";
 import { TeacherSubjects } from "./teacher-subjects";
@@ -15,9 +17,9 @@ import { TeacherWallet } from "./teacher-wallet";
 import { TeacherReviews } from "./teacher-reviews";
 
 const TABS = [
-  "dashboard",
   "anketa",
   "subjects",
+  "dashboard",
   "schedule",
   "wallet",
   "reviews",
@@ -35,11 +37,35 @@ const TAB_LABEL: Record<TabKey, string> = {
 
 export default function TeacherCabinetPage() {
   const t = useTranslations("Cabinet.teacher");
-  const { profile, refreshProfile } = useCabinet();
-  const [tab, setTab] = useState<TabKey>("dashboard");
+  const { profile, userId, refreshProfile } = useCabinet();
+  const [tab, setTab] = useState<TabKey>("anketa");
+  const [hasLessons, setHasLessons] = useState<boolean | null>(null);
+
+  const checkSetup = useCallback(async () => {
+    const supabase = createClient();
+    const { count } = await supabase
+      .from("teacher_subjects")
+      .select("id", { count: "exact", head: true })
+      .eq("teacher_id", userId);
+    setHasLessons((count ?? 0) > 0);
+  }, [userId]);
+
+  useEffect(() => {
+    if (profile.is_teacher) queueMicrotask(() => void checkSetup());
+  }, [profile.is_teacher, checkSetup]);
 
   if (!profile.is_teacher) {
     return <BecomeTeacherCard onDone={refreshProfile} />;
+  }
+
+  if (hasLessons === null) {
+    return <Skeleton className="h-96 rounded-2xl" />;
+  }
+
+  // First-time setup: the guided "Расскажите о себе" wizard opens right away —
+  // no duplicate Анкета tab. Once a lesson exists, the management tabs appear.
+  if (!hasLessons) {
+    return <TeacherCreateWizard onComplete={checkSetup} />;
   }
 
   return (
@@ -105,7 +131,7 @@ function BecomeTeacherCard({ onDone }: { onDone: () => Promise<void> }) {
   };
 
   return (
-    <div className="flex flex-col items-center rounded-2xl border border-dashed border-brand-200 bg-brand-50/40 px-6 py-14 text-center">
+    <div className="flex flex-col items-start rounded-2xl border border-dashed border-brand-200 bg-brand-50/40 px-6 py-10">
       <span className="flex h-16 w-16 items-center justify-center rounded-full bg-brand-100 text-brand-700">
         <GraduationCap size={30} aria-hidden="true" />
       </span>

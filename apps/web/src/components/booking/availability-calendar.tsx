@@ -183,7 +183,7 @@ export function AvailabilityCalendar({
           >
             <ChevronLeft size={18} aria-hidden="true" />
           </button>
-          <span className="min-w-36 text-center text-sm font-semibold text-zinc-800">
+          <span className="min-w-0 flex-1 text-center text-sm font-semibold text-zinc-800 sm:min-w-36 sm:flex-none">
             {formatDayMonth(visibleDays[0], locale)} –{" "}
             {formatDayMonth(visibleDays[WEEK - 1], locale)}
           </span>

@@ -43,3 +43,8 @@ Thumbs.db
 # Logs
 *.log
 npm-debug.log*
+
+# tooling / generated (not app code)
+graphify-out/
+.claude/
+.tmp-claude/

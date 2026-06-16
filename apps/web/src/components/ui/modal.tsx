@@ -15,15 +15,24 @@ export function Modal({
   title,
   children,
   className,
+  size = "lg",
 }: {
   open: boolean;
   onClose: () => void;
   title?: string;
   children: ReactNode;
   className?: string;
+  size?: "lg" | "xl" | "2xl" | "3xl" | "4xl";
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const t = useTranslations("Ui");
+  const widthClass = {
+    lg: "max-w-lg",
+    xl: "max-w-xl",
+    "2xl": "max-w-2xl",
+    "3xl": "max-w-3xl",
+    "4xl": "max-w-4xl",
+  }[size];
 
   useEffect(() => {
     const dialog = ref.current;
@@ -46,7 +55,8 @@ export function Modal({
         if (e.target === ref.current) onClose();
       }}
       className={cn(
-        "m-auto w-[calc(100%-2rem)] max-w-lg rounded-2xl bg-white p-0 shadow-xl backdrop:bg-zinc-900/50",
+        "m-auto w-[calc(100%-2rem)] rounded-2xl bg-white p-0 shadow-xl backdrop:bg-zinc-900/50",
+        widthClass,
         className,
       )}
     >

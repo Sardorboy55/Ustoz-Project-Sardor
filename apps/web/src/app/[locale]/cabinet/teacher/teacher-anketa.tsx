@@ -1,19 +1,18 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Camera, Video } from "lucide-react";
+import { Video } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/cn";
-import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ErrorState } from "@/components/ui/error-state";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { useCabinet } from "@/components/cabinet/cabinet-shell";
+import { TeacherFaqEditor } from "@/components/cabinet/teacher-faq-editor";
 
 const LANG_CODES = ["uz", "ru", "en", "kaa", "tr", "ar"] as const;
 
@@ -31,7 +30,7 @@ export function TeacherAnketa() {
   const t = useTranslations("Cabinet.teacher");
   const tCommon = useTranslations("Cabinet.common");
   const tLangs = useTranslations("TeacherCard.langs");
-  const { userId, profile, refreshProfile } = useCabinet();
+  const { userId } = useCabinet();
 
   const [phase, setPhase] = useState<"loading" | "error" | "ready">("loading");
   const [form, setForm] = useState<AnketaForm | null>(null);
@@ -39,9 +38,7 @@ export function TeacherAnketa() {
   const [saving, setSaving] = useState(false);
   const [saveState, setSaveState] = useState<"idle" | "saved" | "error">("idle");
 
-  const photoRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLInputElement>(null);
-  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [uploadingVideo, setUploadingVideo] = useState(false);
   const [uploadFailed, setUploadFailed] = useState(false);
 
@@ -79,32 +76,6 @@ export function TeacherAnketa() {
       : [...form.teaching_langs, code];
     if (next.length === 0) return; // at least one teaching language
     patch({ teaching_langs: next });
-  };
-
-  const uploadPhoto = async (file: File) => {
-    setUploadingPhoto(true);
-    setUploadFailed(false);
-    try {
-      const supabase = createClient();
-      const path = `${userId}/avatar.jpg`;
-      const { error: upErr } = await supabase.storage
-        .from("avatars")
-        .upload(path, file, { contentType: file.type || "image/jpeg", upsert: true });
-      if (upErr) throw upErr;
-      const { data } = supabase.storage.from("avatars").getPublicUrl(path);
-      const url = `${data.publicUrl}?v=${Date.now()}`;
-      const { error } = await supabase
-        .from("profiles")
-        .update({ avatar_url: url })
-        .eq("id", userId);
-      if (error) throw error;
-      await refreshProfile();
-    } catch {
-      setUploadFailed(true);
-    } finally {
-      setUploadingPhoto(false);
-      if (photoRef.current) photoRef.current.value = "";
-    }
   };
 
   const uploadVideo = async (file: File) => {
@@ -177,40 +148,6 @@ export function TeacherAnketa() {
       {/* Media */}
       <Card className="p-5">
         <div className="flex flex-wrap items-start gap-x-8 gap-y-5">
-          <div>
-            <p className="text-sm font-medium text-zinc-700">{t("photo")}</p>
-            <div className="mt-2 flex items-center gap-3">
-              <div className="relative">
-                <Avatar src={profile.avatar_url} name={profile.full_name} size="lg" />
-                {uploadingPhoto && (
-                  <span className="absolute inset-0 flex items-center justify-center rounded-full bg-zinc-900/40 text-white">
-                    <Spinner size={18} />
-                  </span>
-                )}
-              </div>
-              <Button
-                variant="secondary"
-                size="sm"
-                disabled={uploadingPhoto}
-                onClick={() => photoRef.current?.click()}
-              >
-                <Camera size={15} aria-hidden="true" />
-                {t("photoChange")}
-              </Button>
-              <input
-                ref={photoRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                aria-label={t("photoChange")}
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) void uploadPhoto(f);
-                }}
-              />
-            </div>
-          </div>
-
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium text-zinc-700">{t("video")}</p>
             {form.intro_video_url && (
@@ -256,33 +193,24 @@ export function TeacherAnketa() {
 
       {/* Texts */}
       <Card className="space-y-4 p-5">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Input
-            label={t("headlineUz")}
-            value={form.headline_uz}
-            maxLength={120}
-            onChange={(e) => patch({ headline_uz: e.target.value })}
-          />
-          <Input
-            label={t("headlineRu")}
-            value={form.headline_ru}
-            maxLength={120}
-            onChange={(e) => patch({ headline_ru: e.target.value })}
-          />
-        </div>
-        <Textarea
-          label={t("bioUz")}
-          rows={4}
-          maxLength={2000}
-          value={form.bio_uz}
-          onChange={(e) => patch({ bio_uz: e.target.value })}
+        <Input
+          label="Заголовок профиля"
+          helper="Крупная строка на карточке. Напр.: «IELTS 8.5 · Английский, 7 лет опыта»"
+          value={form.headline_ru}
+          maxLength={120}
+          onChange={(e) =>
+            patch({ headline_ru: e.target.value, headline_uz: e.target.value })
+          }
         />
         <Textarea
-          label={t("bioRu")}
+          label="О себе"
+          helper="Опыт и подход — это читают на вашей странице."
           rows={4}
           maxLength={2000}
           value={form.bio_ru}
-          onChange={(e) => patch({ bio_ru: e.target.value })}
+          onChange={(e) =>
+            patch({ bio_ru: e.target.value, bio_uz: e.target.value })
+          }
         />
         <div className="grid gap-4 sm:grid-cols-2">
           <Input
@@ -343,6 +271,8 @@ export function TeacherAnketa() {
           )}
         </div>
       </Card>
+
+      <TeacherFaqEditor />
     </div>
   );
 }

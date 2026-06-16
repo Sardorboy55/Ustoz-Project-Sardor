@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   ArrowDownLeft,
   ArrowUpRight,
+  Plus,
   ReceiptText,
   Settings2,
   Wallet,
@@ -14,16 +15,18 @@ import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/cn";
 import { formatDayMonth, formatTime } from "@/lib/datetime";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { Price } from "@/components/ui/price";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCabinet } from "@/components/cabinet/cabinet-shell";
+import { TopUpModal } from "@/components/cabinet/topup-modal";
 
 type BalanceTx = {
   id: string;
-  type: "refund_in" | "booking_spend" | "admin_adjust";
+  type: "refund_in" | "booking_spend" | "admin_adjust" | "topup";
   amount: number;
   comment: string | null;
   created_at: string;
@@ -37,17 +40,16 @@ type PaymentRow = {
   created_at: string;
 };
 
-const PAY_METHODS = ["Payme", "Click", "Uzum"] as const;
-
 export default function PaymentsPage() {
   const t = useTranslations("Cabinet.payments");
   const tCommon = useTranslations("Cabinet.common");
   const locale = useLocale() as Locale;
-  const { userId, profile } = useCabinet();
+  const { userId, profile, refreshProfile } = useCabinet();
 
   const [phase, setPhase] = useState<"loading" | "error" | "ready">("loading");
   const [txs, setTxs] = useState<BalanceTx[]>([]);
   const [payments, setPayments] = useState<PaymentRow[]>([]);
+  const [topupOpen, setTopupOpen] = useState(false);
 
   const load = useCallback(async () => {
     const supabase = createClient();
@@ -79,7 +81,7 @@ export default function PaymentsPage() {
   }, [load]);
 
   const txIcon = (type: BalanceTx["type"]) =>
-    type === "refund_in" ? (
+    type === "refund_in" || type === "topup" ? (
       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
         <ArrowDownLeft size={18} aria-hidden="true" />
       </span>
@@ -102,48 +104,42 @@ export default function PaymentsPage() {
         {t("title")}
       </h1>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        {/* Balance */}
-        <Card className="p-5">
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
-              {t("balance")}
-            </p>
-            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-50 text-brand-600">
-              <Wallet size={18} aria-hidden="true" />
-            </span>
-          </div>
-          <Price
-            tiyin={profile.student_balance}
-            className="mt-1 text-3xl font-bold"
-          />
-          <p className="mt-2 text-xs leading-relaxed text-zinc-500">
-            {t("balanceNote")}
-          </p>
-        </Card>
-
-        {/* Online payment placeholder */}
-        <Card className="p-5">
+      {/* Balance */}
+      <Card className="flex flex-col p-5 sm:max-w-md">
+        <div className="flex items-center justify-between gap-3">
           <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
-            {t("onlineTitle")}
+            {t("balance")}
           </p>
-          <div className="mt-3 grid grid-cols-3 gap-2">
-            {PAY_METHODS.map((m) => (
-              <div
-                key={m}
-                aria-disabled="true"
-                className="flex cursor-not-allowed flex-col items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-2 py-3 opacity-70"
-              >
-                <span className="text-sm font-bold text-zinc-500">{m}</span>
-                <Badge variant="neutral">{t("soon")}</Badge>
-              </div>
-            ))}
-          </div>
-          <p className="mt-3 text-xs leading-relaxed text-zinc-500">
-            {t("onlineNote")}
-          </p>
-        </Card>
-      </div>
+          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-50 text-brand-600">
+            <Wallet size={18} aria-hidden="true" />
+          </span>
+        </div>
+        <Price
+          tiyin={profile.student_balance}
+          className="mt-1 text-3xl font-bold"
+        />
+        <p className="mt-2 mb-4 text-xs leading-relaxed text-zinc-500">
+          {t("balanceNote")}
+        </p>
+        <Button
+          variant="primary"
+          size="sm"
+          className="mt-auto w-full"
+          onClick={() => setTopupOpen(true)}
+        >
+          <Plus size={16} aria-hidden="true" />
+          {t("topup")}
+        </Button>
+      </Card>
+
+      <TopUpModal
+        open={topupOpen}
+        onClose={() => setTopupOpen(false)}
+        onToppedUp={() => {
+          void refreshProfile();
+          void load();
+        }}
+      />
 
       {phase === "loading" && (
         <div aria-busy="true" className="space-y-2">

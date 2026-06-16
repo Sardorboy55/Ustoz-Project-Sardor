@@ -14,7 +14,7 @@ export function SelectSubjectButton({
   children: ReactNode;
   className?: string;
 }) {
-  const { subjectId: selected, selectSubject } = useBookingSelection();
+  const { subjectId: selected, openBooking } = useBookingSelection();
   const active = selected === subjectId;
 
   return (
@@ -22,7 +22,7 @@ export function SelectSubjectButton({
       variant={active ? "primary" : "secondary"}
       size="sm"
       className={className}
-      onClick={() => selectSubject(subjectId, { scroll: true })}
+      onClick={() => openBooking(subjectId)}
     >
       {children}
     </Button>

@@ -3,6 +3,7 @@ import { Link } from "@/i18n/navigation";
 import { Wordmark } from "@/components/brand";
 import { LocaleSwitcher } from "@/components/locale-switcher";
 import { AuthButton } from "@/components/auth-button";
+import { JoinPlusButton } from "@/components/join-plus-button";
 import { MobileMenu } from "@/components/mobile-menu";
 
 /** Sticky site header: wordmark, nav, locale switcher, auth island, burger. */
@@ -15,6 +16,9 @@ export function SiteHeader() {
         <Wordmark />
 
         <nav className="hidden items-center gap-6 text-sm font-medium text-zinc-600 md:flex">
+          <Link href="/" className="transition-colors hover:text-brand-700">
+            {t("home")}
+          </Link>
           <Link href="/catalog" className="transition-colors hover:text-brand-700">
             {t("catalog")}
           </Link>
@@ -24,11 +28,15 @@ export function SiteHeader() {
           >
             {t("forTeachers")}
           </Link>
+          <Link href="/cabinet" className="transition-colors hover:text-brand-700">
+            {t("cabinet")}
+          </Link>
         </nav>
 
         <div className="flex items-center gap-3">
           <LocaleSwitcher />
-          <div className="hidden md:block">
+          <div className="hidden items-center gap-3 md:flex">
+            <JoinPlusButton />
             <AuthButton />
           </div>
           <MobileMenu />

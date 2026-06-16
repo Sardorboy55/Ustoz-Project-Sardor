@@ -227,8 +227,11 @@ export function BookingWidget({
         })}
       </ol>
 
+      <div className="mt-6 space-y-6">
+        <div className="grid items-start gap-6 sm:grid-cols-2">
+
       {/* Step 1 — subject */}
-      <section className="mt-6">
+      <section>
         <h3 className="text-sm font-bold text-zinc-900">
           1. {t("stepSubject")}
           <span className="ml-2 font-normal text-zinc-400">
@@ -260,14 +263,43 @@ export function BookingWidget({
 
       {/* Step 2 — duration */}
       {subject && (
-        <section className="mt-6">
+        <section>
           <h3 className="text-sm font-bold text-zinc-900">
             2. {t("stepDuration")}
             <span className="ml-2 font-normal text-zinc-400">
               {t("durationPrompt")}
             </span>
           </h3>
-          <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-3 space-y-2">
+            {subject.trialFree && (
+              <button
+                type="button"
+                onClick={() => pickDuration({ kind: "trial_free", min: 20 })}
+                aria-pressed={duration?.kind === "trial_free"}
+                className={cn(
+                  "flex w-full items-center justify-between gap-4 rounded-xl border px-4 py-3.5 text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-brand-600",
+                  duration?.kind === "trial_free"
+                    ? "border-accent-500 ring-1 ring-accent-500"
+                    : "border-accent-200 bg-accent-50/40 hover:border-accent-400",
+                )}
+              >
+                <span className="min-w-0">
+                  <span className="flex items-center gap-1.5 text-sm font-bold text-zinc-900">
+                    <Sparkles size={14} className="text-accent-500" aria-hidden="true" />
+                    {t("trialOption")}
+                  </span>
+                  <span className="mt-0.5 block text-xs text-zinc-500">
+                    {t("trialOnce")}
+                  </span>
+                </span>
+                <span className="flex shrink-0 items-center gap-3">
+                  <span className="text-sm font-bold text-accent-600">
+                    {t("free")}
+                  </span>
+                  <Radio active={duration?.kind === "trial_free"} accent />
+                </span>
+              </button>
+            )}
             {durations.map((d) => {
               const active =
                 duration?.kind === d.kind && duration?.min === d.min;
@@ -283,49 +315,37 @@ export function BookingWidget({
                   onClick={() => pickDuration(d)}
                   aria-pressed={active}
                   className={cn(
-                    "rounded-xl border px-4 py-3 text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-brand-600",
+                    "flex w-full items-center justify-between gap-4 rounded-xl border px-4 py-3.5 text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-brand-600",
                     active
-                      ? "border-brand-600 bg-brand-50 ring-1 ring-brand-600"
+                      ? "border-brand-600 ring-1 ring-brand-600"
                       : "border-zinc-200 bg-white hover:border-brand-300",
                   )}
                 >
-                  <span className="block text-sm font-bold text-zinc-900">
-                    {t("durationValue", { min: d.min })}
+                  <span className="min-w-0">
+                    <span className="block text-sm font-bold text-zinc-900">
+                      {t("durationValue", { min: d.min })}
+                    </span>
+                    <span className="mt-0.5 block truncate text-xs text-zinc-500">
+                      {subjectName(subject)}
+                    </span>
                   </span>
-                  <span className="mt-0.5 block text-xs text-zinc-500">
-                    {fmtPrice(byMin[d.min] ?? 0)}
+                  <span className="flex shrink-0 items-center gap-3">
+                    <span className="text-sm font-bold text-zinc-900">
+                      {fmtPrice(byMin[d.min] ?? 0)}
+                    </span>
+                    <Radio active={active} />
                   </span>
                 </button>
               );
             })}
-            {subject.trialFree && (
-              <button
-                type="button"
-                onClick={() => pickDuration({ kind: "trial_free", min: 20 })}
-                aria-pressed={duration?.kind === "trial_free"}
-                className={cn(
-                  "rounded-xl border px-4 py-3 text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-brand-600",
-                  duration?.kind === "trial_free"
-                    ? "border-accent-500 bg-accent-50 ring-1 ring-accent-500"
-                    : "border-accent-200 bg-accent-50/50 hover:border-accent-400",
-                )}
-              >
-                <span className="flex items-center gap-1.5 text-sm font-bold text-zinc-900">
-                  <Sparkles size={14} className="text-accent-500" aria-hidden="true" />
-                  {t("trialOption")}
-                </span>
-                <span className="mt-0.5 block text-xs font-semibold text-accent-600">
-                  {t("free")} · {t("trialOnce")}
-                </span>
-              </button>
-            )}
           </div>
         </section>
       )}
+        </div>
 
       {/* Step 3 — day & slot */}
       {subject && duration && (
-        <section className="mt-6">
+        <section>
           <h3 className="text-sm font-bold text-zinc-900">
             3. {t("stepTime")}
             <span className="ml-2 font-normal text-zinc-400">
@@ -346,7 +366,7 @@ export function BookingWidget({
 
       {/* Step 4 — confirmation */}
       {subject && duration && slot && (
-        <section className="mt-6">
+        <section>
           <h3 className="text-sm font-bold text-zinc-900">
             4. {t("stepConfirm")}
           </h3>
@@ -443,6 +463,28 @@ export function BookingWidget({
           </div>
         </section>
       )}
+      </div>
     </div>
+  );
+}
+
+function Radio({ active, accent = false }: { active: boolean; accent?: boolean }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={cn(
+        "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2",
+        active ? (accent ? "border-accent-500" : "border-brand-600") : "border-zinc-300",
+      )}
+    >
+      {active && (
+        <span
+          className={cn(
+            "h-2.5 w-2.5 rounded-full",
+            accent ? "bg-accent-500" : "bg-brand-600",
+          )}
+        />
+      )}
+    </span>
   );
 }

@@ -2,8 +2,8 @@
 
 import { useRef, useState } from "react";
 import { Camera, LogOut } from "lucide-react";
-import { useLocale, useTranslations } from "next-intl";
-import { Link, usePathname, useRouter } from "@/i18n/navigation";
+import { useTranslations } from "next-intl";
+import { useRouter } from "@/i18n/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/cn";
 import { Avatar } from "@/components/ui/avatar";
@@ -13,16 +13,9 @@ import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { useCabinet } from "@/components/cabinet/cabinet-shell";
 
-const LOCALES = [
-  { code: "uz", label: "O'zbekcha" },
-  { code: "ru", label: "Русский" },
-] as const;
-
 export default function ProfilePage() {
   const t = useTranslations("Cabinet.profile");
-  const locale = useLocale();
   const router = useRouter();
-  const pathname = usePathname();
   const { userId, profile, refreshProfile } = useCabinet();
 
   const fileRef = useRef<HTMLInputElement>(null);
@@ -81,12 +74,6 @@ export default function ProfilePage() {
     await refreshProfile();
   };
 
-  const switchLocale = (code: string) => {
-    // remember the preference; the link itself switches the UI locale
-    const supabase = createClient();
-    void supabase.from("profiles").update({ locale: code }).eq("id", userId);
-  };
-
   const signOut = async () => {
     setSigningOut(true);
     const supabase = createClient();
@@ -103,31 +90,33 @@ export default function ProfilePage() {
       {/* Avatar */}
       <Card className="p-5">
         <p className="text-sm font-medium text-zinc-700">{t("photo")}</p>
-        <div className="mt-3 flex items-center gap-4">
-          <div className="relative">
+        <div className="mt-3">
+          <button
+            type="button"
+            disabled={uploading}
+            onClick={() => fileRef.current?.click()}
+            aria-label={t("changePhoto")}
+            title={t("changePhoto")}
+            className="group relative block rounded-full outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2 disabled:cursor-not-allowed"
+          >
             <Avatar src={profile.avatar_url} name={profile.full_name} size="xl" />
+            <span className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-full bg-zinc-900/55 text-white opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
+              <Camera size={26} aria-hidden="true" />
+            </span>
+            <span className="pointer-events-none absolute bottom-1 right-1 flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-brand-600 text-white shadow-sm transition-opacity group-hover:opacity-0">
+              <Camera size={14} aria-hidden="true" />
+            </span>
             {uploading && (
-              <span className="absolute inset-0 flex items-center justify-center rounded-full bg-zinc-900/40 text-white">
+              <span className="absolute inset-0 flex items-center justify-center rounded-full bg-zinc-900/55 text-white">
                 <Spinner size={22} />
               </span>
             )}
-          </div>
-          <div>
-            <Button
-              variant="secondary"
-              size="sm"
-              disabled={uploading}
-              onClick={() => fileRef.current?.click()}
-            >
-              <Camera size={15} aria-hidden="true" />
-              {t("changePhoto")}
-            </Button>
-            {uploadFailed && (
-              <p role="alert" className="mt-2 text-xs text-red-600">
-                {t("uploadError")}
-              </p>
-            )}
-          </div>
+          </button>
+          {uploadFailed && (
+            <p role="alert" className="mt-2 text-xs text-red-600">
+              {t("uploadError")}
+            </p>
+          )}
           <input
             ref={fileRef}
             type="file"
@@ -177,32 +166,8 @@ export default function ProfilePage() {
         <Input label={t("phone")} value={`+${profile.phone}`} disabled readOnly />
       </Card>
 
-      {/* Interface language */}
-      <Card className="p-5">
-        <p className="text-sm font-medium text-zinc-700">{t("language")}</p>
-        <div className="mt-3 flex gap-2">
-          {LOCALES.map(({ code, label }) => (
-            <Link
-              key={code}
-              href={pathname}
-              locale={code}
-              onClick={() => switchLocale(code)}
-              aria-current={locale === code ? "true" : undefined}
-              className={cn(
-                "rounded-full border px-4 py-2 text-sm font-semibold outline-none transition-colors focus-visible:ring-2 focus-visible:ring-brand-600",
-                locale === code
-                  ? "border-brand-600 bg-brand-600 text-white"
-                  : "border-zinc-200 bg-white text-zinc-700 hover:border-brand-300",
-              )}
-            >
-              {label}
-            </Link>
-          ))}
-        </div>
-      </Card>
-
       {/* Sign out */}
-      <div className="pt-2">
+      <div className="flex justify-center pt-2">
         <Button
           variant="ghost"
           loading={signingOut}

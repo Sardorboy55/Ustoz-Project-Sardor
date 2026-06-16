@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Form from "next/form";
-import { ChevronLeft, ChevronRight, Search, X } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, Search, X } from "lucide-react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { getPathname, Link } from "@/i18n/navigation";
 import { cn } from "@/lib/cn";
@@ -8,6 +8,8 @@ import {
   fetchCatalog,
   fetchCategories,
   fetchSubjects,
+  fetchTeacherBios,
+  fetchTeacherVideos,
   type CatalogCard,
 } from "@/lib/catalog";
 import { Card } from "@/components/ui/card";
@@ -20,6 +22,7 @@ import { FavoritesProvider } from "@/components/favorites";
 import { TeacherCard } from "@/components/teacher-card";
 import { AutoSubmit } from "@/components/catalog/auto-submit";
 import { FiltersPanel } from "@/components/catalog/filters-panel";
+import { localizeContent } from "@/lib/content-i18n";
 
 const PER_PAGE = 20;
 
@@ -112,11 +115,17 @@ export default async function CatalogPage({
     failed = true;
   }
 
+  const teacherIds = cards.map((c) => c.user_id);
+  const [teacherBios, teacherVideos] = await Promise.all([
+    fetchTeacherBios(teacherIds),
+    fetchTeacherVideos(teacherIds),
+  ]);
+
   const total = cards[0]?.total_count ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
 
   const name = (row: { name_uz: string; name_ru: string }) =>
-    locale === "ru" ? row.name_ru : row.name_uz;
+    localizeContent(locale, row.name_uz, row.name_ru);
   const fmtNum = (v: string) =>
     Number(v).toLocaleString(locale === "ru" ? "ru-RU" : "uz-UZ");
   const langLabels: Record<string, string> = {
@@ -168,7 +177,7 @@ export default async function CatalogPage({
   const fieldsKey = JSON.stringify(queryWithout().valueOf()) + (sp.sort ?? "");
 
   const selectClasses =
-    "h-10 rounded-xl border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none transition-colors focus:border-brand-500 focus:ring-2 focus:ring-brand-100";
+    "h-10 appearance-none rounded-xl border border-zinc-300 bg-white px-3 pr-9 text-sm text-zinc-900 outline-none transition-colors focus:border-brand-500 focus:ring-2 focus:ring-brand-100";
 
   return (
     <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6">
@@ -298,16 +307,23 @@ export default async function CatalogPage({
               </p>
               <label className="flex items-center gap-2 text-sm text-zinc-500">
                 {t("sortLabel")}
-                <select
-                  name="sort"
-                  defaultValue={sp.sort ?? "recommended"}
-                  className={selectClasses}
-                >
-                  <option value="recommended">{t("sortRecommended")}</option>
-                  <option value="price_asc">{t("sortPriceAsc")}</option>
-                  <option value="price_desc">{t("sortPriceDesc")}</option>
-                  <option value="rating">{t("sortRating")}</option>
-                </select>
+                <span className="relative inline-flex">
+                  <select
+                    name="sort"
+                    defaultValue={sp.sort ?? "recommended"}
+                    className={selectClasses}
+                  >
+                    <option value="recommended">{t("sortRecommended")}</option>
+                    <option value="price_asc">{t("sortPriceAsc")}</option>
+                    <option value="price_desc">{t("sortPriceDesc")}</option>
+                    <option value="rating">{t("sortRating")}</option>
+                  </select>
+                  <ChevronDown
+                    size={16}
+                    aria-hidden="true"
+                    className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400"
+                  />
+                </span>
               </label>
             </div>
 
@@ -350,7 +366,12 @@ export default async function CatalogPage({
                 <FavoritesProvider>
                   <div className="grid gap-4">
                     {cards.map((card) => (
-                      <TeacherCard key={card.user_id} card={card} />
+                      <TeacherCard
+                        key={card.user_id}
+                        card={card}
+                        bio={teacherBios[card.user_id]}
+                        videoUrl={teacherVideos[card.user_id] ?? null}
+                      />
                     ))}
                   </div>
                 </FavoritesProvider>

@@ -5,6 +5,7 @@ import {
   CalendarDays,
   CalendarPlus,
   ChevronRight,
+  Plus,
   Search,
   Wallet,
 } from "lucide-react";
@@ -13,6 +14,7 @@ import type { BookingStatus, Locale } from "@ustoz/shared";
 import { Link } from "@/i18n/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { fetchCatalog, type CatalogCard } from "@/lib/catalog";
+import { localizeList } from "@/lib/content-i18n";
 import { formatFullDate, formatTime } from "@/lib/datetime";
 import { Avatar } from "@/components/ui/avatar";
 import { ButtonLink } from "@/components/ui/button";
@@ -157,16 +159,18 @@ export default function CabinetHomePage() {
             </span>
           </div>
           <Price tiyin={profile.student_balance} className="mt-1 text-3xl font-bold" />
-          <p className="mt-2 text-xs leading-relaxed text-zinc-500">
+          <p className="mt-2 mb-4 text-xs leading-relaxed text-zinc-500">
             {t("topupNote")}
           </p>
-          <Link
+          <ButtonLink
             href="/cabinet/payments"
-            className="mt-auto inline-flex items-center gap-1 pt-3 text-sm font-semibold text-brand-700 hover:text-brand-800"
+            variant="primary"
+            size="sm"
+            className="mt-auto w-full"
           >
-            {t("history")}
-            <ChevronRight size={15} aria-hidden="true" />
-          </Link>
+            <Plus size={16} aria-hidden="true" />
+            {t("topup")}
+          </ButtonLink>
         </Card>
       </div>
 
@@ -219,7 +223,7 @@ export default function CabinetHomePage() {
                       {card.full_name}
                     </p>
                     <p className="truncate text-xs text-zinc-500">
-                      {(locale === "ru" ? card.subjects_ru : card.subjects_uz).join(
+                      {localizeList(locale, card.subjects_uz, card.subjects_ru).join(
                         " · ",
                       )}
                     </p>

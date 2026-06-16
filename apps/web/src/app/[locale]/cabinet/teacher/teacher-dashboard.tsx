@@ -5,7 +5,13 @@ import { CalendarDays, Eye, GraduationCap, TrendingUp } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { BookingStatus, Locale } from "@ustoz/shared";
 import { createClient } from "@/lib/supabase/client";
-import { formatDayMonth, formatTime, formatWeekdayShort } from "@/lib/datetime";
+import {
+  formatMonthShort,
+  formatTime,
+  formatWeekdayShort,
+  tashkentDayNumber,
+  tashkentMonthStartUtc,
+} from "@/lib/datetime";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -46,9 +52,7 @@ export function TeacherDashboard() {
   const load = useCallback(async () => {
     const supabase = createClient();
     const now = new Date();
-    const monthStart = new Date(
-      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1),
-    ).toISOString();
+    const monthStart = tashkentMonthStartUtc(now);
     const [upRes, incomeRes, tpRes] = await Promise.all([
       supabase
         .from("bookings")
@@ -170,12 +174,15 @@ export function TeacherDashboard() {
                     key={row.id}
                     className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl border border-zinc-200 bg-white p-4"
                   >
-                    <div className="flex w-14 shrink-0 flex-col items-center rounded-xl bg-brand-50 px-2 py-2 text-brand-800">
-                      <span className="text-[11px] font-semibold uppercase">
+                    <div className="flex w-14 shrink-0 flex-col items-center justify-center rounded-xl bg-brand-50 py-2 text-brand-800">
+                      <span className="text-[11px] font-semibold uppercase leading-none">
                         {formatWeekdayShort(start, locale)}
                       </span>
-                      <span className="text-sm font-bold leading-tight">
-                        {formatDayMonth(start, locale)}
+                      <span className="mt-1 text-lg font-bold leading-none">
+                        {tashkentDayNumber(start)}
+                      </span>
+                      <span className="mt-1 text-[11px] font-medium uppercase leading-none">
+                        {formatMonthShort(start, locale)}
                       </span>
                     </div>
                     <div className="min-w-0 flex-1">

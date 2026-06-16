@@ -1,4 +1,5 @@
 import { useId, type SelectHTMLAttributes } from "react";
+import { ChevronDown } from "lucide-react";
 import { controlClasses, FieldWrapper } from "./field";
 import { cn } from "@/lib/cn";
 
@@ -30,14 +31,21 @@ export function Select({
       error={error}
       className={wrapperClassName}
     >
-      <select
-        id={selectId}
-        aria-invalid={error ? true : undefined}
-        className={cn(controlClasses(Boolean(error)), "appearance-none", className)}
-        {...rest}
-      >
-        {children}
-      </select>
+      <div className="relative">
+        <select
+          id={selectId}
+          aria-invalid={error ? true : undefined}
+          className={cn(controlClasses(Boolean(error)), "appearance-none pr-10", className)}
+          {...rest}
+        >
+          {children}
+        </select>
+        <ChevronDown
+          size={18}
+          aria-hidden="true"
+          className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400"
+        />
+      </div>
     </FieldWrapper>
   );
 }

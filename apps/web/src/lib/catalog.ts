@@ -54,6 +54,65 @@ export async function fetchCatalog(filters: CatalogFilters): Promise<CatalogCard
   return (data ?? []) as CatalogCard[];
 }
 
+/** intro_video_url for a set of teachers, keyed by user_id (public read). */
+export async function fetchTeacherVideos(
+  userIds: string[],
+): Promise<Record<string, string | null>> {
+  if (userIds.length === 0) return {};
+  const { data } = await publicClient()
+    .from("teacher_profiles")
+    .select("user_id, intro_video_url")
+    .in("user_id", userIds);
+  return Object.fromEntries(
+    (data ?? []).map((r) => [
+      r.user_id as string,
+      (r.intro_video_url as string | null) ?? null,
+    ]),
+  );
+}
+
+/** Weekdays (0=Sun..6=Sat) a teacher has any availability window — public read. */
+export async function fetchAvailabilityDays(teacherId: string): Promise<number[]> {
+  const { data } = await publicClient()
+    .from("availability_rules")
+    .select("weekday")
+    .eq("teacher_id", teacherId);
+  return [...new Set((data ?? []).map((r) => r.weekday as number))];
+}
+
+/** Teacher-authored FAQ ({q, a}[]) for the public profile. Tolerates the column
+ *  being absent (returns []) before the migration is applied. */
+export async function fetchTeacherFaq(
+  teacherId: string,
+): Promise<Array<{ q: string; a: string }>> {
+  const { data } = await publicClient()
+    .from("teacher_profiles")
+    .select("faq")
+    .eq("user_id", teacherId)
+    .maybeSingle();
+  const faq = (data as { faq?: unknown } | null)?.faq;
+  return Array.isArray(faq)
+    ? (faq as Array<{ q: string; a: string }>).filter((x) => x?.q && x?.a)
+    : [];
+}
+
+/** bio_uz / bio_ru for a set of teachers, keyed by user_id (public read). */
+export async function fetchTeacherBios(
+  userIds: string[],
+): Promise<Record<string, { uz: string; ru: string }>> {
+  if (userIds.length === 0) return {};
+  const { data } = await publicClient()
+    .from("teacher_profiles")
+    .select("user_id, bio_uz, bio_ru")
+    .in("user_id", userIds);
+  return Object.fromEntries(
+    (data ?? []).map((r) => [
+      r.user_id as string,
+      { uz: (r.bio_uz as string) ?? "", ru: (r.bio_ru as string) ?? "" },
+    ]),
+  );
+}
+
 export async function fetchCategories() {
   const { data } = await publicClient()
     .from("categories")
@@ -106,20 +165,29 @@ export type TeacherPublic = {
 };
 
 export async function fetchTeacherBySlug(slug: string): Promise<TeacherPublic | null> {
-  const { data } = await publicClient()
-    .from("teacher_profiles")
-    .select(
-      `user_id, slug, headline_uz, headline_ru, bio_uz, bio_ru, intro_video_url,
-       experience_years, teaching_langs, is_verified, tier, rating_avg, rating_count,
-       lessons_done,
-       profiles!teacher_profiles_user_id_fkey ( full_name, avatar_url ),
-       teacher_subjects ( id, price_30, price_60, price_90, trial_free_enabled,
-                          trial_discount_pct, pkg5_discount_pct, pkg10_discount_pct,
-                          pkg20_discount_pct, is_active,
-                          subjects ( id, name_uz, name_ru, slug ) )`,
-    )
-    .eq("slug", slug)
-    .maybeSingle();
+  const query = () =>
+    publicClient()
+      .from("teacher_profiles")
+      .select(
+        `user_id, slug, headline_uz, headline_ru, bio_uz, bio_ru, intro_video_url,
+         experience_years, teaching_langs, is_verified, tier, rating_avg, rating_count,
+         lessons_done,
+         profiles!teacher_profiles_user_id_fkey ( full_name, avatar_url ),
+         teacher_subjects ( id, price_30, price_60, price_90, trial_free_enabled,
+                            trial_discount_pct, pkg5_discount_pct, pkg10_discount_pct,
+                            pkg20_discount_pct, is_active,
+                            subjects ( id, name_uz, name_ru, slug ) )`,
+      )
+      .eq("slug", slug)
+      .maybeSingle();
+
+  let { data, error } = await query();
+  if (error) {
+    // Transient failure (Supabase cold-start / network blip) — retry once, then
+    // surface the real error instead of masquerading as a 404 (data === null).
+    ({ data, error } = await query());
+    if (error) throw error;
+  }
   return data as unknown as TeacherPublic | null;
 }
 
@@ -153,15 +221,29 @@ export async function fetchSimilarTeachers(
   limit = 3,
 ): Promise<CatalogCard[]> {
   const cards = await fetchCatalog({ subjectId, perPage: limit + 1 });
-  return cards.filter((c) => c.user_id !== excludeUserId).slice(0, limit);
+  const sameSubject = cards
+    .filter((c) => c.user_id !== excludeUserId)
+    .slice(0, limit);
+  if (sameSubject.length > 0) return sameSubject;
+  // Fallback: show other teachers so the "similar" block is never empty.
+  const any = await fetchCatalog({ perPage: limit + 1 });
+  return any.filter((c) => c.user_id !== excludeUserId).slice(0, limit);
 }
 
 export async function fetchSubjectBySlug(slug: string) {
-  const { data } = await publicClient()
-    .from("subjects")
-    .select("id, slug, name_uz, name_ru, category_id")
-    .eq("slug", slug)
-    .eq("is_active", true)
-    .maybeSingle();
+  const query = () =>
+    publicClient()
+      .from("subjects")
+      .select("id, slug, name_uz, name_ru, category_id")
+      .eq("slug", slug)
+      .eq("is_active", true)
+      .maybeSingle();
+
+  let { data, error } = await query();
+  if (error) {
+    // Retry once on a transient failure, then surface it rather than 404-ing.
+    ({ data, error } = await query());
+    if (error) throw error;
+  }
   return data;
 }

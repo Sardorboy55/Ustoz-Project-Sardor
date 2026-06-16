@@ -2,6 +2,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { publicClient } from "@/lib/supabase/public";
 import { Wordmark } from "@/components/brand";
+import { localizeContent } from "@/lib/content-i18n";
 
 type FooterCategory = { slug: string; name_uz: string; name_ru: string };
 
@@ -64,7 +65,7 @@ export async function SiteFooter() {
                 href={{ pathname: "/catalog", query: { category: c.slug } }}
                 className={linkClasses}
               >
-                {locale === "ru" ? c.name_ru : c.name_uz}
+                {localizeContent(locale, c.name_uz, c.name_ru)}
               </Link>
             ))}
           </nav>

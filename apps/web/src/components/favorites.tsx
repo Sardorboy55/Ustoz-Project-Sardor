@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type ReactNode,
@@ -104,8 +105,13 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const value = useMemo(
+    () => ({ authed, isFavorite, toggle }),
+    [authed, isFavorite, toggle],
+  );
+
   return (
-    <FavoritesContext.Provider value={{ authed, isFavorite, toggle }}>
+    <FavoritesContext.Provider value={value}>
       {children}
     </FavoritesContext.Provider>
   );
@@ -117,9 +123,12 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
  */
 export function FavoriteButton({
   teacherId,
+  bare = false,
   className,
 }: {
   teacherId: string;
+  /** Drop the white pill background — for use on light surfaces (cards). */
+  bare?: boolean;
   className?: string;
 }) {
   const ctx = useContext(FavoritesContext);
@@ -143,7 +152,8 @@ export function FavoriteButton({
         ctx.toggle(teacherId);
       }}
       className={cn(
-        "flex h-9 w-9 items-center justify-center rounded-full bg-white/90 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-brand-600",
+        "flex h-9 w-9 items-center justify-center rounded-full outline-none transition-colors focus-visible:ring-2 focus-visible:ring-brand-600",
+        !bare && "bg-white/90",
         active ? "text-red-500" : "text-zinc-400 hover:text-red-500",
         className,
       )}

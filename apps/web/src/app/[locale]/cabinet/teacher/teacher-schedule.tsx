@@ -49,6 +49,7 @@ export function TeacherSchedule() {
   const [endMin, setEndMin] = useState(18 * 60);
   const [addingRule, setAddingRule] = useState(false);
   const [ruleError, setRuleError] = useState(false);
+  const [excError, setExcError] = useState(false);
 
   // add-exception form
   const [exceptionDate, setExceptionDate] = useState("");
@@ -120,11 +121,17 @@ export function TeacherSchedule() {
   const addException = async () => {
     if (!exceptionDate) return;
     setAddingException(true);
+    setExcError(false);
     const supabase = createClient();
-    await supabase
+    const { error } = await supabase
       .from("availability_exceptions")
       .insert({ teacher_id: userId, date: exceptionDate });
     setAddingException(false);
+    if (error) {
+      // Keep the date so the teacher can retry instead of silently losing it.
+      setExcError(true);
+      return;
+    }
     setExceptionDate("");
     await load();
   };
@@ -277,6 +284,12 @@ export function TeacherSchedule() {
             {t("exceptionAdd")}
           </Button>
         </div>
+
+        {excError && (
+          <p role="alert" className="mt-2 text-sm text-red-600">
+            {t("scheduleError")}
+          </p>
+        )}
 
         {exceptions.length > 0 && (
           <div className="mt-4 flex flex-wrap gap-2">

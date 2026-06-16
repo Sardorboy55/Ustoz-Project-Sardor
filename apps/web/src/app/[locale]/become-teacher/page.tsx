@@ -14,7 +14,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { ButtonLink } from "@/components/ui/button";
+import { BecomeTeacherCta } from "@/components/teacher/become-teacher-cta";
 import { Badge } from "@/components/ui/badge";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { FaqItem } from "@/components/faq";
@@ -80,24 +80,17 @@ export default async function BecomeTeacherPage({
       {/* ============================== Hero ============================== */}
       <section className="bg-gradient-to-br from-brand-700 to-brand-900 text-white">
         <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:py-24">
-          <span className="inline-flex items-center rounded-full bg-white/10 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wide text-brand-100">
-            {t("heroBadge")}
-          </span>
-          <h1 className="mt-5 max-w-2xl text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl">
+          <h1 className="max-w-2xl text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl">
             {t("heroTitle")}
           </h1>
           <p className="mt-5 max-w-xl text-lg leading-relaxed text-brand-100">
             {t("heroSubtitle")}
           </p>
-          <div className="mt-8 flex flex-wrap items-center gap-4">
-            <ButtonLink
-              href="/auth?next=/cabinet"
-              size="lg"
-              className="bg-white text-brand-800 shadow-md hover:bg-brand-50 active:bg-brand-100"
-            >
-              {t("heroCta")}
-            </ButtonLink>
-            <span className="text-sm text-brand-200">{t("heroNote")}</span>
+          <div className="mt-8">
+            <BecomeTeacherCta
+              label={t("heroCta")}
+              className="bg-brand-500 text-white shadow-md hover:bg-brand-400 active:bg-brand-600"
+            />
           </div>
         </div>
       </section>
@@ -190,13 +183,10 @@ export default async function BecomeTeacherPage({
           </h2>
           <p className="mx-auto mt-3 max-w-lg text-brand-100">{t("ctaSubtitle")}</p>
           <div className="mt-7">
-            <ButtonLink
-              href="/auth?next=/cabinet"
-              size="lg"
-              className="bg-white text-brand-800 shadow-md hover:bg-brand-50 active:bg-brand-100"
-            >
-              {t("cta")}
-            </ButtonLink>
+            <BecomeTeacherCta
+              label={t("cta")}
+              className="bg-brand-500 text-white shadow-md hover:bg-brand-400 active:bg-brand-600"
+            />
           </div>
         </div>
       </section>

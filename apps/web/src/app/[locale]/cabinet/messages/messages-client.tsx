@@ -13,6 +13,7 @@ import {
   ArrowLeft,
   MessageCircle,
   Paperclip,
+  Search,
   SendHorizontal,
   ShieldCheck,
 } from "lucide-react";
@@ -65,7 +66,7 @@ export function MessagesSkeleton() {
   return (
     <div aria-busy="true">
       <Skeleton className="h-8 w-48" />
-      <Card className="mt-4 grid h-[calc(100dvh-16rem)] min-h-[420px] overflow-hidden md:grid-cols-[300px_1fr]">
+      <Card className="mt-4 grid h-[calc(100dvh-13rem)] min-h-[420px] overflow-hidden md:h-[calc(100dvh-16rem)] md:grid-cols-[300px_1fr]">
         <div className="space-y-3 border-r border-zinc-100 p-4">
           {Array.from({ length: 4 }, (_, i) => (
             <div key={i} className="flex items-center gap-3">
@@ -92,6 +93,7 @@ export function MessagesClient() {
 
   const [phase, setPhase] = useState<"loading" | "error" | "ready">("loading");
   const [chats, setChats] = useState<ChatRow[]>([]);
+  const [query, setQuery] = useState("");
 
   // Selected chat: explicit user pick wins over the ?chat= deep link.
   const chatParam = searchParams.get("chat");
@@ -133,6 +135,16 @@ export function MessagesClient() {
     () => chats.find((c) => c.id === selectedId) ?? null,
     [chats, selectedId],
   );
+
+  const visibleChats = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return chats;
+    return chats.filter((c) => {
+      const name = partnerOf(c).name.toLowerCase();
+      const last = (c.messages?.[0]?.body ?? "").toLowerCase();
+      return name.includes(q) || last.includes(q);
+    });
+  }, [chats, query, partnerOf]);
 
   /** Updates the list preview after a message arrives / is sent. */
   const bumpChatPreview = useCallback((m: MessageRow) => {
@@ -196,16 +208,37 @@ export function MessagesClient() {
         {t("title")}
       </h1>
 
-      <Card className="mt-4 grid h-[calc(100dvh-16rem)] min-h-[420px] overflow-hidden md:grid-cols-[300px_1fr]">
+      <Card className="mt-4 grid h-[calc(100dvh-13rem)] min-h-[420px] overflow-hidden md:h-[calc(100dvh-16rem)] md:grid-cols-[300px_1fr]">
         {/* Chat list */}
         <div
           className={cn(
-            "min-h-0 overflow-y-auto border-zinc-100 md:block md:border-r",
-            selectedId && "hidden",
+            "flex min-h-0 flex-col border-zinc-100 md:border-r",
+            selectedId ? "hidden md:flex" : "flex",
           )}
         >
-          <ul>
-            {chats.map((c) => {
+          <div className="border-b border-zinc-100 p-3">
+            <div className="relative">
+              <Search
+                size={16}
+                aria-hidden="true"
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400"
+              />
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={t("search")}
+                aria-label={t("search")}
+                className="w-full rounded-xl border border-zinc-200 bg-white py-2 pl-9 pr-3 text-sm outline-none transition focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20"
+              />
+            </div>
+          </div>
+          {visibleChats.length === 0 ? (
+            <p className="px-4 py-8 text-center text-sm text-zinc-500">
+              {t("searchEmpty")}
+            </p>
+          ) : (
+            <ul className="min-h-0 flex-1 overflow-y-auto">
+              {visibleChats.map((c) => {
               const partner = partnerOf(c);
               const last = c.messages?.[0] ?? null;
               const lastText = last
@@ -246,7 +279,8 @@ export function MessagesClient() {
                 </li>
               );
             })}
-          </ul>
+            </ul>
+          )}
         </div>
 
         {/* Thread */}
@@ -311,9 +345,14 @@ function ChatThread({
   const [sending, setSending] = useState(false);
   const [sendFailed, setSendFailed] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  // Realtime inserts that arrive while the initial fetch is still pending — they
+  // would otherwise be dropped (result is null), so buffer and flush on resolve.
+  const pendingRef = useRef<MessageRow[]>([]);
 
   useEffect(() => {
     let mounted = true;
+    // New fetch window: discard any buffer from the previous chat/reload.
+    pendingRef.current = [];
     const supabase = createClient();
     supabase
       .from("messages")
@@ -323,11 +362,16 @@ function ChatThread({
       .limit(500)
       .then(({ data, error }) => {
         if (!mounted) return;
-        setResult({
-          key: fetchKey,
-          rows: (data ?? []) as MessageRow[],
-          failed: Boolean(error),
-        });
+        const fetched = (data ?? []) as MessageRow[];
+        // Merge in messages that arrived during the fetch, dedup by id, re-sort.
+        const buffered = pendingRef.current;
+        pendingRef.current = [];
+        const byId = new Map(fetched.map((r) => [r.id, r]));
+        for (const m of buffered) if (!byId.has(m.id)) byId.set(m.id, m);
+        const rows = Array.from(byId.values()).sort((a, b) =>
+          a.created_at.localeCompare(b.created_at),
+        );
+        setResult({ key: fetchKey, rows, failed: Boolean(error) });
       });
     return () => {
       mounted = false;
@@ -345,7 +389,14 @@ function ChatThread({
   const append = useCallback(
     (m: MessageRow) => {
       setResult((prev) => {
-        if (!prev || prev.rows.some((r) => r.id === m.id)) return prev;
+        // Initial fetch not resolved yet — buffer instead of dropping.
+        if (!prev) {
+          if (!pendingRef.current.some((r) => r.id === m.id)) {
+            pendingRef.current.push(m);
+          }
+          return prev;
+        }
+        if (prev.rows.some((r) => r.id === m.id)) return prev;
         return { ...prev, rows: [...prev.rows, m] };
       });
       onMessage(m);

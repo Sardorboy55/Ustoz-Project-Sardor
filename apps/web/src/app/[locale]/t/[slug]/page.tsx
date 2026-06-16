@@ -2,26 +2,29 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import {
   BookOpen,
-  CalendarClock,
   ChevronLeft,
   GraduationCap,
   Languages,
   Star,
+  ArrowRight,
 } from "lucide-react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import {
   fetchSimilarTeachers,
   fetchTeacherBySlug,
+  fetchAvailabilityDays,
+  fetchTeacherFaq,
   fetchTeacherReviews,
   type CatalogCard,
   type TeacherReview,
 } from "@/lib/catalog";
 import { formatDateWithYear } from "@/lib/datetime";
 import { Avatar } from "@/components/ui/avatar";
+import { TeacherMedia } from "@/components/teacher-media";
+import { localizeContent } from "@/lib/content-i18n";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { buttonClasses } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { Price } from "@/components/ui/price";
@@ -31,7 +34,9 @@ import { FaqItem } from "@/components/faq";
 import { FavoritesProvider } from "@/components/favorites";
 import { TeacherCard } from "@/components/teacher-card";
 import { BookingProvider } from "@/components/booking/booking-context";
-import { BookingWidget, type BookingSubject } from "@/components/booking/booking-widget";
+import { type BookingSubject } from "@/components/booking/booking-widget";
+import { BookNowButton } from "@/components/booking/book-now-button";
+import { BookingModal } from "@/components/booking/booking-modal";
 import { SelectSubjectButton } from "@/components/booking/select-subject-button";
 import { ContactTeacherButton } from "@/components/teacher/contact-button";
 
@@ -57,14 +62,18 @@ export async function generateMetadata({
   const bio = locale === "ru" ? teacher.bio_ru : teacher.bio_uz;
   const title = `${name} — ${headline}`;
   const description = (bio || headline).slice(0, 160);
+  // 'en' is a real locale (i18n/routing.ts) — prefix every non-default locale,
+  // not just 'ru', so /en pages don't declare a /ru canonical.
+  const prefix = locale === "uz" ? "" : `/${locale}`;
   return {
     title,
     description,
     alternates: {
-      canonical: `${SITE}${locale === "uz" ? "" : "/ru"}/t/${slug}`,
+      canonical: `${SITE}${prefix}/t/${slug}`,
       languages: {
         uz: `${SITE}/t/${slug}`,
         ru: `${SITE}/ru/t/${slug}`,
+        en: `${SITE}/en/t/${slug}`,
       },
     },
     openGraph: {
@@ -95,34 +104,43 @@ export default async function TeacherPage({
   const headline = locale === "ru" ? teacher.headline_ru : teacher.headline_uz;
   const bio = locale === "ru" ? teacher.bio_ru : teacher.bio_uz;
   const activeSubjects = teacher.teacher_subjects.filter((s) => s.is_active);
+  const firstSubjectId = activeSubjects[0]?.subjects?.id;
+
+  // These three only depend on the already-resolved teacher, so fetch them in
+  // parallel instead of serializing 3 round-trips on this SEO-critical page.
+  // Availability stays uncaught (same as before — its failure errors the page);
+  // reviews and similar degrade gracefully and must never break the render.
+  const [availDays, reviewsResult, similar, teacherFaq] = await Promise.all([
+    fetchAvailabilityDays(teacher.user_id),
+    fetchTeacherReviews(teacher.user_id, 10)
+      .then((r) => ({ ok: true as const, reviews: r }))
+      .catch(() => ({ ok: false as const, reviews: [] as TeacherReview[] })),
+    firstSubjectId
+      ? fetchSimilarTeachers(firstSubjectId, teacher.user_id, 3).catch(
+          () => [] as CatalogCard[],
+        )
+      : Promise.resolve([] as CatalogCard[]),
+    fetchTeacherFaq(teacher.user_id).catch(() => []),
+  ]);
+  const reviews = reviewsResult.reviews;
+  const reviewsFailed = !reviewsResult.ok;
+
+  // Tashkent weekday — intentionally request-time (server component, ISR 60s).
+  // eslint-disable-next-line react-hooks/purity
+  const tashDow = new Date(Date.now() + 5 * 3600 * 1000).getUTCDay();
+  const availableToday =
+    availDays.includes(tashDow) || (tashDow === 0 && availDays.includes(7));
+  const slotStatus =
+    availDays.length === 0 ? "closed" : availableToday ? "today" : "scheduled";
   const minPrice =
     activeSubjects.length > 0
       ? Math.min(...activeSubjects.map((s) => s.price_60))
       : null;
   const hasFreeTrial = activeSubjects.some((s) => s.trial_free_enabled);
   const subjectName = (s: { name_uz: string; name_ru: string } | null) =>
-    s ? (locale === "ru" ? s.name_ru : s.name_uz) : "";
+    s ? localizeContent(locale, s.name_uz, s.name_ru) : "";
   const langLabel = (code: string) =>
     tCard.has(`langs.${code}`) ? tCard(`langs.${code}`) : code.toUpperCase();
-
-  // Graceful degraded sections: the page must render even if these fail.
-  let reviews: TeacherReview[] = [];
-  let reviewsFailed = false;
-  try {
-    reviews = await fetchTeacherReviews(teacher.user_id, 10);
-  } catch {
-    reviewsFailed = true;
-  }
-
-  let similar: CatalogCard[] = [];
-  const firstSubjectId = activeSubjects[0]?.subjects?.id;
-  try {
-    if (firstSubjectId) {
-      similar = await fetchSimilarTeachers(firstSubjectId, teacher.user_id, 3);
-    }
-  } catch {
-    /* section hides itself */
-  }
 
   const widgetSubjects: BookingSubject[] = activeSubjects.map((s) => ({
     id: s.id,
@@ -142,7 +160,7 @@ export default async function TeacherPage({
     "@type": "Person",
     name,
     description: headline,
-    url: `${SITE}${locale === "uz" ? "" : "/ru"}/t/${slug}`,
+    url: `${SITE}${locale === "uz" ? "" : `/${locale}`}/t/${slug}`,
     ...(teacher.profiles?.avatar_url ? { image: teacher.profiles.avatar_url } : {}),
     jobTitle: headline,
     knowsLanguage: teacher.teaching_langs,
@@ -195,7 +213,7 @@ export default async function TeacherPage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6">
+      <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-8 pb-32 sm:px-6">
         <Link
           href="/catalog"
           className="mb-6 inline-flex items-center gap-1 text-sm font-medium text-zinc-500 transition-colors hover:text-zinc-900"
@@ -209,9 +227,9 @@ export default async function TeacherPage({
             activeSubjects.length === 1 ? activeSubjects[0].id : null
           }
         >
-          <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
+          <div className="space-y-10">
             {/* ===================== Hero ===================== */}
-            <section className="lg:col-start-1 lg:row-start-1">
+            <section>
               <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
                 <Avatar
                   src={teacher.profiles?.avatar_url}
@@ -250,6 +268,30 @@ export default async function TeacherPage({
                       {t("experienceYears", { years: teacher.experience_years })}
                     </span>
                   </div>
+                  <div className="mt-3">
+                    <span
+                      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${
+                        slotStatus === "today"
+                          ? "bg-emerald-50 text-emerald-700"
+                          : slotStatus === "scheduled"
+                            ? "bg-brand-50 text-brand-700"
+                            : "bg-zinc-100 text-zinc-500"
+                      }`}
+                    >
+                      <span
+                        className={`h-1.5 w-1.5 rounded-full ${
+                          slotStatus === "closed"
+                            ? "bg-zinc-400"
+                            : "bg-emerald-500"
+                        }`}
+                      />
+                      {slotStatus === "today"
+                        ? t("statusToday")
+                        : slotStatus === "scheduled"
+                          ? t("statusScheduled")
+                          : t("statusClosed")}
+                    </span>
+                  </div>
                   {teacher.teaching_langs.length > 0 && (
                     <div className="mt-3 flex flex-wrap items-center gap-1.5">
                       <Languages size={15} className="text-zinc-400" aria-hidden="true" />
@@ -267,84 +309,25 @@ export default async function TeacherPage({
               </div>
             </section>
 
-            {/* ===================== Sticky booking card ===================== */}
-            <aside className="lg:col-start-2 lg:row-start-1 lg:row-span-2">
-              <Card className="overflow-hidden lg:sticky lg:top-24">
-                {teacher.profiles?.avatar_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element -- Supabase Storage URL
-                  <img
-                    src={teacher.profiles.avatar_url}
-                    alt={name}
-                    className="h-44 w-full object-cover"
-                  />
-                ) : (
-                  <div className="flex h-44 w-full items-center justify-center bg-brand-50 text-5xl font-bold text-brand-300">
-                    {name
-                      .trim()
-                      .split(/\s+/)
-                      .map((w) => w[0])
-                      .slice(0, 2)
-                      .join("")
-                      .toUpperCase()}
-                  </div>
-                )}
-                <div className="space-y-3 p-5">
-                  {minPrice !== null && (
-                    <Price
-                      tiyin={minPrice}
-                      from
-                      suffix={t("per60Short")}
-                      className="block text-xl"
-                    />
-                  )}
-                  <RatingStars
-                    value={Number(teacher.rating_avg)}
-                    count={teacher.rating_count}
-                    size={14}
-                  />
-                  {hasFreeTrial && (
-                    <Badge variant="trial">{t("freeTrial20")}</Badge>
-                  )}
-                  {activeSubjects.length > 0 && (
-                    <a
-                      href="#booking"
-                      className={buttonClasses("primary", "lg", "w-full")}
-                    >
-                      <CalendarClock size={18} aria-hidden="true" />
-                      {t("book")}
-                    </a>
-                  )}
-                  <ContactTeacherButton
-                    teacherId={teacher.user_id}
-                    teacherSlug={teacher.slug}
-                  />
-                  <p className="text-xs leading-relaxed text-zinc-500">
-                    {t("cancelNote")}
-                  </p>
-                </div>
-              </Card>
-            </aside>
-
             {/* ===================== Main content ===================== */}
-            <div className="space-y-12 lg:col-start-1 lg:row-start-2">
+            <div className="space-y-12">
               {teacher.intro_video_url && (
                 <section>
-                  <SectionHeading title={t("video")} />
-                  <video
-                    src={teacher.intro_video_url}
-                    controls
-                    preload="metadata"
-                    {...(teacher.profiles?.avatar_url
-                      ? { poster: teacher.profiles.avatar_url }
-                      : {})}
-                    className="mt-4 aspect-video w-full max-w-2xl rounded-2xl bg-zinc-900"
-                  />
+                  <SectionHeading align="left" title={t("video")} />
+                  <div className="mt-4 overflow-hidden rounded-2xl border border-zinc-200">
+                    <TeacherMedia
+                      name={name}
+                      videoUrl={teacher.intro_video_url}
+                      posterUrl={teacher.profiles?.avatar_url}
+                      playLabel={tCard("playVideo")}
+                      rounded="rounded-2xl"
+                    />
+                  </div>
                 </section>
               )}
-
               {bio && (
                 <section>
-                  <SectionHeading title={t("about")} />
+                  <SectionHeading align="left" title={t("about")} />
                   <p className="mt-4 max-w-prose whitespace-pre-line leading-relaxed text-zinc-700">
                     {bio}
                   </p>
@@ -358,7 +341,7 @@ export default async function TeacherPage({
 
               {activeSubjects.length > 0 && (
                 <section>
-                  <SectionHeading title={t("services")} />
+                  <SectionHeading align="left" title={t("services")} />
                   <div className="mt-4 grid gap-4">
                     {activeSubjects.map((s) => (
                       <Card key={s.id} className="p-5">
@@ -427,25 +410,8 @@ export default async function TeacherPage({
                 </section>
               )}
 
-              {activeSubjects.length > 0 && (
-                <section id="booking" className="scroll-mt-24">
-                  <SectionHeading
-                    title={t("scheduleTitle")}
-                    subtitle={t("scheduleSubtitle")}
-                  />
-                  <div className="mt-4">
-                    <BookingWidget
-                      teacherId={teacher.user_id}
-                      teacherSlug={teacher.slug}
-                      teacherName={name}
-                      subjects={widgetSubjects}
-                    />
-                  </div>
-                </section>
-              )}
-
               <section id="reviews" className="scroll-mt-24">
-                <SectionHeading title={t("reviewsTitle")} />
+                <SectionHeading align="left" title={t("reviewsTitle")} />
                 {reviewsFailed ? (
                   <ErrorState
                     description={t("reviewsError")}
@@ -475,8 +441,15 @@ export default async function TeacherPage({
                           {t("reviewsBasedOn", { count: teacher.rating_count })}
                         </p>
                       </div>
+                      <Link
+                        href={`/t/${slug}/reviews`}
+                        className="ml-auto inline-flex items-center gap-1 whitespace-nowrap text-sm font-semibold text-brand-700 transition-colors hover:text-brand-800"
+                      >
+                        {t("allReviews")}
+                        <ArrowRight size={15} aria-hidden="true" />
+                      </Link>
                     </div>
-                    <ul className="space-y-4">
+                    <ul id="reviews-list" className="space-y-4">
                       {reviews.map((r) => (
                         <li key={r.booking_id}>
                           <Card className="p-5">
@@ -517,8 +490,12 @@ export default async function TeacherPage({
               </section>
 
               <section>
-                <SectionHeading title={t("faqTitle")} />
+                <SectionHeading align="left" title={t("faqTitle")} />
                 <div className="mt-4 space-y-3">
+                  {/* Teacher-authored questions first, then the general ones */}
+                  {teacherFaq.map((f, i) => (
+                    <FaqItem key={`t-${i}`} question={f.q} answer={f.a} />
+                  ))}
                   <FaqItem question={t("faqLessonQ")} answer={t("faqLessonA")} />
                   <FaqItem question={t("faqCancelQ")} answer={t("faqCancelA")} />
                   <FaqItem
@@ -529,11 +506,57 @@ export default async function TeacherPage({
               </section>
             </div>
           </div>
+
+          <BookingModal
+            teacherId={teacher.user_id}
+            teacherSlug={teacher.slug}
+            teacherName={name}
+            subjects={widgetSubjects}
+          />
+
+          {/* ===================== Floating action bar ===================== */}
+          <div className="pointer-events-none fixed inset-x-0 bottom-4 z-40 flex justify-center px-3 sm:bottom-6 sm:px-4">
+            <div className="pointer-events-auto flex w-full max-w-2xl flex-col gap-2 rounded-2xl border border-zinc-200 bg-white/95 px-3 py-2.5 shadow-xl ring-1 ring-black/5 backdrop-blur sm:flex-row sm:items-center sm:gap-3 sm:px-4">
+              {/* Price — its own row on mobile so it's always fully visible */}
+              <div className="min-w-0 sm:flex-1">
+                {minPrice !== null && (
+                  <Price
+                    tiyin={minPrice}
+                    from
+                    suffix={t("per60Short")}
+                    className="block text-base font-extrabold leading-tight text-zinc-900 sm:text-lg"
+                  />
+                )}
+                {hasFreeTrial && (
+                  <span className="block truncate text-xs font-medium text-brand-700">
+                    {t("freeTrial20")}
+                  </span>
+                )}
+              </div>
+              {/* Actions — equal-width, text-only (no icons) on mobile */}
+              <div className="flex items-center gap-2 sm:shrink-0">
+                <ContactTeacherButton
+                  teacherId={teacher.user_id}
+                  teacherSlug={teacher.slug}
+                  size="lg"
+                  icon={false}
+                  className="flex-1 sm:flex-none"
+                />
+                {activeSubjects.length > 0 && (
+                  <BookNowButton className="flex-1 whitespace-nowrap sm:flex-none">
+                    <span className="sm:hidden">{t("bookShort")}</span>
+                    <span className="hidden sm:inline">{t("book")}</span>
+                  </BookNowButton>
+                )}
+              </div>
+            </div>
+          </div>
         </BookingProvider>
 
         {similar.length > 0 && (
           <section className="mt-14">
             <SectionHeading
+              align="left"
               title={t("similarTitle")}
               action={
                 <Link

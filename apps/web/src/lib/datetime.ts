@@ -18,6 +18,14 @@ export function tashkentDateKey(d: Date): string {
   }).format(d);
 }
 
+/** UTC ISO instant for the start of the Tashkent calendar month containing d.
+ *  Use this to bound "this month" queries — a plain UTC month start is off by
+ *  the +5h offset and mis-buckets income/lessons around month boundaries. */
+export function tashkentMonthStartUtc(d: Date): string {
+  const [year, month] = tashkentDateKey(d).split("-");
+  return new Date(`${year}-${month}-01T00:00:00+05:00`).toISOString();
+}
+
 /** "14:30" in Tashkent. */
 export function formatTime(d: Date, locale: string): string {
   return new Intl.DateTimeFormat(intlTag(locale), {
@@ -50,6 +58,14 @@ export function formatDayMonth(d: Date, locale: string): string {
     timeZone: TASHKENT_TZ,
     day: "numeric",
     month: "long",
+  }).format(d);
+}
+
+/** "iyun" / "июн." — short month in Tashkent (compact calendar chips). */
+export function formatMonthShort(d: Date, locale: string): string {
+  return new Intl.DateTimeFormat(intlTag(locale), {
+    timeZone: TASHKENT_TZ,
+    month: "short",
   }).format(d);
 }
 

@@ -9,8 +9,9 @@ import { cn } from "@/lib/cn";
 type AuthState = "loading" | "anon" | "authed";
 
 /**
- * Client island: "Sign in" → /auth for guests, "Cabinet" → /cabinet for
- * signed-in users. Reacts live to Supabase auth state changes.
+ * Corner auth control. Guests see "Вход" → /auth. "Кабинет" lives in the nav,
+ * so on desktop signed-in users get nothing here; the mobile menu keeps a
+ * full-width cabinet button. Reacts live to Supabase auth changes.
  */
 export function AuthButton({ block = false }: { block?: boolean }) {
   const t = useTranslations("Header");
@@ -45,17 +46,17 @@ export function AuthButton({ block = false }: { block?: boolean }) {
     );
   }
 
-  return state === "authed" ? (
-    <ButtonLink
-      href="/cabinet"
-      size="sm"
-      variant="secondary"
-      className={cn(block && "w-full")}
-    >
-      {t("cabinet")}
-    </ButtonLink>
-  ) : (
-    <ButtonLink href="/auth" size="sm" className={cn(block && "w-full")}>
+  if (state === "authed") {
+    // Desktop: cabinet lives in the nav, so the corner stays empty.
+    return block ? (
+      <ButtonLink href="/cabinet" size="sm" variant="secondary" className="w-full">
+        {t("cabinet")}
+      </ButtonLink>
+    ) : null;
+  }
+
+  return (
+    <ButtonLink href="/auth" size="sm" className={cn("min-w-28", block && "w-full")}>
       {t("signIn")}
     </ButtonLink>
   );

@@ -5,8 +5,12 @@ import {
   CalendarPlus,
   CalendarX2,
   Check,
+  ChevronLeft,
   Clock,
+  CreditCard,
   GraduationCap,
+  ShieldCheck,
+  Star,
   Wallet,
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
@@ -26,6 +30,8 @@ import { Skeleton, SkeletonText } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Textarea } from "@/components/ui/textarea";
 import { ContactTeacherButton } from "@/components/teacher/contact-button";
+import { LessonPanel } from "@/components/booking/lesson-panel";
+import { ReviewForm } from "@/components/lessons/review-form";
 
 type BookingRow = {
   id: string;
@@ -45,6 +51,8 @@ type BookingRow = {
     slug: string;
     profiles: { full_name: string; avatar_url: string | null } | null;
   } | null;
+  review: { stars: number } | null;
+  lesson: { meeting_url: string | null } | null;
 };
 
 const SELECT = `
@@ -52,13 +60,13 @@ const SELECT = `
   teacher_id, student_id,
   teacher_subjects ( subjects ( name_uz, name_ru ) ),
   teacher:teacher_profiles!bookings_teacher_id_fkey (
-    slug, profiles!teacher_profiles_user_id_fkey ( full_name, avatar_url ) )
+    slug, profiles!teacher_profiles_user_id_fkey ( full_name, avatar_url ) ),
+  review:reviews ( stars ),
+  lesson:lessons ( meeting_url )
 `;
 
 const PENDING_TTL_MS = 15 * 60_000;
 const CANCEL_WINDOW_H = 12;
-
-const PAY_METHODS = ["Payme", "Click", "Uzum"] as const;
 
 export function BookingDetail({ bookingId }: { bookingId: string }) {
   const locale = useLocale() as Locale;
@@ -173,6 +181,14 @@ export function BookingDetail({ bookingId }: { bookingId: string }) {
     isUpcoming;
   const showSuccess =
     booking.status === "pending_payment" || booking.status === "paid";
+  // A free booking (trial or package, price 0) has nothing to pay — treat it as
+  // confirmed instead of showing the "awaiting payment" countdown.
+  const needsPayment =
+    booking.status === "pending_payment" && booking.price > 0;
+  const displayStatus: BookingStatus =
+    booking.status === "pending_payment" && booking.price === 0
+      ? "paid"
+      : booking.status;
 
   const payLeftMs =
     new Date(booking.created_at).getTime() + PENDING_TTL_MS - nowTs;
@@ -182,10 +198,10 @@ export function BookingDetail({ bookingId }: { bookingId: string }) {
 
   const hoursLeft = (start.getTime() - nowTs) / 3_600_000;
   const cancelNote =
-    booking.status === "pending_payment"
-      ? t("cancelPendingNote")
-      : booking.price === 0
-        ? t("cancelTrialNote")
+    booking.price === 0
+      ? t("cancelTrialNote")
+      : booking.status === "pending_payment"
+        ? t("cancelPendingNote")
         : isTeacherViewer
           ? t("cancelTeacherNote")
           : hoursLeft >= CANCEL_WINDOW_H
@@ -241,6 +257,152 @@ export function BookingDetail({ bookingId }: { bookingId: string }) {
     booking.status === "no_show_student" ||
     booking.status === "no_show_teacher";
 
+  // ===================== Checkout (awaiting payment) =====================
+  // Two-column layout: payment options on the left, a sticky order summary on
+  // the right. Online providers are not wired yet (Phase 7), so methods and the
+  // pay button stay disabled with a "soon" note — the layout is payment-ready.
+  if (needsPayment) {
+    const priceLabel = tUi("price", { price: formatUzs(booking.price, locale) });
+    const methods: Array<{ key: string; icon: typeof Wallet; label: string }> = [
+      { key: "balance", icon: Wallet, label: t("balance") },
+      { key: "payme", icon: CreditCard, label: "Payme" },
+      { key: "click", icon: CreditCard, label: "Click" },
+      { key: "uzum", icon: CreditCard, label: "Uzum" },
+    ];
+    return (
+      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 sm:px-6 sm:py-10">
+        <Link
+          href="/cabinet/lessons"
+          className="inline-flex items-center gap-1 text-sm font-medium text-zinc-500 transition-colors hover:text-zinc-800"
+        >
+          <ChevronLeft size={16} aria-hidden="true" />
+          {t("myLessons")}
+        </Link>
+
+        <div className="mt-5 grid gap-6 lg:grid-cols-[1fr_360px]">
+          {/* Left: countdown + payment methods */}
+          <div className="space-y-5">
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 sm:p-5">
+              <p className="font-bold text-amber-800">{t("pendingTitle")}</p>
+              <p className="mt-1 text-sm text-amber-700">{t("pendingBody")}</p>
+              <p className="mt-2 text-sm font-semibold text-amber-800">
+                {payLeftMs > 0 ? (
+                  t("expiresIn", { time: countdown })
+                ) : (
+                  <span className="inline-flex flex-wrap items-center gap-3">
+                    {t("expiredMaybe")}
+                    <Button size="sm" variant="secondary" onClick={() => void load()}>
+                      {t("refresh")}
+                    </Button>
+                  </span>
+                )}
+              </p>
+            </div>
+
+            <Card className="p-5 sm:p-6">
+              <h2 className="text-base font-bold text-zinc-900">
+                {t("paymentTitle")}
+              </h2>
+              <ul className="mt-3 divide-y divide-zinc-100">
+                {methods.map(({ key, icon: Icon, label }) => (
+                  <li key={key} className="flex items-center gap-3 py-3.5">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-zinc-100 text-zinc-500">
+                      <Icon size={18} aria-hidden="true" />
+                    </span>
+                    <span className="flex-1 font-semibold text-zinc-700">
+                      {label}
+                    </span>
+                    <Badge variant="neutral">{t("soon")}</Badge>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-3 text-xs leading-relaxed text-zinc-500">
+                {t("paymentNote")}
+              </p>
+            </Card>
+          </div>
+
+          {/* Right: sticky order summary */}
+          <aside className="h-fit lg:sticky lg:top-24">
+            <Card className="p-5 sm:p-6">
+              <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
+                {t("checkoutSummary")}
+              </p>
+              <Link
+                href={`/t/${booking.teacher?.slug ?? ""}`}
+                className="group mt-3 flex items-center gap-3"
+              >
+                <Avatar
+                  src={booking.teacher?.profiles?.avatar_url}
+                  name={teacherName}
+                  size="md"
+                />
+                <span className="min-w-0">
+                  <span className="block truncate font-bold text-zinc-900 group-hover:text-brand-700">
+                    {teacherName}
+                  </span>
+                  <span className="block truncate text-sm text-zinc-500">
+                    {subjectName}
+                  </span>
+                </span>
+              </Link>
+
+              <dl className="mt-5 space-y-2.5 border-t border-zinc-100 pt-5 text-sm">
+                <div className="flex justify-between gap-3">
+                  <dt className="text-zinc-500">{tW("date")}</dt>
+                  <dd className="text-right font-semibold text-zinc-900">
+                    {formatFullDate(start, locale)}
+                  </dd>
+                </div>
+                <div className="flex justify-between gap-3">
+                  <dt className="text-zinc-500">{tW("time")}</dt>
+                  <dd className="text-right font-semibold text-zinc-900">
+                    {formatTime(start, locale)}–{formatTime(end, locale)} ·{" "}
+                    {tW("durationValue", { min: booking.duration_min })}
+                  </dd>
+                </div>
+                <div className="flex justify-between gap-3">
+                  <dt className="text-zinc-500">{tW("subject")}</dt>
+                  <dd className="text-right font-semibold text-zinc-900">
+                    {subjectName}
+                  </dd>
+                </div>
+              </dl>
+
+              <div className="mt-5 flex items-center justify-between border-t border-zinc-100 pt-5">
+                <span className="font-bold text-zinc-900">{t("total")}</span>
+                <span className="text-lg font-extrabold text-zinc-900">
+                  {priceLabel}
+                </span>
+              </div>
+
+              <Button size="lg" className="mt-5 w-full" disabled>
+                {t("payCta", { amount: priceLabel })}
+              </Button>
+              <p className="mt-2 text-center text-xs text-zinc-400">{t("soon")}</p>
+
+              <div className="mt-5 flex items-start gap-2.5 rounded-xl bg-emerald-50 p-3.5">
+                <ShieldCheck
+                  size={18}
+                  className="mt-0.5 shrink-0 text-emerald-600"
+                  aria-hidden="true"
+                />
+                <div>
+                  <p className="text-sm font-bold text-emerald-800">
+                    {t("guaranteeTitle")}
+                  </p>
+                  <p className="mt-0.5 text-xs leading-relaxed text-emerald-700">
+                    {t("guaranteeBody")}
+                  </p>
+                </div>
+              </div>
+            </Card>
+          </aside>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-10 sm:px-6">
       {/* Header */}
@@ -256,7 +418,7 @@ export function BookingDetail({ bookingId }: { bookingId: string }) {
       ) : (
         <div className="flex flex-col items-center gap-3 text-center">
           <h1 className="text-2xl font-bold tracking-tight">{t("title")}</h1>
-          <StatusBadge status={booking.status} />
+          <StatusBadge status={displayStatus} />
         </div>
       )}
 
@@ -291,7 +453,7 @@ export function BookingDetail({ bookingId }: { bookingId: string }) {
               </span>
             </span>
           </Link>
-          <StatusBadge status={booking.status} />
+          <StatusBadge status={displayStatus} />
         </div>
 
         <dl className="mt-5 grid gap-x-6 gap-y-3 border-t border-zinc-100 pt-5 text-sm sm:grid-cols-2">
@@ -337,52 +499,84 @@ export function BookingDetail({ bookingId }: { bookingId: string }) {
         </dl>
       </Card>
 
-      {/* Status panel */}
-      {booking.status === "pending_payment" && (
-        <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-5">
-          <p className="font-bold text-amber-800">{t("pendingTitle")}</p>
-          <p className="mt-1 text-sm text-amber-700">{t("pendingBody")}</p>
-          <p className="mt-2 text-sm font-semibold text-amber-800">
-            {payLeftMs > 0 ? (
-              t("expiresIn", { time: countdown })
-            ) : (
-              <span className="inline-flex flex-wrap items-center gap-3">
-                {t("expiredMaybe")}
-                <Button size="sm" variant="secondary" onClick={() => void load()}>
-                  {t("refresh")}
-                </Button>
+      {/* Review — completed lesson, student viewer */}
+      {booking.status === "completed" && !isTeacherViewer && (
+        <Card className="mt-6 p-5 sm:p-6">
+          {booking.review ? (
+            <div className="flex flex-col items-center text-center">
+              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-accent-50 text-accent-500">
+                <Star
+                  size={24}
+                  fill="currentColor"
+                  strokeWidth={0}
+                  aria-hidden="true"
+                />
               </span>
-            )}
-          </p>
-
-          <div className="mt-4">
-            <p className="text-sm font-bold text-zinc-800">{t("paymentTitle")}</p>
-            <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
-              {[...PAY_METHODS, t("balance")].map((m) => (
-                <div
-                  key={m}
-                  aria-disabled="true"
-                  className="flex cursor-not-allowed flex-col items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-2 py-3 opacity-70"
-                >
-                  <span className="text-sm font-bold text-zinc-500">{m}</span>
-                  <Badge variant="neutral">{t("soon")}</Badge>
-                </div>
-              ))}
+              <p className="mt-3 font-bold text-zinc-900">
+                {t("reviewThanksTitle")}
+              </p>
+              <p className="mt-1 text-sm text-zinc-500">{t("reviewThanksBody")}</p>
+              <div
+                className="mt-3 flex gap-1"
+                aria-label={`${booking.review.stars} / 5`}
+              >
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <Star
+                    key={n}
+                    size={20}
+                    aria-hidden="true"
+                    className={
+                      n <= (booking.review?.stars ?? 0)
+                        ? "text-accent-500"
+                        : "text-zinc-200"
+                    }
+                    fill="currentColor"
+                    strokeWidth={0}
+                  />
+                ))}
+              </div>
             </div>
-            <p className="mt-3 text-xs leading-relaxed text-zinc-500">
-              {t("paymentNote")}
-            </p>
-          </div>
-        </div>
+          ) : (
+            <>
+              <h2 className="text-lg font-bold tracking-tight text-zinc-900">
+                {t("reviewSectionTitle")}
+              </h2>
+              <p className="mt-1 text-sm text-zinc-500">{t("reviewSectionBody")}</p>
+              <div className="mt-4">
+                <ReviewForm
+                  bookingId={booking.id}
+                  teacherId={booking.teacher_id}
+                  studentId={booking.student_id}
+                  onReviewed={(stars) =>
+                    setBooking({ ...booking, review: { stars } })
+                  }
+                />
+              </div>
+            </>
+          )}
+        </Card>
       )}
 
-      {booking.status === "paid" && (
+      {/* Status panel — the "awaiting payment" case renders its own checkout
+          layout above (early return), so only the paid panel remains here. */}
+      {displayStatus === "paid" && (
         <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
           <p className="font-bold text-emerald-800">{t("paidTitle")}</p>
           <p className="mt-1 text-sm text-emerald-700">
             {booking.kind === "trial_free" ? t("trialPaidBody") : t("paidBody")}
           </p>
         </div>
+      )}
+
+      {/* Lesson (Google Meet link + join + teacher completes) */}
+      {(booking.status === "paid" || booking.status === "in_progress") && (
+        <LessonPanel
+          bookingId={booking.id}
+          isTeacher={isTeacherViewer}
+          startAtMs={start.getTime()}
+          initialMeetingUrl={booking.lesson?.meeting_url ?? null}
+          onCompleted={() => void load()}
+        />
       )}
 
       {cancelled && booking.cancel_reason && (
@@ -392,7 +586,11 @@ export function BookingDetail({ bookingId }: { bookingId: string }) {
       )}
 
       {/* Actions */}
-      <div className="mt-6 flex flex-wrap items-start gap-2.5">
+      <div className="mt-6 flex flex-wrap items-center gap-2.5">
+        <ButtonLink variant="ghost" href="/cabinet/lessons">
+          <ChevronLeft size={16} aria-hidden="true" />
+          {t("myLessons")}
+        </ButtonLink>
         {showSuccess && (
           <Button variant="secondary" onClick={addToCalendar}>
             <CalendarPlus size={16} aria-hidden="true" />
@@ -407,13 +605,10 @@ export function BookingDetail({ bookingId }: { bookingId: string }) {
             {t("messageTeacher")}
           </ContactTeacherButton>
         )}
-        <ButtonLink variant="ghost" href="/cabinet/lessons">
-          {t("myLessons")}
-        </ButtonLink>
         {cancellable && (
           <Button
             variant="ghost"
-            className="text-red-600 hover:bg-red-50 active:bg-red-100"
+            className="border border-red-300 text-red-600 hover:border-red-400 hover:bg-red-50 active:bg-red-100"
             onClick={() => {
               setCancelError(false);
               setCancelOpen(true);

@@ -11,14 +11,20 @@ import {
 type BookingSelectionValue = {
   /** teacher_subjects.id chosen anywhere on the page (pricing cards / widget). */
   subjectId: string | null;
+  /** Whether the booking modal is open. */
+  open: boolean;
   selectSubject: (id: string, opts?: { scroll?: boolean }) => void;
+  /** Open the booking modal, optionally pre-selecting a subject. */
+  openBooking: (id?: string) => void;
+  closeBooking: () => void;
 };
 
 const BookingSelectionContext = createContext<BookingSelectionValue | null>(null);
 
 /**
  * Shares the chosen subject between the "Services & prices" cards and the
- * booking widget. Server-rendered sections can be nested inside.
+ * booking modal, and controls whether the modal is open. Server-rendered
+ * sections can be nested inside.
  */
 export function BookingProvider({
   children,
@@ -28,6 +34,7 @@ export function BookingProvider({
   initialSubjectId?: string | null;
 }) {
   const [subjectId, setSubjectId] = useState<string | null>(initialSubjectId);
+  const [open, setOpen] = useState(false);
 
   const selectSubject = useCallback(
     (id: string, opts?: { scroll?: boolean }) => {
@@ -41,8 +48,17 @@ export function BookingProvider({
     [],
   );
 
+  const openBooking = useCallback((id?: string) => {
+    if (id) setSubjectId(id);
+    setOpen(true);
+  }, []);
+
+  const closeBooking = useCallback(() => setOpen(false), []);
+
   return (
-    <BookingSelectionContext.Provider value={{ subjectId, selectSubject }}>
+    <BookingSelectionContext.Provider
+      value={{ subjectId, open, selectSubject, openBooking, closeBooking }}
+    >
       {children}
     </BookingSelectionContext.Provider>
   );

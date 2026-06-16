@@ -7,7 +7,12 @@ import type { BookingStatus, Locale } from "@ustoz/shared";
 import { Link } from "@/i18n/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/cn";
-import { formatDayMonth, formatTime, formatWeekdayShort } from "@/lib/datetime";
+import {
+  formatMonthShort,
+  formatTime,
+  formatWeekdayShort,
+  tashkentDayNumber,
+} from "@/lib/datetime";
 import { Avatar } from "@/components/ui/avatar";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -18,6 +23,7 @@ import { Price } from "@/components/ui/price";
 import { SkeletonCard } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Textarea } from "@/components/ui/textarea";
+import { ReviewForm } from "@/components/lessons/review-form";
 import { ContactTeacherButton } from "@/components/teacher/contact-button";
 import { useCabinet } from "@/components/cabinet/cabinet-shell";
 
@@ -215,12 +221,15 @@ function LessonCard({
     <Card className="p-4 sm:p-5">
       <div className="flex flex-wrap items-start gap-x-4 gap-y-3">
         {/* Date block */}
-        <div className="flex w-14 shrink-0 flex-col items-center rounded-xl bg-brand-50 px-2 py-2 text-brand-800">
-          <span className="text-[11px] font-semibold uppercase">
+        <div className="flex w-14 shrink-0 flex-col items-center justify-center rounded-xl bg-brand-50 py-2 text-brand-800">
+          <span className="text-[11px] font-semibold uppercase leading-none">
             {formatWeekdayShort(start, locale)}
           </span>
-          <span className="text-sm font-bold leading-tight">
-            {formatDayMonth(start, locale)}
+          <span className="mt-1 text-lg font-bold leading-none">
+            {tashkentDayNumber(start)}
+          </span>
+          <span className="mt-1 text-[11px] font-medium uppercase leading-none">
+            {formatMonthShort(start, locale)}
           </span>
         </div>
 
@@ -246,7 +255,7 @@ function LessonCard({
           </Link>
         </div>
 
-        <div className="flex flex-col items-end gap-1">
+        <div className="flex shrink-0 flex-col items-end gap-1">
           {row.price === 0 ? (
             <span className="text-sm font-semibold text-brand-700">
               {tUi("freeTrial")}
@@ -388,9 +397,7 @@ function CancelModal({
   );
 }
 
-const TAG_KEYS = ["tagPunctual", "tagClear", "tagPolite", "tagRecommend"] as const;
-
-/** Review modal: 1–5 stars, quick tags appended to the text, comment. */
+/** Review modal: wraps the shared rating form in a dialog. */
 function ReviewModal({
   row,
   studentId,
@@ -403,132 +410,25 @@ function ReviewModal({
   onReviewed: (id: string, stars: number) => void;
 }) {
   const t = useTranslations("Cabinet.lessons");
-  const [stars, setStars] = useState(0);
-  const [body, setBody] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [errorKey, setErrorKey] = useState<"reviewDuplicate" | "reviewError" | null>(
-    null,
-  );
-
-  const [lastId, setLastId] = useState<string | null>(null);
-  if (row && row.id !== lastId) {
-    setLastId(row.id);
-    setStars(0);
-    setBody("");
-    setErrorKey(null);
+  if (!row) {
+    return (
+      <Modal open={false} onClose={onClose}>
+        {null}
+      </Modal>
+    );
   }
-
-  if (!row) return <Modal open={false} onClose={onClose}>{null}</Modal>;
-
-  const toggleTag = (label: string) => {
-    setBody((prev) => {
-      if (prev.includes(label)) {
-        return prev
-          .replace(`${label}. `, "")
-          .replace(`${label}.`, "")
-          .replace(label, "")
-          .trimStart();
-      }
-      const base = prev.trim();
-      return base ? `${base.replace(/\.?$/, ".")} ${label}.` : `${label}.`;
-    });
-  };
-
-  const submit = async () => {
-    if (stars < 1) return;
-    setBusy(true);
-    setErrorKey(null);
-    const supabase = createClient();
-    const { error } = await supabase.from("reviews").insert({
-      booking_id: row.id,
-      student_id: studentId,
-      teacher_id: row.teacher_id,
-      stars,
-      body: body.trim() || null,
-    });
-    setBusy(false);
-    if (error) {
-      if (error.code === "23505") {
-        // already reviewed (e.g. from mobile) — reflect it and close
-        setErrorKey("reviewDuplicate");
-        onReviewed(row.id, stars);
-        return;
-      }
-      setErrorKey("reviewError");
-      return;
-    }
-    onReviewed(row.id, stars);
-    onClose();
-  };
-
   return (
-    <Modal open onClose={() => !busy && onClose()} title={t("reviewTitle")}>
-      <p className="text-sm font-medium text-zinc-700">{t("reviewStars")}</p>
-      <div className="mt-2 flex gap-1.5">
-        {[1, 2, 3, 4, 5].map((n) => (
-          <button
-            key={n}
-            type="button"
-            aria-label={`${n} / 5`}
-            aria-pressed={stars >= n}
-            onClick={() => setStars(n)}
-            className="rounded-lg p-0.5 outline-none transition-transform hover:scale-110 focus-visible:ring-2 focus-visible:ring-brand-600"
-          >
-            <Star
-              size={30}
-              aria-hidden="true"
-              className={stars >= n ? "text-accent-500" : "text-zinc-200"}
-              fill="currentColor"
-              strokeWidth={0}
-            />
-          </button>
-        ))}
-      </div>
-
-      <p className="mt-4 text-sm font-medium text-zinc-700">{t("reviewTags")}</p>
-      <div className="mt-2 flex flex-wrap gap-2">
-        {TAG_KEYS.map((key) => {
-          const label = t(key);
-          const active = body.includes(label);
-          return (
-            <button
-              key={key}
-              type="button"
-              aria-pressed={active}
-              onClick={() => toggleTag(label)}
-              className={cn(
-                "rounded-full border px-3 py-1.5 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-brand-600",
-                active
-                  ? "border-brand-600 bg-brand-50 text-brand-700"
-                  : "border-zinc-200 bg-white text-zinc-600 hover:border-brand-300",
-              )}
-            >
-              {label}
-            </button>
-          );
-        })}
-      </div>
-
-      <Textarea
-        label={t("reviewComment")}
-        rows={3}
-        maxLength={1000}
-        value={body}
-        onChange={(e) => setBody(e.target.value)}
-        wrapperClassName="mt-4"
+    <Modal open onClose={onClose} title={t("reviewTitle")}>
+      <ReviewForm
+        key={row.id}
+        bookingId={row.id}
+        teacherId={row.teacher_id}
+        studentId={studentId}
+        onReviewed={(stars) => {
+          onReviewed(row.id, stars);
+          onClose();
+        }}
       />
-
-      {errorKey && (
-        <p role="alert" className="mt-3 text-sm text-red-600">
-          {t(errorKey)}
-        </p>
-      )}
-
-      <div className="mt-5 flex justify-end">
-        <Button loading={busy} disabled={stars < 1} onClick={submit}>
-          {t("reviewSubmit")}
-        </Button>
-      </div>
     </Modal>
   );
 }

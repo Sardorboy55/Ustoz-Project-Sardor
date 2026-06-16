@@ -5,6 +5,7 @@ import { Menu, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { AuthButton } from "@/components/auth-button";
+import { JoinPlusButton } from "@/components/join-plus-button";
 
 /** Burger menu for the site header (visible below md). */
 export function MobileMenu() {
@@ -41,6 +42,7 @@ export function MobileMenu() {
               {t("forTeachers")}
             </Link>
             <div className="mt-2 border-t border-zinc-100 pt-3" onClick={close}>
+              <JoinPlusButton className="mb-3 w-full" />
               <AuthButton block />
             </div>
           </nav>
