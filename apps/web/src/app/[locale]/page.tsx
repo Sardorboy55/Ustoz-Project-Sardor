@@ -1,4 +1,5 @@
 import {
+  BadgeCheck,
   BookOpen,
   Brain,
   Briefcase,
@@ -15,6 +16,7 @@ import {
   Search,
   ShieldCheck,
   Sparkles,
+  Star,
   type LucideIcon,
 } from "lucide-react";
 import Form from "next/form";
@@ -108,6 +110,13 @@ export default async function LandingPage({
     { icon: Search, title: t("how1Title"), body: t("how1Body") },
     { icon: CalendarCheck, title: t("how2Title"), body: t("how2Body") },
     { icon: MonitorPlay, title: t("how3Title"), body: t("how3Body") },
+  ];
+
+  const whyItems: Array<{ icon: LucideIcon; title: string; body: string }> = [
+    { icon: BadgeCheck, title: t("why1Title"), body: t("why1Body") },
+    { icon: ShieldCheck, title: t("why2Title"), body: t("why2Body") },
+    { icon: Star, title: t("why3Title"), body: t("why3Body") },
+    { icon: MessagesSquare, title: t("why4Title"), body: t("why4Body") },
   ];
 
   const reviews = [
@@ -283,17 +292,55 @@ export default async function LandingPage({
         </section>
       )}
 
+      {/* ============================ Why USTOZ ============================ */}
+      <section className="bg-white py-16">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <div className="text-center">
+            <h2 className="text-2xl font-extrabold tracking-tight text-zinc-900 sm:text-3xl">
+              {t("whyTitle")}
+            </h2>
+          </div>
+          <div className="mt-9 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {whyItems.map(({ icon: Icon, title, body }) => (
+              <div
+                key={title}
+                className="rounded-2xl border border-zinc-200 bg-page p-6 transition hover:border-brand-200 hover:shadow-sm"
+              >
+                <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
+                  <Icon size={22} aria-hidden="true" />
+                </span>
+                <h3 className="mt-4 text-base font-bold text-zinc-900">{title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-zinc-600">{body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* =========================== Testimonials ========================== */}
       <Testimonials title={t("reviewsTitle")} items={reviews} />
 
-      {/* ========================= For teachers band ======================== */}
+      {/* ===================== Big "become a teacher" banner ===================== */}
       <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
-        <div className="overflow-hidden rounded-3xl bg-gradient-to-br from-brand-700 to-brand-900 px-6 py-12 text-white sm:px-12">
-          <div className="max-w-2xl">
-            <h2 className="text-2xl font-extrabold tracking-tight sm:text-3xl">
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-700 via-brand-800 to-brand-900 px-6 py-14 text-white shadow-xl sm:px-14 sm:py-16">
+          {/* decorative glows */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -right-20 -top-24 h-72 w-72 rounded-full bg-brand-500/30 blur-3xl"
+          />
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -bottom-24 -left-16 h-72 w-72 rounded-full bg-brand-400/20 blur-3xl"
+          />
+          <div className="relative max-w-2xl">
+            <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-50 ring-1 ring-white/20">
+              <GraduationCap size={14} aria-hidden="true" />
+              {t("ctaBecome")}
+            </span>
+            <h2 className="mt-4 text-3xl font-extrabold tracking-tight sm:text-4xl">
               {t("teachersTitle")}
             </h2>
-            <p className="mt-3 text-brand-100">{t("teachersSubtitle")}</p>
+            <p className="mt-3 text-lg text-brand-100">{t("teachersSubtitle")}</p>
             <ul className="mt-6 space-y-3">
               {[t("tBullet1"), t("tBullet2"), t("tBullet3")].map((bullet) => (
                 <li key={bullet} className="flex items-start gap-3">
@@ -307,7 +354,7 @@ export default async function LandingPage({
             <ButtonLink
               href="/become-teacher"
               size="lg"
-              className="mt-8 bg-brand-500 text-white shadow-md hover:bg-brand-400 active:bg-brand-600"
+              className="mt-8 bg-white text-brand-700 shadow-md hover:bg-brand-50 active:bg-brand-100"
             >
               {t("teachersCta")}
             </ButtonLink>
