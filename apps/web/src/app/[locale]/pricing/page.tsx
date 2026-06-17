@@ -47,7 +47,7 @@ export default async function PricingPage({
       key: "pro",
       name: t("proName"),
       price: t("proPrice"),
-      features: [t("pro1"), t("pro2"), t("pro3"), t("pro4"), t("pro5")],
+      features: [t("pro1"), t("pro2"), t("pro3"), t("pro4")],
       cta: t("proCta"),
       highlight: true,
     },

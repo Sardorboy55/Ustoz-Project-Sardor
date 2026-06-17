@@ -27,7 +27,7 @@ export default async function ProCheckoutPage({
   setRequestLocale(locale);
   const t = await getTranslations({ locale, namespace: "Pricing" });
 
-  const features = [t("pro1"), t("pro2"), t("pro3"), t("pro4"), t("pro5")];
+  const features = [t("pro1"), t("pro2"), t("pro3"), t("pro4")];
   const methods = ["Click", "Payme", "Uzum"];
 
   return (

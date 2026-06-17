@@ -42,8 +42,6 @@ type PayoutRow = {
   created_at: string;
 };
 
-const MIN_PAYOUT_UZS = 50_000;
-
 const PAYOUT_BADGE: Record<PayoutRow["status"], BadgeVariant> = {
   pending: "warning",
   approved: "neutral",
@@ -133,10 +131,10 @@ export function TeacherWallet() {
             </span>
           </div>
           <Price tiyin={wallet.balance} className="mt-1 text-3xl font-bold" />
-          {wallet.balance < MIN_PAYOUT_UZS * 100 && (
+          {wallet.balance <= 0 && (
             <p className="mt-2 text-xs leading-relaxed text-zinc-500">
-              Вывод на карту — от {formatUzs(MIN_PAYOUT_UZS * 100, locale)} сум.
-              Проводите уроки: баланс пополнится, и кнопка станет активной.
+              Проводите уроки — заработок появится здесь, и вы сможете вывести
+              на карту любую сумму.
             </p>
           )}
           {success && (
@@ -146,7 +144,7 @@ export function TeacherWallet() {
           )}
           <Button
             className="mt-4 w-full"
-            disabled={wallet.balance < MIN_PAYOUT_UZS * 100}
+            disabled={wallet.balance <= 0}
             onClick={() => {
               setSuccess(false);
               setPayoutOpen(true);
@@ -307,7 +305,7 @@ function PayoutModal({
   const cardDigits = card.replace(/\D/g, "");
 
   const validate = (): string | null => {
-    if (amountUzs < MIN_PAYOUT_UZS) return "payoutErrMin";
+    if (amountUzs <= 0) return "payoutErrMin";
     if (amountUzs * 100 > balance) return "payoutErrBalance";
     if (!/^\d{16}$/.test(cardDigits)) return "payoutErrCard";
     return null;
@@ -379,7 +377,7 @@ function PayoutModal({
       <div className="mt-5 flex justify-end">
         <Button
           loading={busy}
-          disabled={amountUzs < MIN_PAYOUT_UZS || cardDigits.length !== 16}
+          disabled={amountUzs <= 0 || cardDigits.length !== 16}
           onClick={submit}
         >
           {t("payoutSubmit")}
