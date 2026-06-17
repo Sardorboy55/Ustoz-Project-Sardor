@@ -107,8 +107,8 @@ export default async function LandingPage({
   }> = [
     { icon: LayoutGrid, value: "8", label: t("trust1"), tint: "bg-indigo-50 text-indigo-600" },
     { icon: BookOpen, value: "35+", label: t("trust2"), tint: "bg-emerald-50 text-emerald-600" },
-    { icon: ShieldCheck, value: "✓", label: t("trust3"), tint: "bg-sky-50 text-sky-600" },
-    { icon: MessagesSquare, value: "✓", label: t("trust4"), tint: "bg-violet-50 text-violet-600" },
+    { icon: ShieldCheck, value: t("trustV3"), label: t("trust3"), tint: "bg-sky-50 text-sky-600" },
+    { icon: MessagesSquare, value: t("trustV4"), label: t("trust4"), tint: "bg-violet-50 text-violet-600" },
   ];
 
   const steps: Array<{ icon: LucideIcon; title: string; body: string }> = [
