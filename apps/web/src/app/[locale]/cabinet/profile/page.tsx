@@ -169,10 +169,9 @@ export default function ProfilePage() {
       {/* Sign out */}
       <div className="flex justify-center pt-2">
         <Button
-          variant="ghost"
+          variant="danger"
           loading={signingOut}
           onClick={signOut}
-          className="text-red-600 hover:bg-red-50 active:bg-red-100"
         >
           {!signingOut && <LogOut size={16} aria-hidden="true" />}
           {t("signOut")}

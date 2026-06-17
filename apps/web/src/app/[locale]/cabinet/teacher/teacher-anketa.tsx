@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Video } from "lucide-react";
+import { Check, Plus, Search, Trash2, Video, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/cn";
@@ -9,12 +9,34 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ErrorState } from "@/components/ui/error-state";
 import { Input } from "@/components/ui/input";
+import { Modal } from "@/components/ui/modal";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { useCabinet } from "@/components/cabinet/cabinet-shell";
 import { TeacherFaqEditor } from "@/components/cabinet/teacher-faq-editor";
 
-const LANG_CODES = ["uz", "ru", "en", "kaa", "tr", "ar"] as const;
+const LANGS: { code: string; label: string; flag: string }[] = [
+  { code: "uz", label: "Узбекский", flag: "🇺🇿" },
+  { code: "ru", label: "Русский", flag: "🇷🇺" },
+  { code: "en", label: "Английский", flag: "🇬🇧" },
+  { code: "kaa", label: "Каракалпакский", flag: "🇺🇿" },
+  { code: "tr", label: "Турецкий", flag: "🇹🇷" },
+  { code: "ar", label: "Арабский", flag: "🇸🇦" },
+  { code: "kk", label: "Казахский", flag: "🇰🇿" },
+  { code: "tg", label: "Таджикский", flag: "🇹🇯" },
+  { code: "ky", label: "Киргизский", flag: "🇰🇬" },
+  { code: "tk", label: "Туркменский", flag: "🇹🇲" },
+  { code: "ko", label: "Корейский", flag: "🇰🇷" },
+  { code: "zh", label: "Китайский", flag: "🇨🇳" },
+  { code: "ja", label: "Японский", flag: "🇯🇵" },
+  { code: "de", label: "Немецкий", flag: "🇩🇪" },
+  { code: "fr", label: "Французский", flag: "🇫🇷" },
+  { code: "es", label: "Испанский", flag: "🇪🇸" },
+  { code: "it", label: "Итальянский", flag: "🇮🇹" },
+  { code: "fa", label: "Персидский", flag: "🇮🇷" },
+  { code: "hi", label: "Хинди", flag: "🇮🇳" },
+  { code: "ur", label: "Урду", flag: "🇵🇰" },
+];
 
 type AnketaForm = {
   headline_uz: string;
@@ -29,7 +51,6 @@ type AnketaForm = {
 export function TeacherAnketa() {
   const t = useTranslations("Cabinet.teacher");
   const tCommon = useTranslations("Cabinet.common");
-  const tLangs = useTranslations("TeacherCard.langs");
   const { userId } = useCabinet();
 
   const [phase, setPhase] = useState<"loading" | "error" | "ready">("loading");
@@ -40,7 +61,11 @@ export function TeacherAnketa() {
 
   const videoRef = useRef<HTMLInputElement>(null);
   const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [deletingVideo, setDeletingVideo] = useState(false);
   const [uploadFailed, setUploadFailed] = useState(false);
+
+  const [langOpen, setLangOpen] = useState(false);
+  const [langQuery, setLangQuery] = useState("");
 
   const load = useCallback(async () => {
     const supabase = createClient();
@@ -105,6 +130,23 @@ export function TeacherAnketa() {
     }
   };
 
+  const deleteVideo = async () => {
+    if (!form?.intro_video_url) return;
+    setDeletingVideo(true);
+    setUploadFailed(false);
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("teacher_profiles")
+      .update({ intro_video_url: null })
+      .eq("user_id", userId);
+    setDeletingVideo(false);
+    if (error) {
+      setUploadFailed(true);
+      return;
+    }
+    patch({ intro_video_url: null });
+  };
+
   const save = async () => {
     if (!form) return;
     setSaving(true);
@@ -138,6 +180,10 @@ export function TeacherAnketa() {
     return <ErrorState description={tCommon("loadError")} onRetry={() => void load()} />;
   }
 
+  const filteredLangs = LANGS.filter((l) =>
+    l.label.toLowerCase().includes(langQuery.trim().toLowerCase()),
+  );
+
   return (
     <div className="max-w-3xl space-y-4">
       <div>
@@ -145,45 +191,73 @@ export function TeacherAnketa() {
         <p className="mt-0.5 text-sm text-zinc-500">{t("anketaSubtitle")}</p>
       </div>
 
-      {/* Media */}
+      {/* Video presentation — upload box, replace and delete */}
       <Card className="p-5">
-        <div className="flex flex-wrap items-start gap-x-8 gap-y-5">
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium text-zinc-700">{t("video")}</p>
-            {form.intro_video_url && (
-              <video
-                src={form.intro_video_url}
-                controls
-                preload="metadata"
-                className="mt-2 max-h-44 w-full max-w-xs rounded-xl bg-zinc-900"
-              />
-            )}
-            <div className="mt-2">
+        <p className="text-sm font-medium text-zinc-700">{t("video")}</p>
+        <p className="text-xs text-zinc-400">{t("videoNote")}</p>
+
+        {form.intro_video_url ? (
+          <div className="mt-3 flex flex-wrap items-center gap-4">
+            <video
+              src={form.intro_video_url}
+              controls
+              preload="metadata"
+              className="h-28 w-48 rounded-xl bg-zinc-900 object-cover"
+            />
+            <div className="flex flex-col gap-2">
               <Button
                 variant="secondary"
                 size="sm"
-                disabled={uploadingVideo}
+                disabled={uploadingVideo || deletingVideo}
                 loading={uploadingVideo}
                 onClick={() => videoRef.current?.click()}
               >
                 {!uploadingVideo && <Video size={15} aria-hidden="true" />}
                 {t("videoUpload")}
               </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                loading={deletingVideo}
+                disabled={uploadingVideo}
+                onClick={deleteVideo}
+                className="text-red-600 hover:bg-red-50 active:bg-red-100"
+              >
+                {!deletingVideo && <Trash2 size={15} aria-hidden="true" />}
+                Удалить видео
+              </Button>
             </div>
-            <p className="mt-2 text-xs text-zinc-500">{t("videoNote")}</p>
-            <input
-              ref={videoRef}
-              type="file"
-              accept="video/*"
-              className="hidden"
-              aria-label={t("videoUpload")}
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) void uploadVideo(f);
-              }}
-            />
           </div>
-        </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => videoRef.current?.click()}
+            disabled={uploadingVideo}
+            className="mt-3 flex w-full max-w-md flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-zinc-300 bg-zinc-50/60 px-6 py-8 text-center transition hover:border-brand-400 hover:bg-brand-50/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 disabled:opacity-60"
+          >
+            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-100 text-brand-600">
+              <Video size={24} aria-hidden="true" />
+            </span>
+            <span className="text-sm font-semibold text-zinc-800">
+              {uploadingVideo ? "Загрузка…" : "Загрузить видео-презентацию"}
+            </span>
+            <span className="text-xs text-zinc-400">
+              MP4, до 1–2 минут. Нажмите, чтобы выбрать файл.
+            </span>
+          </button>
+        )}
+
+        <input
+          ref={videoRef}
+          type="file"
+          accept="video/*"
+          className="hidden"
+          aria-label={t("videoUpload")}
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) void uploadVideo(f);
+          }}
+        />
         {uploadFailed && (
           <p role="alert" className="mt-3 text-sm text-red-600">
             {t("uploadError")}
@@ -233,26 +307,36 @@ export function TeacherAnketa() {
             <p className="mb-1.5 block text-sm font-medium text-zinc-700">
               {t("langs")}
             </p>
-            <div className="flex flex-wrap gap-2">
-              {LANG_CODES.map((code) => {
-                const active = form.teaching_langs.includes(code);
+            <div className="flex flex-wrap items-center gap-2">
+              {form.teaching_langs.map((code) => {
+                const l = LANGS.find((x) => x.code === code);
+                if (!l) return null;
                 return (
-                  <button
+                  <span
                     key={code}
-                    type="button"
-                    aria-pressed={active}
-                    onClick={() => toggleLang(code)}
-                    className={cn(
-                      "rounded-full border px-3 py-1.5 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-brand-600",
-                      active
-                        ? "border-brand-600 bg-brand-50 text-brand-700"
-                        : "border-zinc-200 bg-white text-zinc-600 hover:border-brand-300",
-                    )}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-brand-600 bg-brand-50 py-1.5 pl-3 pr-1.5 text-sm font-medium text-brand-700"
                   >
-                    {tLangs(code)}
-                  </button>
+                    <span aria-hidden="true">{l.flag}</span>
+                    {l.label}
+                    <button
+                      type="button"
+                      aria-label={`Убрать ${l.label}`}
+                      onClick={() => toggleLang(code)}
+                      className="flex h-5 w-5 items-center justify-center rounded-full text-brand-500 transition hover:bg-brand-100 hover:text-brand-700"
+                    >
+                      <X size={13} aria-hidden="true" />
+                    </button>
+                  </span>
                 );
               })}
+              <button
+                type="button"
+                onClick={() => setLangOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-zinc-300 px-3.5 py-1.5 text-sm font-medium text-zinc-600 outline-none transition hover:border-brand-400 hover:text-brand-700 focus-visible:ring-2 focus-visible:ring-brand-600"
+              >
+                <Plus size={15} aria-hidden="true" />
+                {form.teaching_langs.length ? "Добавить язык" : "Выбрать языки"}
+              </button>
             </div>
           </div>
         </div>
@@ -273,6 +357,66 @@ export function TeacherAnketa() {
       </Card>
 
       <TeacherFaqEditor />
+
+      {/* Language picker — dimmed backdrop, search, flags */}
+      <Modal
+        open={langOpen}
+        onClose={() => setLangOpen(false)}
+        title={t("langs")}
+        size="lg"
+      >
+        <div className="relative">
+          <Search
+            size={16}
+            aria-hidden="true"
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400"
+          />
+          <input
+            type="search"
+            value={langQuery}
+            onChange={(e) => setLangQuery(e.target.value)}
+            placeholder="Поиск языка…"
+            className="h-11 w-full rounded-xl border border-zinc-200 bg-white pl-9 pr-3 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
+          />
+        </div>
+        <ul className="mt-3 max-h-[50dvh] space-y-1 overflow-y-auto">
+          {filteredLangs.map((l) => {
+            const active = form.teaching_langs.includes(l.code);
+            return (
+              <li key={l.code}>
+                <button
+                  type="button"
+                  onClick={() => toggleLang(l.code)}
+                  className={cn(
+                    "flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left text-sm outline-none transition focus-visible:ring-2 focus-visible:ring-brand-600",
+                    active
+                      ? "border-brand-600 bg-brand-50"
+                      : "border-transparent hover:bg-zinc-50",
+                  )}
+                >
+                  <span className="text-lg" aria-hidden="true">
+                    {l.flag}
+                  </span>
+                  <span className="flex-1 font-medium text-zinc-800">
+                    {l.label}
+                  </span>
+                  {active && (
+                    <Check size={17} className="text-brand-600" aria-hidden="true" />
+                  )}
+                </button>
+              </li>
+            );
+          })}
+          {filteredLangs.length === 0 && (
+            <li className="px-3 py-6 text-center text-sm text-zinc-400">
+              Ничего не найдено
+            </li>
+          )}
+        </ul>
+        <div className="mt-4 flex justify-end">
+          <Button onClick={() => setLangOpen(false)}>Готово</Button>
+        </div>
+      </Modal>
     </div>
   );
 }
