@@ -5,6 +5,7 @@ import { BookOpen, Pencil, Plus, Trash2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { formatUzs, type Locale } from "@ustoz/shared";
 import { createClient } from "@/lib/supabase/client";
+import { Avatar } from "@/components/ui/avatar";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -41,7 +42,7 @@ export function TeacherSubjects() {
   const t = useTranslations("Cabinet.teacher");
   const tCommon = useTranslations("Cabinet.common");
   const locale = useLocale() as Locale;
-  const { userId } = useCabinet();
+  const { userId, profile } = useCabinet();
 
   const [phase, setPhase] = useState<"loading" | "error" | "ready">("loading");
   const [mine, setMine] = useState<MyRow[]>([]);
@@ -113,6 +114,8 @@ export function TeacherSubjects() {
             row={row}
             title={name(row.subjects)}
             locale={locale}
+            avatarUrl={profile.avatar_url}
+            teacherName={profile.full_name}
             onChanged={load}
           />
         ))
@@ -125,11 +128,15 @@ function SubjectRow({
   row,
   title,
   locale,
+  avatarUrl,
+  teacherName,
   onChanged,
 }: {
   row: MyRow;
   title: string;
   locale: Locale;
+  avatarUrl: string | null;
+  teacherName: string;
   onChanged: () => Promise<void>;
 }) {
   const t = useTranslations("Cabinet.teacher");
@@ -235,20 +242,10 @@ function SubjectRow({
 
   return (
     <>
-    <Card className="p-5">
-      <div className="flex items-center justify-between gap-3">
-        <p className="font-bold text-zinc-900">{title}</p>
-        <div className="flex items-center gap-1.5">
-          {!editing && (
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setEditing(true)}
-            >
-              <Pencil size={15} aria-hidden="true" />
-              Изменить
-            </Button>
-          )}
+    {editing ? (
+      <Card className="p-5">
+        <div className="flex items-center justify-between gap-3">
+          <p className="font-bold text-zinc-900">{title}</p>
           <Button
             variant="ghost"
             size="sm"
@@ -262,67 +259,78 @@ function SubjectRow({
             {t("subjectDelete")}
           </Button>
         </div>
-      </div>
 
-      {editing ? (
-        <>
-          <p className="mt-3 text-sm font-medium text-zinc-700">
-            Цены по длительности
+        <p className="mt-3 text-sm font-medium text-zinc-700">
+          Цены по длительности
+        </p>
+        <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <Input label={t("price30")} helper={t("optional")} suffix="сум" inputMode="numeric" value={p30} onChange={num(setP30)} />
+          <Input label={t("price60")} suffix="сум" inputMode="numeric" value={p60} onChange={num(setP60)} />
+          <Input label={t("price90")} helper={t("optional")} suffix="сум" inputMode="numeric" value={p90} onChange={num(setP90)} />
+        </div>
+
+        <p className="mt-4 text-sm font-medium text-zinc-700">
+          Скидки на пакеты{" "}
+          <span className="font-normal text-zinc-400">(%, необязательно)</span>
+        </p>
+        <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <Input label="5 уроков" suffix="%" inputMode="numeric" value={pkg5} onChange={num(setPkg5)} />
+          <Input label="10 уроков" suffix="%" inputMode="numeric" value={pkg10} onChange={num(setPkg10)} />
+          <Input label="20 уроков" suffix="%" inputMode="numeric" value={pkg20} onChange={num(setPkg20)} />
+        </div>
+
+        <div className="mt-3 flex flex-wrap items-center gap-4">
+          <label className="flex cursor-pointer items-center gap-2 text-sm text-zinc-700">
+            <input
+              type="checkbox"
+              checked={trial}
+              onChange={(e) => {
+                setTrial(e.target.checked);
+                setState("idle");
+              }}
+              className="h-4 w-4 rounded border-zinc-300 accent-brand-600"
+            />
+            {t("trialToggle")}
+          </label>
+          <div className="ml-auto flex items-center gap-3">
+            {state === "error" && (
+              <span role="alert" className="text-sm text-red-600">
+                {t("subjectError")}
+              </span>
+            )}
+            <Button variant="ghost" size="sm" onClick={cancel}>
+              Отмена
+            </Button>
+            <Button size="sm" loading={saving} disabled={!dirty || !toTiyin(p60)} onClick={save}>
+              {t("save")}
+            </Button>
+          </div>
+        </div>
+
+        <div className="mt-4 border-t border-zinc-100 pt-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
+            Так увидят ученики
           </p>
-          <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <Input label={t("price30")} helper={t("optional")} inputMode="numeric" value={p30} onChange={num(setP30)} />
-            <Input label={t("price60")} inputMode="numeric" value={p60} onChange={num(setP60)} />
-            <Input label={t("price90")} helper={t("optional")} inputMode="numeric" value={p90} onChange={num(setP90)} />
+          <div className="mt-2">{preview}</div>
+        </div>
+      </Card>
+    ) : (
+      <article className="group flex flex-col gap-4 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm transition hover:border-brand-300 hover:shadow-md sm:flex-row sm:gap-5">
+        <Avatar
+          src={avatarUrl}
+          name={teacherName}
+          size="xl"
+          className="h-16 w-16 shrink-0 self-start ring-2 ring-white"
+        />
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="text-lg font-bold text-zinc-900">{title}</h3>
+            {trial && (
+              <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700">
+                Бесплатный пробный
+              </span>
+            )}
           </div>
-
-          <p className="mt-4 text-sm font-medium text-zinc-700">
-            Скидки на пакеты{" "}
-            <span className="font-normal text-zinc-400">(%, необязательно)</span>
-          </p>
-          <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <Input label="5 уроков" suffix="%" inputMode="numeric" value={pkg5} onChange={num(setPkg5)} />
-            <Input label="10 уроков" suffix="%" inputMode="numeric" value={pkg10} onChange={num(setPkg10)} />
-            <Input label="20 уроков" suffix="%" inputMode="numeric" value={pkg20} onChange={num(setPkg20)} />
-          </div>
-
-          <div className="mt-3 flex flex-wrap items-center gap-4">
-            <label className="flex cursor-pointer items-center gap-2 text-sm text-zinc-700">
-              <input
-                type="checkbox"
-                checked={trial}
-                onChange={(e) => {
-                  setTrial(e.target.checked);
-                  setState("idle");
-                }}
-                className="h-4 w-4 rounded border-zinc-300 accent-brand-600"
-              />
-              {t("trialToggle")}
-            </label>
-            <div className="ml-auto flex items-center gap-3">
-              {state === "error" && (
-                <span role="alert" className="text-sm text-red-600">
-                  {t("subjectError")}
-                </span>
-              )}
-              <Button variant="ghost" size="sm" onClick={cancel}>
-                Отмена
-              </Button>
-              <Button size="sm" loading={saving} disabled={!dirty || !toTiyin(p60)} onClick={save}>
-                {t("save")}
-              </Button>
-            </div>
-          </div>
-
-          {/* Live preview — how the lesson appears to students */}
-          <div className="mt-4 border-t border-zinc-100 pt-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
-              Так увидят ученики
-            </p>
-            <div className="mt-2">{preview}</div>
-          </div>
-        </>
-      ) : (
-        <>
           <div className="mt-3 flex flex-wrap gap-2">
             {(
               [
@@ -345,21 +353,11 @@ function SubjectRow({
               ) : null;
             })}
           </div>
-          {(trial ||
-            pctInt(pkg5) > 0 ||
+          {(pctInt(pkg5) > 0 ||
             pctInt(pkg10) > 0 ||
             pctInt(pkg20) > 0) && (
-            <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs">
-              {trial && (
-                <span className="font-medium text-brand-700">
-                  Бесплатный пробный 20 мин
-                </span>
-              )}
-              {(pctInt(pkg5) > 0 ||
-                pctInt(pkg10) > 0 ||
-                pctInt(pkg20) > 0) && (
-                <span className="text-zinc-400">Пакеты:</span>
-              )}
+            <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs">
+              <span className="text-zinc-400">Пакеты:</span>
               {(
                 [
                   ["5", pkg5],
@@ -379,9 +377,30 @@ function SubjectRow({
               })}
             </div>
           )}
-        </>
-      )}
-    </Card>
+          <p className="mt-3 text-xs text-zinc-400">
+            Так ваш урок видят ученики в каталоге
+          </p>
+        </div>
+        <div className="flex shrink-0 gap-2 sm:flex-col">
+          <Button variant="secondary" size="sm" onClick={() => setEditing(true)}>
+            <Pencil size={15} aria-hidden="true" />
+            Изменить
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setState("idle");
+              setConfirmDel(true);
+            }}
+            className="border border-red-300 text-red-600 hover:border-red-400 hover:bg-red-50 active:bg-red-100"
+          >
+            <Trash2 size={15} aria-hidden="true" />
+            {t("subjectDelete")}
+          </Button>
+        </div>
+      </article>
+    )}
 
       <Modal
         open={confirmDel}
