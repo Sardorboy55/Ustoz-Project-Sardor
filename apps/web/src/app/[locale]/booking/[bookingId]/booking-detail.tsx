@@ -9,6 +9,7 @@ import {
   Clock,
   CreditCard,
   GraduationCap,
+  Package,
   ShieldCheck,
   Star,
   Wallet,
@@ -44,6 +45,7 @@ type BookingRow = {
   cancel_reason: string | null;
   teacher_id: string;
   student_id: string;
+  teacher_subject_id: string;
   teacher_subjects: {
     subjects: { name_uz: string; name_ru: string } | null;
   } | null;
@@ -57,7 +59,7 @@ type BookingRow = {
 
 const SELECT = `
   id, kind, status, start_at, duration_min, price, created_at, cancel_reason,
-  teacher_id, student_id,
+  teacher_id, student_id, teacher_subject_id,
   teacher_subjects ( subjects ( name_uz, name_ru ) ),
   teacher:teacher_profiles!bookings_teacher_id_fkey (
     slug, profiles!teacher_profiles_user_id_fkey ( full_name, avatar_url ) ),
@@ -86,6 +88,9 @@ export function BookingDetail({ bookingId }: { bookingId: string }) {
   const [cancelling, setCancelling] = useState(false);
   const [cancelError, setCancelError] = useState(false);
   const [refundPct, setRefundPct] = useState<number | null>(null);
+  const [pkgLeft, setPkgLeft] = useState<number | null>(null);
+  const [payingPkg, setPayingPkg] = useState(false);
+  const [pkgErr, setPkgErr] = useState(false);
 
   const load = useCallback(async () => {
     const supabase = createClient();
@@ -125,6 +130,49 @@ export function BookingDetail({ bookingId }: { bookingId: string }) {
     const id = setInterval(() => setNowTs(Date.now()), 1000);
     return () => clearInterval(id);
   }, [booking?.status]);
+
+  // A matching lesson package (same subject + duration, credits left) lets the
+  // student pay this pending booking by spending one credit.
+  useEffect(() => {
+    queueMicrotask(async () => {
+      if (
+        !booking ||
+        booking.status !== "pending_payment" ||
+        booking.kind !== "regular" ||
+        booking.price <= 0
+      ) {
+        setPkgLeft(null);
+        return;
+      }
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("student_packages")
+        .select("lessons_left")
+        .eq("teacher_subject_id", booking.teacher_subject_id)
+        .eq("duration_min", booking.duration_min)
+        .gt("lessons_left", 0)
+        .gt("expires_at", new Date().toISOString())
+        .order("expires_at", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      setPkgLeft(data ? (data.lessons_left as number) : null);
+    });
+  }, [booking]);
+
+  const payWithPackage = async () => {
+    setPayingPkg(true);
+    setPkgErr(false);
+    const supabase = createClient();
+    const { error } = await supabase.rpc("booking_pay_with_package", {
+      p_booking_id: bookingId,
+    });
+    setPayingPkg(false);
+    if (error) {
+      setPkgErr(true);
+      return;
+    }
+    await load();
+  };
 
   if (phase === "loading") {
     return (
@@ -273,8 +321,34 @@ export function BookingDetail({ bookingId }: { bookingId: string }) {
         </Link>
 
         <div className="mt-5 grid gap-6 lg:grid-cols-[1fr_360px]">
-          {/* Left: payment methods */}
+          {/* Left: payment options */}
           <div className="space-y-5">
+            {pkgLeft != null && pkgLeft > 0 && (
+              <Card className="border-brand-200 p-5 sm:p-6">
+                <div className="flex items-center gap-2">
+                  <Package size={18} className="text-brand-600" aria-hidden="true" />
+                  <h2 className="text-base font-bold text-zinc-900">
+                    Оплатить пакетом
+                  </h2>
+                </div>
+                <p className="mt-1 text-sm text-zinc-600">
+                  У вас есть пакет на этот урок — осталось {pkgLeft}. Спишется
+                  1 урок, доплачивать не нужно.
+                </p>
+                <Button
+                  className="mt-3 w-full sm:w-auto"
+                  loading={payingPkg}
+                  onClick={payWithPackage}
+                >
+                  Списать 1 урок из пакета
+                </Button>
+                {pkgErr && (
+                  <p role="alert" className="mt-2 text-sm text-red-600">
+                    Не удалось списать урок. Попробуйте ещё раз.
+                  </p>
+                )}
+              </Card>
+            )}
             <Card className="p-5 sm:p-6">
               <h2 className="text-base font-bold text-zinc-900">
                 {t("paymentTitle")}
