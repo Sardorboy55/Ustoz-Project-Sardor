@@ -493,16 +493,23 @@ export default async function TeacherPage({
               <section>
                 <SectionHeading align="left" title={t("faqTitle")} />
                 <div className="mt-4 space-y-3">
-                  {/* Teacher-authored questions first, then the general ones */}
-                  {teacherFaq.map((f, i) => (
-                    <FaqItem key={`t-${i}`} question={f.q} answer={f.a} />
-                  ))}
-                  <FaqItem question={t("faqLessonQ")} answer={t("faqLessonA")} />
-                  <FaqItem question={t("faqCancelQ")} answer={t("faqCancelA")} />
-                  <FaqItem
-                    question={t("faqPrepareQ")}
-                    answer={t("faqPrepareA")}
-                  />
+                  {/* The teacher's own questions only. The general platform
+                      questions appear solely as a fallback when the teacher
+                      hasn't added any of their own. */}
+                  {teacherFaq.length > 0 ? (
+                    teacherFaq.map((f, i) => (
+                      <FaqItem key={`t-${i}`} question={f.q} answer={f.a} />
+                    ))
+                  ) : (
+                    <>
+                      <FaqItem question={t("faqLessonQ")} answer={t("faqLessonA")} />
+                      <FaqItem question={t("faqCancelQ")} answer={t("faqCancelA")} />
+                      <FaqItem
+                        question={t("faqPrepareQ")}
+                        answer={t("faqPrepareA")}
+                      />
+                    </>
+                  )}
                 </div>
               </section>
             </div>
