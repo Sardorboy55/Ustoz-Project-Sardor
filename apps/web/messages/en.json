@@ -111,7 +111,7 @@
   },
   "Nav": {
     "catalog": "Catalog",
-    "forTeachers": "For tutors",
+    "forTeachers": "Become a tutor",
     "pricing": "Pricing",
     "signIn": "Sign in"
   },
@@ -119,7 +119,7 @@
     "home": "Home",
     "catalog": "Catalog",
     "pricing": "Pricing",
-    "forTeachers": "For tutors",
+    "forTeachers": "Become a tutor",
     "signIn": "Sign in",
     "cabinet": "Dashboard",
     "menu": "Menu",

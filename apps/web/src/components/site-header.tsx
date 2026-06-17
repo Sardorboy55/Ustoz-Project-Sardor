@@ -16,9 +16,6 @@ export function SiteHeader() {
         <Wordmark />
 
         <nav className="hidden items-center gap-6 text-sm font-medium text-zinc-600 md:flex">
-          <Link href="/" className="transition-colors hover:text-brand-700">
-            {t("home")}
-          </Link>
           <Link href="/catalog" className="transition-colors hover:text-brand-700">
             {t("catalog")}
           </Link>

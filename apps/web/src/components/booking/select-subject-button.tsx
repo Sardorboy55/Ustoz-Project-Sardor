@@ -18,13 +18,12 @@ export function SelectSubjectButton({
   const { subjectId: selected, openBooking } = useBookingSelection();
   const active = selected === subjectId;
 
-  // Always white background + green border/text (secondary). A subtle ring marks
-  // the currently selected subject without filling it solid green.
+  // Solid green fill. A subtle ring marks the currently selected subject.
   return (
     <Button
-      variant="secondary"
+      variant="primary"
       size="md"
-      className={cn(active && "ring-2 ring-brand-200", className)}
+      className={cn(active && "ring-2 ring-brand-300 ring-offset-2", className)}
       onClick={() => openBooking(subjectId)}
     >
       {children}

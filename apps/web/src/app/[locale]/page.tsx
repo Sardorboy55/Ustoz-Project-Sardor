@@ -354,7 +354,8 @@ export default async function LandingPage({
             <ButtonLink
               href="/become-teacher"
               size="lg"
-              className="mt-8 bg-white text-brand-700 shadow-md hover:bg-brand-50 active:bg-brand-100"
+              variant="secondary"
+              className="mt-8 border-transparent shadow-md"
             >
               {t("teachersCta")}
             </ButtonLink>
