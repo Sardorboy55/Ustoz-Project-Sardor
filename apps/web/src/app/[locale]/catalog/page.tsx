@@ -366,7 +366,6 @@ export default async function CatalogPage({
                         key={card.user_id}
                         card={card}
                         bio={teacherBios[card.user_id]}
-                        videoUrl={null}
                       />
                     ))}
                   </div>

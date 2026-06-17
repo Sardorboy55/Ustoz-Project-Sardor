@@ -318,7 +318,10 @@ export default async function TeacherPage({
                     <TeacherMedia
                       name={name}
                       videoUrl={teacher.intro_video_url}
-                      posterUrl={teacher.profiles?.avatar_url}
+                      posterUrl={
+                        teacher.intro_video_poster_url ??
+                        teacher.profiles?.avatar_url
+                      }
                       playLabel={tCard("playVideo")}
                       rounded="rounded-2xl"
                     />

@@ -83,7 +83,7 @@ export function TeacherCard({
           src={card.avatar_url}
           name={card.full_name}
           size="xl"
-          className="h-24 w-24 shrink-0 text-2xl ring-2 ring-white"
+          className="h-20 w-20 shrink-0 self-start rounded-full text-xl ring-2 ring-white"
         />
       )}
 

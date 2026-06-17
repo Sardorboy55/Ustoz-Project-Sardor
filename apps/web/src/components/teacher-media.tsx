@@ -96,9 +96,9 @@ export function TeacherMedia({
               type="button"
               onClick={() => setPlaying(true)}
               aria-label={playLabel}
-              className="absolute bottom-3 left-3 z-[2] grid h-12 w-12 place-items-center rounded-full bg-white/90 text-brand-700 shadow-md ring-1 ring-black/5 backdrop-blur transition hover:scale-105 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
+              className="absolute left-1/2 top-1/2 z-[2] grid h-14 w-14 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-white/90 text-brand-700 shadow-lg ring-1 ring-black/5 backdrop-blur transition hover:scale-105 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
             >
-              <Play size={20} className="ml-0.5 fill-current" aria-hidden="true" />
+              <Play size={24} className="ml-0.5 fill-current" aria-hidden="true" />
             </button>
           )}
         </>

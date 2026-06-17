@@ -141,6 +141,7 @@ export type TeacherPublic = {
   bio_uz: string;
   bio_ru: string;
   intro_video_url: string | null;
+  intro_video_poster_url: string | null;
   experience_years: number;
   teaching_langs: string[];
   is_verified: boolean;
@@ -170,6 +171,7 @@ export async function fetchTeacherBySlug(slug: string): Promise<TeacherPublic | 
       .from("teacher_profiles")
       .select(
         `user_id, slug, headline_uz, headline_ru, bio_uz, bio_ru, intro_video_url,
+         intro_video_poster_url,
          experience_years, teaching_langs, is_verified, tier, rating_avg, rating_count,
          lessons_done,
          profiles!teacher_profiles_user_id_fkey ( full_name, avatar_url ),

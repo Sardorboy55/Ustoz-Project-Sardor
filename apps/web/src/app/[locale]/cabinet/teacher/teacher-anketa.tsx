@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Check, Plus, Search, Trash2, Video, X } from "lucide-react";
+import { Check, Image as ImageIcon, Plus, Search, Trash2, Video, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/cn";
@@ -46,6 +46,7 @@ type AnketaForm = {
   experience_years: number;
   teaching_langs: string[];
   intro_video_url: string | null;
+  intro_video_poster_url: string | null;
 };
 
 export function TeacherAnketa() {
@@ -64,6 +65,10 @@ export function TeacherAnketa() {
   const [deletingVideo, setDeletingVideo] = useState(false);
   const [uploadFailed, setUploadFailed] = useState(false);
 
+  const coverRef = useRef<HTMLInputElement>(null);
+  const [uploadingCover, setUploadingCover] = useState(false);
+  const [deletingCover, setDeletingCover] = useState(false);
+
   const [langOpen, setLangOpen] = useState(false);
   const [langQuery, setLangQuery] = useState("");
 
@@ -72,7 +77,7 @@ export function TeacherAnketa() {
     const { data, error } = await supabase
       .from("teacher_profiles")
       .select(
-        "headline_uz, headline_ru, bio_uz, bio_ru, experience_years, teaching_langs, intro_video_url",
+        "headline_uz, headline_ru, bio_uz, bio_ru, experience_years, teaching_langs, intro_video_url, intro_video_poster_url",
       )
       .eq("user_id", userId)
       .maybeSingle();
@@ -147,6 +152,50 @@ export function TeacherAnketa() {
     patch({ intro_video_url: null });
   };
 
+  const uploadCover = async (file: File) => {
+    setUploadingCover(true);
+    setUploadFailed(false);
+    try {
+      const supabase = createClient();
+      const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+      const path = `${userId}/cover.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("intro-videos")
+        .upload(path, file, { contentType: file.type || "image/jpeg", upsert: true });
+      if (upErr) throw upErr;
+      const { data } = supabase.storage.from("intro-videos").getPublicUrl(path);
+      const url = `${data.publicUrl}?v=${Date.now()}`;
+      const { error } = await supabase
+        .from("teacher_profiles")
+        .update({ intro_video_poster_url: url })
+        .eq("user_id", userId);
+      if (error) throw error;
+      patch({ intro_video_poster_url: url });
+    } catch {
+      setUploadFailed(true);
+    } finally {
+      setUploadingCover(false);
+      if (coverRef.current) coverRef.current.value = "";
+    }
+  };
+
+  const deleteCover = async () => {
+    if (!form?.intro_video_poster_url) return;
+    setDeletingCover(true);
+    setUploadFailed(false);
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("teacher_profiles")
+      .update({ intro_video_poster_url: null })
+      .eq("user_id", userId);
+    setDeletingCover(false);
+    if (error) {
+      setUploadFailed(true);
+      return;
+    }
+    patch({ intro_video_poster_url: null });
+  };
+
   const save = async () => {
     if (!form) return;
     setSaving(true);
@@ -195,6 +244,10 @@ export function TeacherAnketa() {
       <Card className="p-5">
         <p className="text-sm font-medium text-zinc-700">{t("video")}</p>
         <p className="text-xs text-zinc-400">{t("videoNote")}</p>
+        <p className="mt-1 text-xs text-zinc-400">
+          📐 Горизонтально, 16:9 (например 1280×720 или 1920×1080) — так видео и
+          обложка ровно показываются и на телефоне, и на компьютере, без обрезки.
+        </p>
 
         {form.intro_video_url ? (
           <div className="mt-3 flex flex-wrap items-center gap-4">
@@ -258,6 +311,62 @@ export function TeacherAnketa() {
             if (f) void uploadVideo(f);
           }}
         />
+
+        {/* Cover image (poster) for the video */}
+        <div className="mt-5 border-t border-zinc-100 pt-4">
+          <p className="text-sm font-medium text-zinc-700">Обложка видео</p>
+          <p className="text-xs text-zinc-400">
+            Картинка-превью до запуска видео. Если не загрузить — покажем ваше
+            фото профиля.
+          </p>
+          <div className="mt-2 flex flex-wrap items-center gap-3">
+            {form.intro_video_poster_url && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={form.intro_video_poster_url}
+                alt=""
+                className="h-20 w-32 rounded-lg object-cover ring-1 ring-zinc-200"
+              />
+            )}
+            <Button
+              variant="secondary"
+              size="sm"
+              loading={uploadingCover}
+              disabled={deletingCover}
+              onClick={() => coverRef.current?.click()}
+            >
+              {!uploadingCover && <ImageIcon size={15} aria-hidden="true" />}
+              {form.intro_video_poster_url
+                ? "Заменить обложку"
+                : "Загрузить обложку"}
+            </Button>
+            {form.intro_video_poster_url && (
+              <Button
+                variant="ghost"
+                size="sm"
+                loading={deletingCover}
+                disabled={uploadingCover}
+                onClick={deleteCover}
+                className="text-red-600 hover:bg-red-50 active:bg-red-100"
+              >
+                {!deletingCover && <Trash2 size={15} aria-hidden="true" />}
+                Удалить
+              </Button>
+            )}
+          </div>
+          <input
+            ref={coverRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            aria-label="Обложка видео"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) void uploadCover(f);
+            }}
+          />
+        </div>
+
         {uploadFailed && (
           <p role="alert" className="mt-3 text-sm text-red-600">
             {t("uploadError")}
