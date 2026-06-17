@@ -20,6 +20,7 @@ import {
 import { useLocale, useTranslations } from "next-intl";
 import type { Locale } from "@ustoz/shared";
 import { createClient } from "@/lib/supabase/client";
+import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/cn";
 import { formatDayMonth, formatTime, tashkentDateKey } from "@/lib/datetime";
 import { Avatar } from "@/components/ui/avatar";
@@ -126,8 +127,13 @@ export function MessagesClient() {
         ? {
             name: c.teacher?.profiles?.full_name ?? "",
             avatar: c.teacher?.profiles?.avatar_url ?? null,
+            slug: c.teacher?.slug ?? null,
           }
-        : { name: c.student?.full_name ?? "", avatar: c.student?.avatar_url ?? null },
+        : {
+            name: c.student?.full_name ?? "",
+            avatar: c.student?.avatar_url ?? null,
+            slug: null,
+          },
     [userId],
   );
 
@@ -325,7 +331,7 @@ function ChatThread({
 }: {
   chat: ChatRow;
   userId: string;
-  partner: { name: string; avatar: string | null };
+  partner: { name: string; avatar: string | null; slug: string | null };
   locale: Locale;
   onBack: () => void;
   onMessage: (m: MessageRow) => void;
@@ -463,8 +469,24 @@ function ChatThread({
         >
           <ArrowLeft size={18} aria-hidden="true" />
         </button>
-        <Avatar src={partner.avatar} name={partner.name} size="sm" />
-        <span className="truncate font-semibold text-zinc-900">{partner.name}</span>
+        {partner.slug ? (
+          <Link
+            href={`/t/${partner.slug}`}
+            className="flex min-w-0 items-center gap-3 rounded-lg outline-none transition hover:opacity-80 focus-visible:ring-2 focus-visible:ring-brand-600"
+          >
+            <Avatar src={partner.avatar} name={partner.name} size="sm" />
+            <span className="truncate font-semibold text-zinc-900">
+              {partner.name}
+            </span>
+          </Link>
+        ) : (
+          <div className="flex min-w-0 items-center gap-3">
+            <Avatar src={partner.avatar} name={partner.name} size="sm" />
+            <span className="truncate font-semibold text-zinc-900">
+              {partner.name}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Messages */}

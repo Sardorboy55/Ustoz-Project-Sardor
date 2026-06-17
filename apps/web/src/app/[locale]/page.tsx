@@ -189,7 +189,7 @@ export default async function LandingPage({
               href="/become-teacher"
               size="lg"
               variant="secondary"
-              className="w-full bg-white shadow-lg sm:w-auto"
+              className="w-full border-transparent bg-white shadow-lg sm:w-auto"
             >
               {t("ctaBecome")}
             </ButtonLink>
