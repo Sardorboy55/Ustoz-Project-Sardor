@@ -344,15 +344,10 @@ export default async function TeacherPage({
                   <SectionHeading align="left" title={t("services")} />
                   <div className="mt-4 grid gap-4">
                     {activeSubjects.map((s) => (
-                      <Card key={s.id} className="p-5">
-                        <div className="flex flex-wrap items-center justify-between gap-3">
-                          <h3 className="text-base font-bold text-zinc-900">
-                            {subjectName(s.subjects)}
-                          </h3>
-                          <SelectSubjectButton subjectId={s.id}>
-                            {t("choose")}
-                          </SelectSubjectButton>
-                        </div>
+                      <Card key={s.id} className="flex flex-col p-5">
+                        <h3 className="text-base font-bold text-zinc-900">
+                          {subjectName(s.subjects)}
+                        </h3>
                         <div className="mt-3 flex flex-wrap gap-2">
                           {(
                             [
@@ -404,6 +399,12 @@ export default async function TeacherPage({
                             )}
                           </div>
                         )}
+                        <SelectSubjectButton
+                          subjectId={s.id}
+                          className="mt-4 w-full"
+                        >
+                          {t("choose")}
+                        </SelectSubjectButton>
                       </Card>
                     ))}
                   </div>
