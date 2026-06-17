@@ -109,7 +109,14 @@
     "pro3": "Higher in catalog search",
     "pro4": "PRO badge on your profile",
     "pro5": "Priority support",
-    "proCta": "Go PRO"
+    "proCta": "Go PRO",
+    "soon": "Soon",
+    "checkoutTitle": "Get PRO",
+    "checkoutBack": "Back to plans",
+    "checkoutSummary": "What PRO includes",
+    "checkoutPayTitle": "Payment method",
+    "checkoutPayBtn": "Pay",
+    "checkoutSoonNote": "Online payment is being connected. Soon you'll be able to get PRO by card via Click, Payme or Uzum."
   },
   "Nav": {
     "catalog": "Catalog",

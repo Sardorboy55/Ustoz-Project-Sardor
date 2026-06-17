@@ -109,7 +109,14 @@
     "pro3": "Katalog qidiruvida yuqorida",
     "pro4": "Profilda PRO belgisi",
     "pro5": "Ustuvor qo'llab-quvvatlash",
-    "proCta": "PRO ga o'tish"
+    "proCta": "PRO ga o'tish",
+    "soon": "Tez kunda",
+    "checkoutTitle": "PRO rasmiylashtirish",
+    "checkoutBack": "Tariflarga",
+    "checkoutSummary": "PRO nimani o'z ichiga oladi",
+    "checkoutPayTitle": "To'lov usuli",
+    "checkoutPayBtn": "To'lash",
+    "checkoutSoonNote": "Onlayn to'lov ulanmoqda. Tez orada PRO ni Click, Payme yoki Uzum orqali karta bilan rasmiylashtirish mumkin bo'ladi."
   },
   "Nav": {
     "catalog": "Katalog",

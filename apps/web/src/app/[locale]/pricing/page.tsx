@@ -100,7 +100,7 @@ export default async function PricingPage({
               ))}
             </ul>
             <ButtonLink
-              href="/become-teacher"
+              href={tier.key === "pro" ? "/pricing/checkout" : "/become-teacher"}
               size="lg"
               variant={tier.highlight ? "primary" : "secondary"}
               className="mt-8 w-full"

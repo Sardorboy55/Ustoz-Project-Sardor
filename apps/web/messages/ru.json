@@ -109,7 +109,14 @@
     "pro3": "Выше в поиске каталога",
     "pro4": "Значок PRO в профиле",
     "pro5": "Приоритетная поддержка",
-    "proCta": "Перейти на PRO"
+    "proCta": "Перейти на PRO",
+    "soon": "Скоро",
+    "checkoutTitle": "Оформление PRO",
+    "checkoutBack": "К тарифам",
+    "checkoutSummary": "Что входит в PRO",
+    "checkoutPayTitle": "Способ оплаты",
+    "checkoutPayBtn": "Оплатить",
+    "checkoutSoonNote": "Онлайн-оплата подключается. Скоро можно будет оформить PRO картой через Click, Payme или Uzum."
   },
   "Nav": {
     "catalog": "Каталог",
