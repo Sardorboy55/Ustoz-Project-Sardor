@@ -123,7 +123,7 @@ export function TeacherWallet() {
     <div className="max-w-3xl space-y-5">
       {/* Balances */}
       <div className="grid gap-3 sm:grid-cols-2">
-        <Card className="p-5">
+        <Card className="flex flex-col p-5">
           <div className="flex items-center justify-between gap-3">
             <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
               {t("walletBalance")}
@@ -133,9 +133,19 @@ export function TeacherWallet() {
             </span>
           </div>
           <Price tiyin={wallet.balance} className="mt-1 text-3xl font-bold" />
+          {wallet.balance < MIN_PAYOUT_UZS * 100 && (
+            <p className="mt-2 text-xs leading-relaxed text-zinc-500">
+              Вывод на карту — от {formatUzs(MIN_PAYOUT_UZS * 100, locale)} сум.
+              Проводите уроки: баланс пополнится, и кнопка станет активной.
+            </p>
+          )}
+          {success && (
+            <p className="mt-2 text-sm font-medium text-brand-700">
+              {t("payoutSuccess")}
+            </p>
+          )}
           <Button
-            size="sm"
-            className="mt-4"
+            className="mt-4 w-full"
             disabled={wallet.balance < MIN_PAYOUT_UZS * 100}
             onClick={() => {
               setSuccess(false);
@@ -144,11 +154,6 @@ export function TeacherWallet() {
           >
             {t("payoutCta")}
           </Button>
-          {success && (
-            <p className="mt-3 text-sm font-medium text-brand-700">
-              {t("payoutSuccess")}
-            </p>
-          )}
         </Card>
         <Card className="p-5">
           <div className="flex items-center justify-between gap-3">
