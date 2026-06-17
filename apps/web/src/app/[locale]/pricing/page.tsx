@@ -68,8 +68,8 @@ export default async function PricingPage({
             key={tier.key}
             className={
               tier.highlight
-                ? "relative rounded-3xl border-2 border-brand-500 bg-white p-8 shadow-lg"
-                : "rounded-3xl border border-zinc-200 bg-white p-8 shadow-sm"
+                ? "relative flex flex-col rounded-3xl border-2 border-brand-500 bg-white p-8 shadow-lg"
+                : "flex flex-col rounded-3xl border border-zinc-200 bg-white p-8 shadow-sm"
             }
           >
             {tier.highlight && (
@@ -84,7 +84,7 @@ export default async function PricingPage({
               </span>
               <span className="pb-1 text-sm text-zinc-500">{t("perMonth")}</span>
             </div>
-            <ul className="mt-6 space-y-3">
+            <ul className="mt-6 flex-1 space-y-3">
               {tier.features.map((f) => (
                 <li
                   key={f}

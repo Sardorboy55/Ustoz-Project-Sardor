@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { CheckCircle2, ExternalLink, GraduationCap } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
@@ -9,7 +9,6 @@ import { cn } from "@/lib/cn";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCabinet } from "@/components/cabinet/cabinet-shell";
-import { TeacherCreateWizard } from "@/components/teacher/teacher-create-wizard";
 import { TeacherDashboard } from "./teacher-dashboard";
 import { TeacherAnketa } from "./teacher-anketa";
 import { TeacherSubjects } from "./teacher-subjects";
@@ -39,7 +38,8 @@ const TAB_LABEL: Record<TabKey, string> = {
 export default function TeacherCabinetPage() {
   const t = useTranslations("Cabinet.teacher");
   const { profile, userId, refreshProfile } = useCabinet();
-  const [tab, setTab] = useState<TabKey>("dashboard");
+  const [tab, setTab] = useState<TabKey>("anketa");
+  const tabInitRef = useRef(false);
   const [hasLessons, setHasLessons] = useState<boolean | null>(null);
   const [slug, setSlug] = useState<string | null>(null);
 
@@ -56,8 +56,14 @@ export default function TeacherCabinetPage() {
         .eq("user_id", userId)
         .maybeSingle(),
     ]);
-    setHasLessons((count ?? 0) > 0);
+    const has = (count ?? 0) > 0;
+    setHasLessons(has);
     setSlug((prof?.slug as string | null) ?? null);
+    // Land new teachers on «Анкета», established ones on the dashboard — once.
+    if (!tabInitRef.current) {
+      tabInitRef.current = true;
+      setTab(has ? "dashboard" : "anketa");
+    }
   }, [userId]);
 
   useEffect(() => {
@@ -72,19 +78,49 @@ export default function TeacherCabinetPage() {
     return <Skeleton className="h-96 rounded-2xl" />;
   }
 
-  // First-time setup: the guided "Расскажите о себе" wizard opens right away —
-  // no duplicate Анкета tab. Once a lesson exists, the management tabs appear.
-  if (!hasLessons) {
-    return <TeacherCreateWizard onComplete={checkSetup} />;
-  }
-
   return (
     <div>
       <h1 className="text-2xl font-bold tracking-tight text-zinc-900">
         {t("title")}
       </h1>
 
-      {slug && (
+      {/* Setup checklist — shown until the teacher has added their first subject.
+          Profile lives only in «Анкета»; subjects & schedule in their own tabs. */}
+      {!hasLessons && (
+        <div className="mt-3 rounded-2xl border border-brand-200 bg-brand-50/50 p-4 sm:p-5">
+          <p className="font-semibold text-zinc-900">
+            Осталось 3 шага до публикации
+          </p>
+          <p className="mt-0.5 text-sm text-zinc-600">
+            Заполните профиль, добавьте предмет и расписание — после этого вы
+            появитесь в каталоге.
+          </p>
+          <ol className="mt-3 space-y-1.5">
+            {[
+              { n: 1, label: "Заполните анкету (фото, о себе, языки)", key: "anketa" as const },
+              { n: 2, label: "Добавьте предмет и цену", key: "subjects" as const },
+              { n: 3, label: "Укажите расписание", key: "schedule" as const },
+            ].map((s) => (
+              <li key={s.n}>
+                <button
+                  type="button"
+                  onClick={() => setTab(s.key)}
+                  className="group inline-flex items-center gap-2 text-left text-sm text-zinc-700 outline-none hover:text-brand-700 focus-visible:underline"
+                >
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-600 text-[11px] font-bold text-white">
+                    {s.n}
+                  </span>
+                  <span className="font-medium underline-offset-2 group-hover:underline">
+                    {s.label}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
+
+      {slug && hasLessons && (
         <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm">
           <span className="flex items-center gap-1.5 font-medium text-emerald-800">
             <CheckCircle2 size={16} aria-hidden="true" />
@@ -111,7 +147,10 @@ export default function TeacherCabinetPage() {
             type="button"
             role="tab"
             aria-selected={tab === key}
-            onClick={() => setTab(key)}
+            onClick={() => {
+              setTab(key);
+              void checkSetup();
+            }}
             className={cn(
               "-mb-px shrink-0 whitespace-nowrap border-b-2 px-1 pb-3 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-brand-600",
               tab === key
