@@ -136,9 +136,9 @@ export function TeacherCard({
         </div>
       </div>
 
-      {/* Price + CTA — grouped and vertically centered so the price no longer
-          floats alone in the top-right corner next to the favorite heart */}
-      <div className="flex shrink-0 flex-col gap-3 border-t border-zinc-100 pt-4 sm:w-44 sm:justify-center sm:border-l sm:border-t-0 sm:pl-6 sm:pt-0 sm:text-right">
+      {/* Price + CTA — grouped at the bottom (button last) so the price sits in
+          the lower area and the top-right corner stays clear for the heart */}
+      <div className="flex shrink-0 flex-col gap-3 border-t border-zinc-100 pt-4 sm:w-44 sm:justify-end sm:border-l sm:border-t-0 sm:pl-6 sm:pt-0 sm:text-right">
         <Price
           tiyin={card.min_price_60}
           from

@@ -3,9 +3,15 @@ import { cn } from "@/lib/cn";
 
 function StarsRow({ size, className }: { size: number; className?: string }) {
   return (
-    <span className={cn("flex gap-0.5", className)}>
+    <span className={cn("flex flex-nowrap gap-0.5", className)}>
       {Array.from({ length: 5 }, (_, i) => (
-        <Star key={i} size={size} fill="currentColor" strokeWidth={0} />
+        <Star
+          key={i}
+          size={size}
+          fill="currentColor"
+          strokeWidth={0}
+          className="shrink-0"
+        />
       ))}
     </span>
   );

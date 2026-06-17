@@ -65,7 +65,6 @@ const SELECT = `
   lesson:lessons ( meeting_url )
 `;
 
-const PENDING_TTL_MS = 15 * 60_000;
 const CANCEL_WINDOW_H = 12;
 
 export function BookingDetail({ bookingId }: { bookingId: string }) {
@@ -190,12 +189,6 @@ export function BookingDetail({ bookingId }: { bookingId: string }) {
       ? "paid"
       : booking.status;
 
-  const payLeftMs =
-    new Date(booking.created_at).getTime() + PENDING_TTL_MS - nowTs;
-  const mm = Math.max(0, Math.floor(payLeftMs / 60_000));
-  const ss = Math.max(0, Math.floor((payLeftMs % 60_000) / 1000));
-  const countdown = `${mm}:${String(ss).padStart(2, "0")}`;
-
   const hoursLeft = (start.getTime() - nowTs) / 3_600_000;
   const cancelNote =
     booking.price === 0
@@ -280,25 +273,8 @@ export function BookingDetail({ bookingId }: { bookingId: string }) {
         </Link>
 
         <div className="mt-5 grid gap-6 lg:grid-cols-[1fr_360px]">
-          {/* Left: countdown + payment methods */}
+          {/* Left: payment methods */}
           <div className="space-y-5">
-            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 sm:p-5">
-              <p className="font-bold text-amber-800">{t("pendingTitle")}</p>
-              <p className="mt-1 text-sm text-amber-700">{t("pendingBody")}</p>
-              <p className="mt-2 text-sm font-semibold text-amber-800">
-                {payLeftMs > 0 ? (
-                  t("expiresIn", { time: countdown })
-                ) : (
-                  <span className="inline-flex flex-wrap items-center gap-3">
-                    {t("expiredMaybe")}
-                    <Button size="sm" variant="secondary" onClick={() => void load()}>
-                      {t("refresh")}
-                    </Button>
-                  </span>
-                )}
-              </p>
-            </div>
-
             <Card className="p-5 sm:p-6">
               <h2 className="text-base font-bold text-zinc-900">
                 {t("paymentTitle")}
