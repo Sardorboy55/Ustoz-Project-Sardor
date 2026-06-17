@@ -69,6 +69,20 @@ const CATEGORY_ICONS: Record<string, LucideIcon> = {
   sparkles: Sparkles,
 };
 
+/** A distinct, fitting accent per category (icon chip). */
+const CATEGORY_TINT: Record<string, string> = {
+  languages: "bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600",
+  school: "bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600",
+  code: "bg-sky-50 text-sky-600 group-hover:bg-sky-600",
+  brain: "bg-violet-50 text-violet-600 group-hover:bg-violet-600",
+  briefcase: "bg-amber-50 text-amber-600 group-hover:bg-amber-600",
+  music: "bg-rose-50 text-rose-600 group-hover:bg-rose-600",
+  dumbbell: "bg-teal-50 text-teal-600 group-hover:bg-teal-600",
+  sparkles: "bg-fuchsia-50 text-fuchsia-600 group-hover:bg-fuchsia-600",
+};
+const CATEGORY_TINT_DEFAULT =
+  "bg-brand-50 text-brand-600 group-hover:bg-brand-600";
+
 export default async function LandingPage({
   params,
 }: {
@@ -106,7 +120,7 @@ export default async function LandingPage({
     label: string;
     tint: string;
   }> = [
-    { icon: LayoutGrid, value: "8", label: t("trust1"), tint: "bg-indigo-50 text-indigo-600" },
+    { icon: LayoutGrid, value: String(categories.length), label: t("trust1"), tint: "bg-indigo-50 text-indigo-600" },
     { icon: BookOpen, value: "35+", label: t("trust2"), tint: "bg-emerald-50 text-emerald-600" },
     { icon: ShieldCheck, value: t("trustV3"), label: t("trust3"), tint: "bg-sky-50 text-sky-600" },
     { icon: MessagesSquare, value: t("trustV4"), label: t("trust4"), tint: "bg-violet-50 text-violet-600" },
@@ -227,6 +241,8 @@ export default async function LandingPage({
         <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
           {categories.map((category) => {
             const Icon = CATEGORY_ICONS[category.icon ?? ""] ?? Sparkles;
+            const tint =
+              CATEGORY_TINT[category.icon ?? ""] ?? CATEGORY_TINT_DEFAULT;
             return (
               <Link
                 key={category.id}
@@ -237,7 +253,9 @@ export default async function LandingPage({
                 }
                 className="group flex items-center gap-3.5 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm outline-none transition hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-md focus-visible:ring-2 focus-visible:ring-brand-600"
               >
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600 transition-colors group-hover:bg-brand-600 group-hover:text-white">
+                <span
+                  className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-colors group-hover:text-white ${tint}`}
+                >
                   <Icon size={20} aria-hidden="true" />
                 </span>
                 <span className="min-w-0 text-sm font-semibold text-zinc-900">

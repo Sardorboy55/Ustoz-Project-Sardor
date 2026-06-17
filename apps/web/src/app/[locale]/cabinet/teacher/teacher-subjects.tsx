@@ -280,9 +280,9 @@ function SubjectRow({
             <span className="font-normal text-zinc-400">(%, необязательно)</span>
           </p>
           <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <Input label="5 уроков" helper="%" inputMode="numeric" value={pkg5} onChange={num(setPkg5)} />
-            <Input label="10 уроков" helper="%" inputMode="numeric" value={pkg10} onChange={num(setPkg10)} />
-            <Input label="20 уроков" helper="%" inputMode="numeric" value={pkg20} onChange={num(setPkg20)} />
+            <Input label="5 уроков" suffix="%" inputMode="numeric" value={pkg5} onChange={num(setPkg5)} />
+            <Input label="10 уроков" suffix="%" inputMode="numeric" value={pkg10} onChange={num(setPkg10)} />
+            <Input label="20 уроков" suffix="%" inputMode="numeric" value={pkg20} onChange={num(setPkg20)} />
           </div>
 
           <div className="mt-3 flex flex-wrap items-center gap-4">
@@ -322,50 +322,64 @@ function SubjectRow({
           </div>
         </>
       ) : (
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          {(
-            [
-              ["30", p30],
-              ["60", p60],
-              ["90", p90],
-            ] as const
-          ).map(([min, v]) => {
-            const tiyin = toTiyin(v);
-            return tiyin ? (
-              <span
-                key={min}
-                className="flex flex-col items-center rounded-lg bg-zinc-50 px-3.5 py-2"
-              >
-                <span className="text-xs text-zinc-500">{min} мин</span>
-                <span className="mt-0.5 text-sm font-bold text-zinc-900">
-                  {formatUzs(tiyin, locale)} сум
+        <>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {(
+              [
+                ["30", p30],
+                ["60", p60],
+                ["90", p90],
+              ] as const
+            ).map(([min, v]) => {
+              const tiyin = toTiyin(v);
+              return tiyin ? (
+                <span
+                  key={min}
+                  className="rounded-lg bg-zinc-50 px-3 py-1.5 text-sm text-zinc-500"
+                >
+                  {min} мин{" "}
+                  <span className="font-bold text-zinc-900">
+                    {formatUzs(tiyin, locale)} сум
+                  </span>
                 </span>
-              </span>
-            ) : null;
-          })}
-          {trial && (
-            <span className="rounded-full bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-700">
-              Бесплатный пробный
-            </span>
+              ) : null;
+            })}
+          </div>
+          {(trial ||
+            pctInt(pkg5) > 0 ||
+            pctInt(pkg10) > 0 ||
+            pctInt(pkg20) > 0) && (
+            <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs">
+              {trial && (
+                <span className="font-medium text-brand-700">
+                  Бесплатный пробный 20 мин
+                </span>
+              )}
+              {(pctInt(pkg5) > 0 ||
+                pctInt(pkg10) > 0 ||
+                pctInt(pkg20) > 0) && (
+                <span className="text-zinc-400">Пакеты:</span>
+              )}
+              {(
+                [
+                  ["5", pkg5],
+                  ["10", pkg10],
+                  ["20", pkg20],
+                ] as const
+              ).map(([n, v]) => {
+                const pct = pctInt(v);
+                return pct > 0 ? (
+                  <span
+                    key={n}
+                    className="rounded-full bg-brand-50 px-2.5 py-1 font-medium text-brand-700"
+                  >
+                    {n} уроков −{pct}%
+                  </span>
+                ) : null;
+              })}
+            </div>
           )}
-          {(
-            [
-              ["5", pkg5],
-              ["10", pkg10],
-              ["20", pkg20],
-            ] as const
-          ).map(([n, v]) => {
-            const pct = pctInt(v);
-            return pct > 0 ? (
-              <span
-                key={n}
-                className="rounded-full bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-700"
-              >
-                {n} уроков −{pct}%
-              </span>
-            ) : null;
-          })}
-        </div>
+        </>
       )}
     </Card>
 

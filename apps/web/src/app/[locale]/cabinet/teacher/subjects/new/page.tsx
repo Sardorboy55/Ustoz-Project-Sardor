@@ -48,9 +48,10 @@ export default function NewLessonPage() {
     pkg5: "",
     pkg10: "",
     pkg20: "",
-    trialMode: "none" as "none" | "free" | "discount",
+    trialMode: "none" as "none" | "free" | "discount" | "price",
     trialDur: "20",
     trialDiscount: "",
+    trialPrice: "",
   });
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) =>
     setF((p) => ({ ...p, [k]: v }));
@@ -99,17 +100,23 @@ export default function NewLessonPage() {
       trial_discount_pct:
         f.trialMode === "discount" ? pctInt(f.trialDiscount) : 0,
     };
-    // trial_duration_min is added by a pending migration; the generated client
-    // types don't include it yet, so cast past the excess-property check.
+    // trial_duration_min and trial_price live in pending migrations; the
+    // generated client types don't include them, so cast past the excess-property
+    // check and retry without them if the columns aren't present yet.
+    const extras: Record<string, number> = {};
+    if (f.trialMode === "free") extras.trial_duration_min = Number(f.trialDur);
+    if (f.trialMode === "price") {
+      const tp = toTiyin(f.trialPrice);
+      if (tp) extras.trial_price = tp;
+    }
     let { error: insErr } = await supabase
       .from("teacher_subjects")
-      .insert(
-        f.trialMode === "free"
-          ? ({ ...row, trial_duration_min: Number(f.trialDur) } as typeof row)
-          : row,
-      );
-    if (insErr && insErr.message.includes("trial_duration_min")) {
-      // Column not migrated yet — save the lesson without the custom trial length.
+      .insert({ ...row, ...extras } as typeof row);
+    if (
+      insErr &&
+      (insErr.message.includes("trial_duration_min") ||
+        insErr.message.includes("trial_price"))
+    ) {
       ({ error: insErr } = await supabase.from("teacher_subjects").insert(row));
     }
     setSaving(false);
@@ -194,21 +201,21 @@ export default function NewLessonPage() {
           <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-3">
             <Input
               label="5 уроков"
-              helper="%"
+              suffix="%"
               inputMode="numeric"
               value={f.pkg5}
               onChange={(e) => set("pkg5", onlyDigits(e.target.value))}
             />
             <Input
               label="10 уроков"
-              helper="%"
+              suffix="%"
               inputMode="numeric"
               value={f.pkg10}
               onChange={(e) => set("pkg10", onlyDigits(e.target.value))}
             />
             <Input
               label="20 уроков"
-              helper="%"
+              suffix="%"
               inputMode="numeric"
               value={f.pkg20}
               onChange={(e) => set("pkg20", onlyDigits(e.target.value))}
@@ -227,6 +234,7 @@ export default function NewLessonPage() {
                 ["none", "Без пробного"],
                 ["free", "Бесплатный"],
                 ["discount", "Со скидкой"],
+                ["price", "Своя цена"],
               ] as const
             ).map(([v, label]) => (
               <button
@@ -269,6 +277,18 @@ export default function NewLessonPage() {
                 inputMode="numeric"
                 value={f.trialDiscount}
                 onChange={(e) => set("trialDiscount", onlyDigits(e.target.value))}
+              />
+            </div>
+          )}
+          {f.trialMode === "price" && (
+            <div className="mt-3 max-w-52">
+              <Input
+                label="Цена пробного урока"
+                helper="разовая, за первый урок"
+                suffix="сум"
+                inputMode="numeric"
+                value={f.trialPrice}
+                onChange={(e) => set("trialPrice", onlyDigits(e.target.value))}
               />
             </div>
           )}
