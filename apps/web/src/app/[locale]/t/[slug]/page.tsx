@@ -38,6 +38,7 @@ import { type BookingSubject } from "@/components/booking/booking-widget";
 import { BookNowButton } from "@/components/booking/book-now-button";
 import { BookingModal } from "@/components/booking/booking-modal";
 import { SelectSubjectButton } from "@/components/booking/select-subject-button";
+import { PackagePicker } from "@/components/booking/package-picker";
 import { ContactTeacherButton } from "@/components/teacher/contact-button";
 
 // ISR: profile pages are the SEO core (docs/02) — rebuild at most every 60s
@@ -408,6 +409,20 @@ export default async function TeacherPage({
                         >
                           {t("choose")}
                         </SelectSubjectButton>
+                        <PackagePicker
+                          teacherSubjectId={s.id}
+                          subjectName={subjectName(s.subjects)}
+                          prices={{
+                            30: s.price_30,
+                            60: s.price_60,
+                            90: s.price_90,
+                          }}
+                          discounts={{
+                            5: s.pkg5_discount_pct,
+                            10: s.pkg10_discount_pct,
+                            20: s.pkg20_discount_pct,
+                          }}
+                        />
                       </Card>
                     ))}
                   </div>

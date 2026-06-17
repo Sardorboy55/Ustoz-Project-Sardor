@@ -8,6 +8,7 @@ import {
   Heart,
   LayoutDashboard,
   MessageCircle,
+  Package,
   UserRound,
   Wallet,
 } from "lucide-react";
@@ -17,13 +18,14 @@ import { cn } from "@/lib/cn";
 
 type NavItem = {
   href: string;
-  labelKey: "home" | "lessons" | "messages" | "favorites" | "notifications" | "payments" | "profile";
+  labelKey: "home" | "lessons" | "packages" | "messages" | "favorites" | "notifications" | "payments" | "profile";
   icon: LucideIcon;
 };
 
 const ITEMS: NavItem[] = [
   { href: "/cabinet", labelKey: "home", icon: LayoutDashboard },
   { href: "/cabinet/lessons", labelKey: "lessons", icon: CalendarDays },
+  { href: "/cabinet/packages", labelKey: "packages", icon: Package },
   { href: "/cabinet/messages", labelKey: "messages", icon: MessageCircle },
   { href: "/cabinet/favorites", labelKey: "favorites", icon: Heart },
   { href: "/cabinet/notifications", labelKey: "notifications", icon: Bell },
