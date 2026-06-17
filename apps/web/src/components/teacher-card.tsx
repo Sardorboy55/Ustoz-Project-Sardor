@@ -136,8 +136,9 @@ export function TeacherCard({
         </div>
       </div>
 
-      {/* Price + CTA */}
-      <div className="flex shrink-0 flex-col gap-2 border-t border-zinc-100 pt-4 sm:w-44 sm:border-l sm:border-t-0 sm:pl-6 sm:pt-0 sm:text-right">
+      {/* Price + CTA — grouped and vertically centered so the price no longer
+          floats alone in the top-right corner next to the favorite heart */}
+      <div className="flex shrink-0 flex-col gap-3 border-t border-zinc-100 pt-4 sm:w-44 sm:justify-center sm:border-l sm:border-t-0 sm:pl-6 sm:pt-0 sm:text-right">
         <Price
           tiyin={card.min_price_60}
           from
@@ -149,7 +150,7 @@ export function TeacherCard({
           className={buttonClasses(
             isPro ? "primary" : "secondary",
             "md",
-            "relative z-[2] mt-auto w-full",
+            "relative z-[2] w-full",
           )}
         >
           {t("choose")}

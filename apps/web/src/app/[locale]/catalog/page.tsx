@@ -9,7 +9,6 @@ import {
   fetchCategories,
   fetchSubjects,
   fetchTeacherBios,
-  fetchTeacherVideos,
   type CatalogCard,
 } from "@/lib/catalog";
 import { Card } from "@/components/ui/card";
@@ -116,10 +115,7 @@ export default async function CatalogPage({
   }
 
   const teacherIds = cards.map((c) => c.user_id);
-  const [teacherBios, teacherVideos] = await Promise.all([
-    fetchTeacherBios(teacherIds),
-    fetchTeacherVideos(teacherIds),
-  ]);
+  const teacherBios = await fetchTeacherBios(teacherIds);
 
   const total = cards[0]?.total_count ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
@@ -370,7 +366,7 @@ export default async function CatalogPage({
                         key={card.user_id}
                         card={card}
                         bio={teacherBios[card.user_id]}
-                        videoUrl={teacherVideos[card.user_id] ?? null}
+                        videoUrl={null}
                       />
                     ))}
                   </div>
