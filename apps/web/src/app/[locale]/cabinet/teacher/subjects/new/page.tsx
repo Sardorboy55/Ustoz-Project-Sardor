@@ -7,6 +7,7 @@ import { type Locale } from "@ustoz/shared";
 import { Link, useRouter } from "@/i18n/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { localizeContent } from "@/lib/content-i18n";
+import { cn } from "@/lib/cn";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -47,8 +48,9 @@ export default function NewLessonPage() {
     pkg5: "",
     pkg10: "",
     pkg20: "",
-    trial: false,
+    trialMode: "none" as "none" | "free" | "discount",
     trialDur: "20",
+    trialDiscount: "",
   });
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) =>
     setF((p) => ({ ...p, [k]: v }));
@@ -93,14 +95,16 @@ export default function NewLessonPage() {
       pkg5_discount_pct: pctInt(f.pkg5),
       pkg10_discount_pct: pctInt(f.pkg10),
       pkg20_discount_pct: pctInt(f.pkg20),
-      trial_free_enabled: f.trial,
+      trial_free_enabled: f.trialMode === "free",
+      trial_discount_pct:
+        f.trialMode === "discount" ? pctInt(f.trialDiscount) : 0,
     };
     // trial_duration_min is added by a pending migration; the generated client
     // types don't include it yet, so cast past the excess-property check.
     let { error: insErr } = await supabase
       .from("teacher_subjects")
       .insert(
-        f.trial
+        f.trialMode === "free"
           ? ({ ...row, trial_duration_min: Number(f.trialDur) } as typeof row)
           : row,
       );
@@ -160,12 +164,14 @@ export default function NewLessonPage() {
               label="30 мин"
               helper="необяз."
               inputMode="numeric"
+              suffix="сум"
               value={f.p30}
               onChange={(e) => set("p30", onlyDigits(e.target.value))}
             />
             <Input
               label="60 мин"
               inputMode="numeric"
+              suffix="сум"
               value={f.p60}
               onChange={(e) => set("p60", onlyDigits(e.target.value))}
             />
@@ -173,6 +179,7 @@ export default function NewLessonPage() {
               label="90 мин"
               helper="необяз."
               inputMode="numeric"
+              suffix="сум"
               value={f.p90}
               onChange={(e) => set("p90", onlyDigits(e.target.value))}
             />
@@ -210,16 +217,35 @@ export default function NewLessonPage() {
         </div>
 
         <div>
-          <label className="flex w-fit cursor-pointer items-center gap-2 text-sm text-zinc-700">
-            <input
-              type="checkbox"
-              checked={f.trial}
-              onChange={(e) => set("trial", e.target.checked)}
-              className="h-4 w-4 rounded border-zinc-300 accent-brand-600"
-            />
-            Предлагать бесплатный пробный урок
-          </label>
-          {f.trial && (
+          <p className="text-sm font-medium text-zinc-700">Пробный урок</p>
+          <p className="text-xs text-zinc-400">
+            Первый урок ученика с вами. Можно сделать бесплатным или со скидкой.
+          </p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {(
+              [
+                ["none", "Без пробного"],
+                ["free", "Бесплатный"],
+                ["discount", "Со скидкой"],
+              ] as const
+            ).map(([v, label]) => (
+              <button
+                key={v}
+                type="button"
+                onClick={() => set("trialMode", v)}
+                className={cn(
+                  "rounded-full border px-3.5 py-1.5 text-sm font-medium outline-none transition focus-visible:ring-2 focus-visible:ring-brand-600",
+                  f.trialMode === v
+                    ? "border-brand-600 bg-brand-50 text-brand-700"
+                    : "border-zinc-200 text-zinc-600 hover:border-brand-300",
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {f.trialMode === "free" && (
             <div className="mt-3 max-w-52">
               <Select
                 label="Длительность пробного урока"
@@ -232,6 +258,18 @@ export default function NewLessonPage() {
                   </option>
                 ))}
               </Select>
+            </div>
+          )}
+          {f.trialMode === "discount" && (
+            <div className="mt-3 max-w-52">
+              <Input
+                label="Скидка на первый урок"
+                helper="до 90%"
+                suffix="%"
+                inputMode="numeric"
+                value={f.trialDiscount}
+                onChange={(e) => set("trialDiscount", onlyDigits(e.target.value))}
+              />
             </div>
           )}
         </div>

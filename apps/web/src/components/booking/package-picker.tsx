@@ -88,7 +88,7 @@ export function PackagePicker({
         open={open}
         onClose={reset}
         title={`Пакет уроков · ${subjectName}`}
-        size="lg"
+        size="2xl"
       >
         {state === "done" ? (
           <div className="py-4 text-center">

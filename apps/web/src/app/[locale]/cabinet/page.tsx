@@ -137,11 +137,9 @@ export default function CabinetHomePage() {
           <NextLessonCard booking={next} locale={locale} />
         ) : (
           <Card className="flex flex-col items-start justify-center gap-3 p-5">
-            <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
-              {t("nextLesson")}
+            <p className="text-sm font-medium text-zinc-600">
+              {t("noUpcomingTitle")}
             </p>
-            <p className="font-semibold text-zinc-900">{t("noUpcomingTitle")}</p>
-            <p className="text-sm text-zinc-500">{t("noUpcomingBody")}</p>
             <ButtonLink href="/catalog" variant="secondary" size="sm">
               {t("findTeacher")}
             </ButtonLink>

@@ -89,7 +89,7 @@ export function TeacherCard({
 
       {/* Info */}
       <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 pr-9">
           <h3 className="truncate text-lg font-bold text-zinc-900">
             {card.full_name}
           </h3>
