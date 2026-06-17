@@ -16,9 +16,12 @@ import { localizeList } from "@/lib/content-i18n";
 export function TeacherTile({
   card,
   videoUrl,
+  posterUrl,
 }: {
   card: CatalogCard;
   videoUrl?: string | null;
+  /** Cover image (intro_video_poster_url) shown before play; falls back to the avatar. */
+  posterUrl?: string | null;
 }) {
   const locale = useLocale();
   const t = useTranslations("TeacherCard");
@@ -38,7 +41,7 @@ export function TeacherTile({
         <TeacherMedia
           name={card.full_name}
           videoUrl={videoUrl}
-          posterUrl={card.avatar_url}
+          posterUrl={posterUrl ?? card.avatar_url}
           playLabel={t("playVideo")}
           rounded="rounded-none"
         />

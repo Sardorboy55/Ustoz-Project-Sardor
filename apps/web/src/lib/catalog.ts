@@ -54,19 +54,37 @@ export async function fetchCatalog(filters: CatalogFilters): Promise<CatalogCard
   return (data ?? []) as CatalogCard[];
 }
 
-/** intro_video_url for a set of teachers, keyed by user_id (public read). */
+/** intro video + cover poster for a set of teachers, keyed by user_id (public read). */
 export async function fetchTeacherVideos(
   userIds: string[],
-): Promise<Record<string, string | null>> {
+): Promise<Record<string, { url: string | null; poster: string | null }>> {
   if (userIds.length === 0) return {};
-  const { data } = await publicClient()
+  const client = publicClient();
+  type Row = {
+    user_id: string;
+    intro_video_url: string | null;
+    intro_video_poster_url?: string | null;
+  };
+  const primary = await client
     .from("teacher_profiles")
-    .select("user_id, intro_video_url")
+    .select("user_id, intro_video_url, intro_video_poster_url")
     .in("user_id", userIds);
+  let rows = (primary.data ?? null) as Row[] | null;
+  if (primary.error) {
+    // intro_video_poster_url column not migrated yet — fall back to video only.
+    const fb = await client
+      .from("teacher_profiles")
+      .select("user_id, intro_video_url")
+      .in("user_id", userIds);
+    rows = (fb.data ?? null) as Row[] | null;
+  }
   return Object.fromEntries(
-    (data ?? []).map((r) => [
-      r.user_id as string,
-      (r.intro_video_url as string | null) ?? null,
+    (rows ?? []).map((r) => [
+      r.user_id,
+      {
+        url: r.intro_video_url ?? null,
+        poster: r.intro_video_poster_url ?? null,
+      },
     ]),
   );
 }

@@ -35,6 +35,7 @@ export function TeacherMedia({
   playLabel,
   className,
   rounded = "rounded-2xl",
+  playCentered = false,
 }: {
   name: string;
   videoUrl?: string | null;
@@ -42,6 +43,8 @@ export function TeacherMedia({
   playLabel: string;
   className?: string;
   rounded?: string;
+  /** Center the play button (profile hero) instead of the bottom-left corner. */
+  playCentered?: boolean;
 }) {
   const [playing, setPlaying] = useState(false);
   const yt = videoUrl ? youTubeEmbed(videoUrl) : null;
@@ -96,9 +99,18 @@ export function TeacherMedia({
               type="button"
               onClick={() => setPlaying(true)}
               aria-label={playLabel}
-              className="absolute left-1/2 top-1/2 z-[2] grid h-14 w-14 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-white/90 text-brand-700 shadow-lg ring-1 ring-black/5 backdrop-blur transition hover:scale-105 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
+              className={cn(
+                "absolute z-[2] grid place-items-center rounded-full bg-white/90 text-brand-700 shadow-lg ring-1 ring-black/5 backdrop-blur transition hover:scale-105 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600",
+                playCentered
+                  ? "left-1/2 top-1/2 h-14 w-14 -translate-x-1/2 -translate-y-1/2"
+                  : "bottom-3 left-3 h-12 w-12",
+              )}
             >
-              <Play size={24} className="ml-0.5 fill-current" aria-hidden="true" />
+              <Play
+                size={playCentered ? 24 : 20}
+                className="ml-0.5 fill-current"
+                aria-hidden="true"
+              />
             </button>
           )}
         </>

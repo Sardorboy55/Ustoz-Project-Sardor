@@ -325,6 +325,7 @@ export default async function TeacherPage({
                       }
                       playLabel={tCard("playVideo")}
                       rounded="rounded-2xl"
+                      playCentered
                     />
                   </div>
                 </section>

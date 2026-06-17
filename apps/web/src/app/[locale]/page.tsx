@@ -292,7 +292,8 @@ export default async function LandingPage({
                 <TeacherTile
                   key={card.user_id}
                   card={card}
-                  videoUrl={teacherVideos[card.user_id]}
+                  videoUrl={teacherVideos[card.user_id]?.url}
+                  posterUrl={teacherVideos[card.user_id]?.poster}
                 />
               ))}
             </div>
