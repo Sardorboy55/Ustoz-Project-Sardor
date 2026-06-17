@@ -99,11 +99,16 @@ export default async function LandingPage({
   const catName = (c: Category) => localizeContent(locale, c.name_uz, c.name_ru);
   const catalogPath = getPathname({ locale, href: "/catalog" });
 
-  const trustItems: Array<{ icon: LucideIcon; label: string }> = [
-    { icon: LayoutGrid, label: t("trust1") },
-    { icon: BookOpen, label: t("trust2") },
-    { icon: ShieldCheck, label: t("trust3") },
-    { icon: MessagesSquare, label: t("trust4") },
+  const trustItems: Array<{
+    icon: LucideIcon;
+    value: string;
+    label: string;
+    tint: string;
+  }> = [
+    { icon: LayoutGrid, value: "8", label: t("trust1"), tint: "bg-indigo-50 text-indigo-600" },
+    { icon: BookOpen, value: "35+", label: t("trust2"), tint: "bg-emerald-50 text-emerald-600" },
+    { icon: ShieldCheck, value: "✓", label: t("trust3"), tint: "bg-sky-50 text-sky-600" },
+    { icon: MessagesSquare, value: "✓", label: t("trust4"), tint: "bg-violet-50 text-violet-600" },
   ];
 
   const steps: Array<{ icon: LucideIcon; title: string; body: string }> = [
@@ -191,15 +196,25 @@ export default async function LandingPage({
         </div>
       </section>
 
-      {/* =========================== Trust strip ========================== */}
-      <section className="border-y border-zinc-200 bg-white">
-        <div className="mx-auto grid max-w-6xl grid-cols-2 gap-x-6 gap-y-4 px-4 py-6 sm:px-6 lg:grid-cols-4">
-          {trustItems.map(({ icon: Icon, label }) => (
-            <div key={label} className="flex items-center gap-3">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-600">
-                <Icon size={17} aria-hidden="true" />
+      {/* ===================== Stats / trust band ===================== */}
+      <section className="border-y border-zinc-200 bg-gradient-to-r from-brand-50/40 via-white to-brand-50/40">
+        <div className="mx-auto grid max-w-6xl grid-cols-2 gap-x-6 gap-y-6 px-4 py-7 sm:px-6 lg:grid-cols-4">
+          {trustItems.map(({ icon: Icon, value, label, tint }) => (
+            <div
+              key={label}
+              className="flex items-center justify-center gap-3 sm:gap-3.5"
+            >
+              <span
+                className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${tint}`}
+              >
+                <Icon size={22} aria-hidden="true" />
               </span>
-              <span className="text-sm font-medium text-zinc-700">{label}</span>
+              <div className="min-w-0">
+                <p className="text-lg font-extrabold leading-tight tracking-tight text-zinc-900 sm:text-xl">
+                  {value}
+                </p>
+                <p className="text-xs leading-tight text-zinc-500">{label}</p>
+              </div>
             </div>
           ))}
         </div>
