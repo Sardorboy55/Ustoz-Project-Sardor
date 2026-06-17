@@ -16,17 +16,11 @@ function initialsOf(name: string): string {
   );
 }
 
-function youTubeEmbed(url: string): string | null {
-  const m = url.match(/(?:youtu\.be\/|[?&]v=|\/embed\/)([\w-]{11})/);
-  return m ? `https://www.youtube.com/embed/${m[1]}?autoplay=1&rel=0` : null;
-}
-
 /**
  * Teacher media box (italki-style): shows a cover/avatar poster (or an initials
- * banner when there is none). If `videoUrl` is set, a play button appears in the
- * bottom-left; clicking it reveals the intro video inline (YouTube embed or a
- * native <video>). Teachers upload their own cover + intro video — until then
- * the poster falls back to the avatar/initials and the play button is hidden.
+ * banner when there is none). If `videoUrl` is set, a play button appears;
+ * clicking it plays the teacher's own uploaded intro video inline, filled to the
+ * frame. Until a video exists the poster falls back to the avatar/initials.
  */
 export function TeacherMedia({
   name,
@@ -47,7 +41,6 @@ export function TeacherMedia({
   playCentered?: boolean;
 }) {
   const [playing, setPlaying] = useState(false);
-  const yt = videoUrl ? youTubeEmbed(videoUrl) : null;
 
   return (
     <div
@@ -58,24 +51,14 @@ export function TeacherMedia({
       )}
     >
       {playing && videoUrl ? (
-        yt ? (
-          <iframe
-            src={yt}
-            title={name}
-            allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
-            allowFullScreen
-            className="h-full w-full"
-          />
-        ) : (
-          // eslint-disable-next-line jsx-a11y/media-has-caption -- teacher intro clip, no captions track
-          <video
-            src={videoUrl}
-            poster={posterUrl ?? undefined}
-            controls
-            autoPlay
-            className="h-full w-full bg-black object-contain"
-          />
-        )
+        // eslint-disable-next-line jsx-a11y/media-has-caption -- teacher intro clip, no captions track
+        <video
+          src={videoUrl}
+          poster={posterUrl ?? undefined}
+          controls
+          autoPlay
+          className="h-full w-full bg-zinc-900 object-cover"
+        />
       ) : (
         <>
           {posterUrl ? (
