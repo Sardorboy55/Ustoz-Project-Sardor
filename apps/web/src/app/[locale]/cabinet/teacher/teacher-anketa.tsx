@@ -319,41 +319,56 @@ export function TeacherAnketa() {
             Картинка-превью до запуска видео. Если не загрузить — покажем ваше
             фото профиля.
           </p>
-          <div className="mt-2 flex flex-wrap items-center gap-3">
-            {form.intro_video_poster_url && (
-              // eslint-disable-next-line @next/next/no-img-element
+          {form.intro_video_poster_url ? (
+            <div className="mt-3 flex flex-wrap items-center gap-4">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={form.intro_video_poster_url}
                 alt=""
-                className="h-20 w-32 rounded-lg object-cover ring-1 ring-zinc-200"
+                className="h-28 w-48 rounded-xl object-cover ring-1 ring-zinc-200"
               />
-            )}
-            <Button
-              variant="secondary"
-              size="sm"
-              loading={uploadingCover}
-              disabled={deletingCover}
+              <div className="flex flex-col gap-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  loading={uploadingCover}
+                  disabled={deletingCover}
+                  onClick={() => coverRef.current?.click()}
+                >
+                  {!uploadingCover && <ImageIcon size={15} aria-hidden="true" />}
+                  Заменить обложку
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  loading={deletingCover}
+                  disabled={uploadingCover}
+                  onClick={deleteCover}
+                  className="text-red-600 hover:bg-red-50 active:bg-red-100"
+                >
+                  {!deletingCover && <Trash2 size={15} aria-hidden="true" />}
+                  Удалить
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
               onClick={() => coverRef.current?.click()}
+              disabled={uploadingCover}
+              className="mt-3 flex w-full max-w-md flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-zinc-300 bg-zinc-50/60 px-6 py-8 text-center transition hover:border-brand-400 hover:bg-brand-50/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 disabled:opacity-60"
             >
-              {!uploadingCover && <ImageIcon size={15} aria-hidden="true" />}
-              {form.intro_video_poster_url
-                ? "Заменить обложку"
-                : "Загрузить обложку"}
-            </Button>
-            {form.intro_video_poster_url && (
-              <Button
-                variant="ghost"
-                size="sm"
-                loading={deletingCover}
-                disabled={uploadingCover}
-                onClick={deleteCover}
-                className="text-red-600 hover:bg-red-50 active:bg-red-100"
-              >
-                {!deletingCover && <Trash2 size={15} aria-hidden="true" />}
-                Удалить
-              </Button>
-            )}
-          </div>
+              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-100 text-brand-600">
+                <ImageIcon size={24} aria-hidden="true" />
+              </span>
+              <span className="text-sm font-semibold text-zinc-800">
+                {uploadingCover ? "Загрузка…" : "Загрузить обложку"}
+              </span>
+              <span className="text-xs text-zinc-400">
+                JPG или PNG, 16:9 (например 1280×720).
+              </span>
+            </button>
+          )}
           <input
             ref={coverRef}
             type="file"

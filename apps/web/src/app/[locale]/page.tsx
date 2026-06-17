@@ -29,6 +29,7 @@ import {
   type CatalogCard,
 } from "@/lib/catalog";
 import { Testimonials } from "@/components/testimonials";
+import { ScrollToTop } from "@/components/scroll-to-top";
 import { ButtonLink, buttonClasses } from "@/components/ui/button";import { SectionHeading } from "@/components/ui/section-heading";
 import { FavoritesProvider } from "@/components/favorites";
 import { TeacherTile } from "@/components/teacher-tile";
@@ -410,6 +411,8 @@ export default async function LandingPage({
           </div>
         </div>
       </section>
+
+      <ScrollToTop />
     </main>
   );
 }
