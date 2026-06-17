@@ -26,12 +26,11 @@ import {
   fetchTeacherVideos,
   type CatalogCard,
 } from "@/lib/catalog";
-import { HeroCollage, type HeroTeacher } from "@/components/hero-collage";
 import { Testimonials } from "@/components/testimonials";
 import { ButtonLink, buttonClasses } from "@/components/ui/button";import { SectionHeading } from "@/components/ui/section-heading";
 import { FavoritesProvider } from "@/components/favorites";
 import { TeacherTile } from "@/components/teacher-tile";
-import { localizeContent, localizeList } from "@/lib/content-i18n";
+import { localizeContent } from "@/lib/content-i18n";
 import { FaqItem } from "@/components/faq";
 
 export const revalidate = 300;
@@ -95,24 +94,6 @@ export default async function LandingPage({
     topTeachers.map((c) => c.user_id),
   );
 
-  const heroTeachers: HeroTeacher[] = topTeachers.map((card) => ({
-    slug: card.slug,
-    name: card.full_name,
-    subject:
-      localizeList(locale, card.subjects_uz, card.subjects_ru)[0] ??
-      (locale === "ru" ? card.headline_ru : card.headline_uz),
-    rating: Number(card.rating_avg),
-    avatarUrl: card.avatar_url,
-  }));
-  if (heroTeachers.length < 2) {
-    heroTeachers.splice(
-      0,
-      heroTeachers.length,
-      { slug: "", name: t("mock1Name"), subject: t("mock1Subject"), rating: 4.9, avatarUrl: null },
-      { slug: "", name: t("mock2Name"), subject: t("mock2Subject"), rating: 4.8, avatarUrl: null },
-    );
-  }
-
   const catName = (c: Category) => localizeContent(locale, c.name_uz, c.name_ru);
   const catalogPath = getPathname({ locale, href: "/catalog" });
 
@@ -146,51 +127,58 @@ export default async function LandingPage({
   return (
     <main className="flex-1">
       {/* ============================== Hero ============================== */}
-      <section className="bg-gradient-to-b from-brand-50 via-white to-page">
-        <div className="mx-auto grid max-w-6xl items-center gap-12 px-4 pb-16 pt-14 sm:px-6 lg:grid-cols-[1fr_420px] lg:gap-16 lg:pb-24 lg:pt-20">
-          <div>
-            <h1 className="max-w-xl text-4xl font-extrabold leading-tight tracking-tight text-zinc-900 sm:text-5xl">
-              {t("heroTitlePre")}
-              <span className="text-brand-600">{t("heroTitleHighlight")}</span>
-              {t("heroTitlePost")}
-            </h1>
-            <p className="mt-5 max-w-xl text-lg leading-relaxed text-zinc-600">
-              {t("heroSubtitle")}
-            </p>
+      <section className="relative isolate overflow-hidden bg-zinc-900">
+        {/* Full-bleed background photo */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 -z-20 bg-cover bg-center"
+          style={{ backgroundImage: "url('/hero.jpg')" }}
+        />
+        {/* Dark overlay so the title, search and buttons stay readable */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 -z-10 bg-gradient-to-b from-zinc-950/75 via-zinc-900/60 to-zinc-950/80"
+        />
 
-            <Form
-              action={catalogPath}
-              className="mt-8 flex max-w-xl items-center gap-2 rounded-2xl border border-zinc-200 bg-white p-2 shadow-sm focus-within:border-brand-400 focus-within:ring-2 focus-within:ring-brand-100"
+        <div className="mx-auto flex max-w-3xl flex-col items-center px-4 pb-20 pt-20 text-center sm:px-6 lg:pb-28 lg:pt-28">
+          <h1 className="text-4xl font-extrabold leading-tight tracking-tight text-white drop-shadow-sm sm:text-5xl">
+            {t("heroTitlePre")}
+            <span className="text-brand-300">{t("heroTitleHighlight")}</span>
+            {t("heroTitlePost")}
+          </h1>
+          <p className="mt-5 max-w-xl text-lg leading-relaxed text-zinc-100">
+            {t("heroSubtitle")}
+          </p>
+
+          <Form
+            action={catalogPath}
+            className="mt-8 flex w-full max-w-xl items-center gap-2 rounded-2xl border border-white/20 bg-white p-2 shadow-xl focus-within:border-brand-400 focus-within:ring-2 focus-within:ring-brand-100"
+          >
+            <Search size={20} aria-hidden="true" className="ml-2 shrink-0 text-zinc-400" />
+            <input
+              type="search"
+              name="q"
+              placeholder={t("searchPlaceholder")}
+              className="h-11 w-full min-w-0 bg-transparent text-base text-zinc-900 placeholder:text-zinc-400 focus:outline-none"
+            />
+            <button type="submit" className={buttonClasses("primary", "md", "shrink-0")}>
+              {t("searchCta")}
+            </button>
+          </Form>
+
+          <div className="mt-6 flex w-full max-w-xl flex-col gap-3 sm:flex-row sm:justify-center">
+            <ButtonLink href="/catalog" size="lg" className="w-full shadow-lg sm:w-auto">
+              {t("ctaFind")}
+            </ButtonLink>
+            <ButtonLink
+              href="/become-teacher"
+              size="lg"
+              variant="secondary"
+              className="w-full bg-white shadow-lg sm:w-auto"
             >
-              <Search size={20} aria-hidden="true" className="ml-2 shrink-0 text-zinc-400" />
-              <input
-                type="search"
-                name="q"
-                placeholder={t("searchPlaceholder")}
-                className="h-11 w-full min-w-0 bg-transparent text-base text-zinc-900 placeholder:text-zinc-400 focus:outline-none"
-              />
-              <button type="submit" className={buttonClasses("primary", "md", "shrink-0")}>
-                {t("searchCta")}
-              </button>
-            </Form>
-
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-              <ButtonLink href="/catalog" size="lg" className="w-full sm:w-auto">
-                {t("ctaFind")}
-              </ButtonLink>
-              <ButtonLink
-                href="/become-teacher"
-                size="lg"
-                variant="secondary"
-                className="w-full sm:w-auto"
-              >
-                {t("ctaBecome")}
-              </ButtonLink>
-            </div>
+              {t("ctaBecome")}
+            </ButtonLink>
           </div>
-
-          {/* Hero collage: rotating teacher cards + animated blobs (client island) */}
-          <HeroCollage teachers={heroTeachers} />
         </div>
       </section>
 
