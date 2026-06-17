@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { Input } from "@/components/ui/input";
+import { Modal } from "@/components/ui/modal";
 import { localizeContent } from "@/lib/content-i18n";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCabinet } from "@/components/cabinet/cabinet-shell";
@@ -233,6 +234,7 @@ function SubjectRow({
   );
 
   return (
+    <>
     <Card className="p-5">
       <div className="flex items-center justify-between gap-3">
         <p className="font-bold text-zinc-900">{title}</p>
@@ -247,39 +249,20 @@ function SubjectRow({
               Изменить
             </Button>
           )}
-          {confirmDel ? (
-            <div className="flex items-center gap-1.5">
-              <Button variant="danger" size="sm" loading={deleting} onClick={remove}>
-                {t("subjectDeleteYes")}
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={deleting}
-                onClick={() => setConfirmDel(false)}
-              >
-                {t("subjectDeleteNo")}
-              </Button>
-            </div>
-          ) : (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setConfirmDel(true)}
-              className="border border-red-300 text-red-600 hover:border-red-400 hover:bg-red-50 active:bg-red-100"
-            >
-              <Trash2 size={15} aria-hidden="true" />
-              {t("subjectDelete")}
-            </Button>
-          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setState("idle");
+              setConfirmDel(true);
+            }}
+            className="border border-red-300 text-red-600 hover:border-red-400 hover:bg-red-50 active:bg-red-100"
+          >
+            <Trash2 size={15} aria-hidden="true" />
+            {t("subjectDelete")}
+          </Button>
         </div>
       </div>
-
-      {confirmDel && (
-        <p className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-800">
-          {t("subjectDeleteWarn")}
-        </p>
-      )}
 
       {editing ? (
         <>
@@ -385,6 +368,38 @@ function SubjectRow({
         </div>
       )}
     </Card>
+
+      <Modal
+        open={confirmDel}
+        onClose={() => {
+          if (!deleting) setConfirmDel(false);
+        }}
+        title={t("subjectDelete")}
+        size="lg"
+      >
+        <p className="text-sm leading-relaxed text-zinc-600">
+          {t("subjectDeleteWarn")}
+        </p>
+        {state === "error" && (
+          <p role="alert" className="mt-3 text-sm text-red-600">
+            {t("subjectError")}
+          </p>
+        )}
+        <div className="mt-5 flex justify-end gap-2">
+          <Button
+            variant="ghost"
+            disabled={deleting}
+            onClick={() => setConfirmDel(false)}
+          >
+            {t("subjectDeleteNo")}
+          </Button>
+          <Button variant="danger" loading={deleting} onClick={remove}>
+            {!deleting && <Trash2 size={16} aria-hidden="true" />}
+            {t("subjectDeleteYes")}
+          </Button>
+        </div>
+      </Modal>
+    </>
   );
 }
 
