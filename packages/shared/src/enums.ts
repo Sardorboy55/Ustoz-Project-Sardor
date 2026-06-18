@@ -48,3 +48,11 @@ export type HomeworkStatus = (typeof HOMEWORK_STATUSES)[number];
 
 export const NOTIFICATION_CHANNELS = ['push', 'sms'] as const;
 export type NotificationChannel = (typeof NOTIFICATION_CHANNELS)[number];
+
+export const TEACHER_APPLICATION_STATUSES = [
+  'interviewing',
+  'pending_review',
+  'approved',
+  'rejected',
+] as const;
+export type TeacherApplicationStatus = (typeof TEACHER_APPLICATION_STATUSES)[number];

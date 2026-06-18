@@ -33,7 +33,7 @@ export function BecomeTeacherCta({
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) {
-      router.push("/auth?next=/cabinet/teacher");
+      router.push("/auth?next=/become-teacher/interview");
       return;
     }
     const { data } = await supabase
@@ -46,16 +46,10 @@ export function BecomeTeacherCta({
       setBusy(false);
       return;
     }
-    // Actually create the teacher profile (idempotent: become_teacher inserts
-    // teacher_profiles + wallet and flips is_teacher), then drop the user
-    // straight into the setup wizard — no second "become a teacher" button.
-    const { error } = await supabase.rpc("become_teacher");
-    if (error) {
-      setBusy(false);
-      setFailed(true);
-      return;
-    }
-    router.push("/cabinet/teacher");
+    // Becoming a teacher is gated behind the AI HR voice interview: send the
+    // user to the interview flow, which provisions the teacher profile only
+    // after an admin approves the application.
+    router.push("/become-teacher/interview");
   };
 
   return (
