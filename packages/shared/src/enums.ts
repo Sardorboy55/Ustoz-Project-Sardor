@@ -46,7 +46,7 @@ export type PayoutStatus = (typeof PAYOUT_STATUSES)[number];
 export const HOMEWORK_STATUSES = ['assigned', 'submitted', 'graded'] as const;
 export type HomeworkStatus = (typeof HOMEWORK_STATUSES)[number];
 
-export const NOTIFICATION_CHANNELS = ['push', 'sms'] as const;
+export const NOTIFICATION_CHANNELS = ['push', 'sms', 'in_app'] as const;
 export type NotificationChannel = (typeof NOTIFICATION_CHANNELS)[number];
 
 export const TEACHER_APPLICATION_STATUSES = [

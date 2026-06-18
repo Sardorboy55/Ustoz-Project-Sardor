@@ -5,6 +5,7 @@ import { LocaleSwitcher } from "@/components/locale-switcher";
 import { AuthButton } from "@/components/auth-button";
 import { JoinPlusButton } from "@/components/join-plus-button";
 import { MobileMenu } from "@/components/mobile-menu";
+import { NotificationsBell } from "@/components/notifications-bell";
 
 /** Sticky site header: wordmark, nav, locale switcher, auth island, burger. */
 export function SiteHeader() {
@@ -34,6 +35,7 @@ export function SiteHeader() {
         </nav>
 
         <div className="flex items-center gap-3">
+          <NotificationsBell />
           <LocaleSwitcher />
           <div className="hidden items-center gap-3 md:flex">
             <JoinPlusButton />
