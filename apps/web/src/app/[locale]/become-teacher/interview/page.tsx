@@ -694,9 +694,9 @@ function InterviewCall({ subject }: { subject: string }) {
     try {
       conversation.startSession({
         agentId: AGENT_ID,
-        // WebRTC сглаживает звук (джиттер-буфер, восстановление потерь) — без
-        // него на нестабильной сети голос рвётся.
-        connectionType: "webrtc",
+        // websocket, а не webrtc: WebRTC (UDP) часто режут узбекские ISP и звонок
+        // не подключается. websocket идёт по wss и стабильно соединяется.
+        connectionType: "websocket",
         dynamicVariables: { subject: subject || "выбранный предмет" },
       });
     } catch {
