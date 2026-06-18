@@ -7,8 +7,10 @@ import {
   Clock,
   FileText,
   GraduationCap,
+  Loader2,
   Mic,
   Paperclip,
+  PhoneOff,
   RotateCcw,
   ShieldCheck,
   Sparkles,
@@ -16,6 +18,7 @@ import {
   Upload,
 } from "lucide-react";
 import { useLocale } from "next-intl";
+import { ConversationProvider, useConversation } from "@elevenlabs/react";
 import { type Locale } from "@ustoz/shared";
 import { Link, useRouter } from "@/i18n/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -45,9 +48,6 @@ type Application = {
 const AGENT_ID =
   process.env.NEXT_PUBLIC_ELEVENLABS_AGENT_ID ??
   "agent_7401kvd53vehfx4vz17gmaac7aw5";
-// Self-hosted (apps/web/public/elevenlabs-convai.js): внешние CDN (unpkg/jsDelivr)
-// бывают недоступны у узбекских ISP, поэтому отдаём скрипт со своего домена.
-const WIDGET_SRC = "/elevenlabs-convai.js";
 const DOCS_BUCKET = "teacher-docs";
 
 type Stage =
@@ -666,80 +666,99 @@ function ResultCard({
  * placeholder keeps the rest of the flow testable.
  */
 function InterviewWidget({ subject }: { subject: string }) {
-  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  // The prebuilt ElevenLabs widget doesn't support Uzbek (its language table
+  // lacks "uz"), so we drive the agent directly via the React SDK instead.
+  return (
+    <ConversationProvider>
+      <InterviewCall subject={subject} />
+    </ConversationProvider>
+  );
+}
 
-  useEffect(() => {
-    if (!AGENT_ID) return;
-    let cancelled = false;
+function InterviewCall({ subject }: { subject: string }) {
+  const [error, setError] = useState<string | null>(null);
+  const conversation = useConversation({
+    onError: () => setError("Связь прервалась. Нажмите «Начать разговор» ещё раз."),
+  });
+  const status = conversation.status; // disconnected | connecting | connected | error
+  const speaking = conversation.isSpeaking;
 
-    // Mount the widget element directly on <body> (not inside the card): the
-    // floating call button is position:fixed, and a card ancestor with
-    // transform/blur would otherwise become its containing block and hide it.
-    const mount = () => {
-      if (cancelled) return;
-      document.querySelectorAll("elevenlabs-convai").forEach((n) => n.remove());
-      const el = document.createElement("elevenlabs-convai");
-      el.setAttribute("agent-id", AGENT_ID);
-      el.setAttribute(
-        "dynamic-variables",
-        JSON.stringify({ subject: subject || "выбранный предмет" }),
-      );
-      document.body.appendChild(el);
-      setStatus("ready");
-    };
-
-    if (window.customElements?.get("elevenlabs-convai")) {
-      mount();
-    } else {
-      if (!document.querySelector(`script[src="${WIDGET_SRC}"]`)) {
-        const s = document.createElement("script");
-        s.src = WIDGET_SRC;
-        s.async = true;
-        s.type = "text/javascript";
-        s.onerror = () => {
-          if (!cancelled) setStatus("error");
-        };
-        document.body.appendChild(s);
-      }
-      window.customElements?.whenDefined("elevenlabs-convai").then(mount);
+  const start = async () => {
+    setError(null);
+    try {
+      await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch {
+      setError("Нужен доступ к микрофону. Разрешите его в браузере и попробуйте снова.");
+      return;
     }
+    try {
+      conversation.startSession({
+        agentId: AGENT_ID,
+        connectionType: "websocket",
+        dynamicVariables: { subject: subject || "выбранный предмет" },
+      });
+    } catch {
+      setError("Не удалось подключиться к агенту. Попробуйте ещё раз.");
+    }
+  };
 
-    const timer = setTimeout(() => {
-      if (!cancelled) setStatus((s) => (s === "loading" ? "error" : s));
-    }, 12000);
+  const stop = () => conversation.endSession();
 
-    // Remove the floating widget when leaving the interview step.
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-      document.querySelectorAll("elevenlabs-convai").forEach((n) => n.remove());
-    };
-  }, [subject]);
-
-  if (!AGENT_ID || status === "error") {
+  if (status === "connected") {
     return (
-      <div className="rounded-xl bg-amber-50 px-4 py-4 text-center text-sm leading-relaxed text-amber-700">
-        Не удалось загрузить голосового агента. Обновите страницу или попробуйте
-        чуть позже.
+      <div className="rounded-xl border border-brand-200 bg-brand-50/60 px-5 py-6 text-center">
+        <span className="relative mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-brand-600 text-white">
+          {speaking && (
+            <span className="absolute inset-0 animate-ping rounded-full bg-brand-400 opacity-60" />
+          )}
+          <Mic size={28} aria-hidden="true" className="relative" />
+        </span>
+        <p className="mt-3 font-semibold text-zinc-900">
+          {speaking ? "Рекрутёр говорит…" : "Слушаю вас — говорите"}
+        </p>
+        <p className="mt-1 text-sm text-zinc-600">
+          Отвечайте вслух. Когда рекрутёр попрощается — завершите разговор.
+        </p>
+        <Button variant="secondary" className="mt-5" onClick={stop}>
+          <PhoneOff size={16} aria-hidden="true" />
+          Завершить разговор
+        </Button>
       </div>
     );
   }
 
   return (
-    <div className="rounded-xl border border-brand-100 bg-brand-50/60 px-5 py-6 text-center">
+    <div className="rounded-xl border border-brand-100 bg-brand-50/50 px-5 py-7 text-center">
       <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-brand-600 text-white">
         <Mic size={26} aria-hidden="true" />
       </span>
-      <p className="mt-3 font-semibold text-zinc-900">
-        {status === "loading"
-          ? "Загружаем голосового агента…"
-          : "Агент готов к разговору"}
-      </p>
+      <p className="mt-3 font-semibold text-zinc-900">Готовы начать собеседование?</p>
       <p className="mx-auto mt-1 max-w-sm text-sm text-zinc-600">
-        Кнопка собеседования — это{" "}
-        <span className="font-semibold text-brand-700">синий кружок в правом нижнем углу экрана</span>.
-        Нажмите его, разрешите доступ к микрофону и начните разговор.
+        Нажмите кнопку, разрешите доступ к микрофону — и агент сразу начнёт разговор.
       </p>
+      {error && (
+        <p role="alert" className="mt-3 text-sm font-medium text-red-600">
+          {error}
+        </p>
+      )}
+      <Button
+        className="mt-5"
+        size="lg"
+        onClick={start}
+        disabled={status === "connecting"}
+      >
+        {status === "connecting" ? (
+          <>
+            <Loader2 size={18} aria-hidden="true" className="animate-spin" />
+            Подключение…
+          </>
+        ) : (
+          <>
+            <Mic size={18} aria-hidden="true" />
+            Начать разговор
+          </>
+        )}
+      </Button>
     </div>
   );
 }
