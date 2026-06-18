@@ -665,18 +665,39 @@ function ResultCard({
  */
 function InterviewWidget({ subject }: { subject: string }) {
   const ref = useRef<HTMLDivElement>(null);
+  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
 
   useEffect(() => {
     if (!AGENT_ID || !ref.current) return;
+    let cancelled = false;
+
     const vars = JSON.stringify({ subject: subject || "выбранный предмет" });
     ref.current.innerHTML = `<elevenlabs-convai agent-id="${AGENT_ID}" dynamic-variables='${vars}'></elevenlabs-convai>`;
+
     if (!document.querySelector(`script[src="${WIDGET_SRC}"]`)) {
       const s = document.createElement("script");
       s.src = WIDGET_SRC;
       s.async = true;
       s.type = "text/javascript";
+      s.onerror = () => {
+        if (!cancelled) setStatus("error");
+      };
       document.body.appendChild(s);
     }
+
+    // The custom element only upgrades once the embed script registers it; if
+    // an ad-blocker kills the script it never resolves, so fail after a timeout.
+    customElements.whenDefined("elevenlabs-convai").then(() => {
+      if (!cancelled) setStatus("ready");
+    });
+    const timer = setTimeout(() => {
+      if (!cancelled) setStatus((s) => (s === "loading" ? "error" : s));
+    }, 9000);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, [subject]);
 
   if (!AGENT_ID) {
@@ -694,5 +715,21 @@ function InterviewWidget({ subject }: { subject: string }) {
     );
   }
 
-  return <div ref={ref} className="flex min-h-[120px] justify-center" />;
+  return (
+    <div>
+      <div ref={ref} className="flex min-h-[96px] items-center justify-center" />
+      {status === "loading" && (
+        <p className="text-center text-sm text-zinc-400">
+          Загружаем голосового агента…
+        </p>
+      )}
+      {status === "error" && (
+        <div className="rounded-xl bg-amber-50 px-4 py-3 text-center text-sm leading-relaxed text-amber-700">
+          Не удалось загрузить голосового агента. Скорее всего, мешает
+          блокировщик рекламы или расширение браузера. Откройте страницу в
+          режиме инкогнито (Cmd+Shift+N) или отключите блокировщики и обновите.
+        </div>
+      )}
+    </div>
+  );
 }
