@@ -114,6 +114,7 @@ begin
 
   select * into v_row from teacher_profiles where user_id = p_uid;
   if found then
+    update profiles set is_teacher = true where id = p_uid;  -- ensure flag (re-approval after reset)
     return v_row;  -- idempotent
   end if;
 
@@ -167,7 +168,9 @@ begin
   if v_uid is null then
     raise exception 'NOT_AUTHENTICATED';
   end if;
-  if exists (select 1 from teacher_profiles where user_id = v_uid) then
+  -- Гейт по флагу is_teacher (а не по наличию профиля): так аккаунт можно
+  -- «сбросить» в обычного пользователя простым is_teacher=false и пройти флоу заново.
+  if coalesce((select is_teacher from profiles where id = v_uid), false) then
     raise exception 'ALREADY_TEACHER';
   end if;
   if p_subject_id is null or not exists (select 1 from subjects where id = p_subject_id) then
