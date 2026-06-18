@@ -45,7 +45,9 @@ type Application = {
 const AGENT_ID =
   process.env.NEXT_PUBLIC_ELEVENLABS_AGENT_ID ??
   "agent_7401kvd53vehfx4vz17gmaac7aw5";
-const WIDGET_SRC = "https://unpkg.com/@elevenlabs/convai-widget-embed";
+// jsDelivr — стабильнее unpkg в СНГ/Узбекистане (unpkg бывает недоступен у ISP).
+const WIDGET_SRC =
+  "https://cdn.jsdelivr.net/npm/@elevenlabs/convai-widget-embed";
 const DOCS_BUCKET = "teacher-docs";
 
 type Stage =
@@ -668,11 +670,22 @@ function InterviewWidget({ subject }: { subject: string }) {
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
 
   useEffect(() => {
-    if (!AGENT_ID || !ref.current) return;
+    if (!AGENT_ID) return;
     let cancelled = false;
 
-    const vars = JSON.stringify({ subject: subject || "выбранный предмет" });
-    ref.current.innerHTML = `<elevenlabs-convai agent-id="${AGENT_ID}" dynamic-variables='${vars}'></elevenlabs-convai>`;
+    // Insert the element only AFTER the custom element is registered, so it
+    // renders reliably (no dependence on lazy upgrade ordering).
+    const mount = () => {
+      if (cancelled || !ref.current) return;
+      const vars = JSON.stringify({ subject: subject || "выбранный предмет" });
+      ref.current.innerHTML = `<elevenlabs-convai agent-id="${AGENT_ID}" dynamic-variables='${vars}'></elevenlabs-convai>`;
+      setStatus("ready");
+    };
+
+    if (window.customElements?.get("elevenlabs-convai")) {
+      mount();
+      return;
+    }
 
     if (!document.querySelector(`script[src="${WIDGET_SRC}"]`)) {
       const s = document.createElement("script");
@@ -685,14 +698,11 @@ function InterviewWidget({ subject }: { subject: string }) {
       document.body.appendChild(s);
     }
 
-    // The custom element only upgrades once the embed script registers it; if
-    // an ad-blocker kills the script it never resolves, so fail after a timeout.
-    customElements.whenDefined("elevenlabs-convai").then(() => {
-      if (!cancelled) setStatus("ready");
-    });
+    window.customElements?.whenDefined("elevenlabs-convai").then(mount);
+    // If the script never loads (blocked/offline), surface a clear message.
     const timer = setTimeout(() => {
       if (!cancelled) setStatus((s) => (s === "loading" ? "error" : s));
-    }, 9000);
+    }, 12000);
 
     return () => {
       cancelled = true;
