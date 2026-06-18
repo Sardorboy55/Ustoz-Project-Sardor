@@ -183,12 +183,16 @@ export default async function LandingPage({
             action={catalogPath}
             className="mt-8 flex w-full max-w-xl items-center gap-2 rounded-2xl border border-white/20 bg-white p-2 shadow-xl focus-within:border-brand-400 focus-within:ring-2 focus-within:ring-brand-100"
           >
-            <Search size={20} aria-hidden="true" className="ml-2 shrink-0 text-zinc-400" />
+            <Search
+              size={20}
+              aria-hidden="true"
+              className="ml-2 hidden shrink-0 text-zinc-400 sm:block"
+            />
             <input
               type="search"
               name="q"
               placeholder={t("searchPlaceholder")}
-              className="h-11 w-full min-w-0 bg-transparent text-base text-zinc-900 placeholder:text-zinc-400 focus:outline-none"
+              className="h-11 w-full min-w-0 bg-transparent pl-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none sm:pl-0 sm:text-base"
             />
             <button type="submit" className={buttonClasses("primary", "md", "shrink-0")}>
               {t("searchCta")}
