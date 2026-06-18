@@ -10,6 +10,7 @@ import {
   CreditCard,
   GraduationCap,
   Package,
+  QrCode,
   ShieldCheck,
   Star,
   Wallet,
@@ -349,6 +350,36 @@ export function BookingDetail({ bookingId }: { bookingId: string }) {
                 )}
               </Card>
             )}
+            {/* Payme QR — interface preview; the data becomes the real Payme
+                checkout link once the merchant keys are connected. */}
+            <Card className="p-5 text-center sm:p-6">
+              <div className="flex items-center justify-center gap-2">
+                <QrCode size={18} className="text-brand-600" aria-hidden="true" />
+                <h2 className="text-base font-bold text-zinc-900">
+                  Оплата через Payme
+                </h2>
+              </div>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=10&data=${encodeURIComponent(
+                  `https://payme.uz/${booking.id}`,
+                )}`}
+                alt="QR Payme"
+                className="mx-auto mt-4 h-52 w-52 rounded-2xl border border-zinc-200 bg-white"
+              />
+              <p className="mt-4 text-sm text-zinc-700">
+                Отсканируйте QR в приложении{" "}
+                <span className="font-semibold">Payme</span> и оплатите{" "}
+                <span className="font-semibold">{priceLabel}</span>.
+              </p>
+              <p className="mt-1 text-xs text-zinc-500">
+                После подтверждения оплаты доступ к уроку откроется автоматически.
+              </p>
+              <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700">
+                Онлайн-оплата подключается — это превью интерфейса
+              </p>
+            </Card>
+
             <Card className="p-5 sm:p-6">
               <h2 className="text-base font-bold text-zinc-900">
                 {t("paymentTitle")}
