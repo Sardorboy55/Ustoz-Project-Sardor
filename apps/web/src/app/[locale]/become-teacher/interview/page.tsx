@@ -45,9 +45,9 @@ type Application = {
 const AGENT_ID =
   process.env.NEXT_PUBLIC_ELEVENLABS_AGENT_ID ??
   "agent_7401kvd53vehfx4vz17gmaac7aw5";
-// jsDelivr — стабильнее unpkg в СНГ/Узбекистане (unpkg бывает недоступен у ISP).
-const WIDGET_SRC =
-  "https://cdn.jsdelivr.net/npm/@elevenlabs/convai-widget-embed";
+// Self-hosted (apps/web/public/elevenlabs-convai.js): внешние CDN (unpkg/jsDelivr)
+// бывают недоступны у узбекских ISP, поэтому отдаём скрипт со своего домена.
+const WIDGET_SRC = "/elevenlabs-convai.js";
 const DOCS_BUCKET = "teacher-docs";
 
 type Stage =
