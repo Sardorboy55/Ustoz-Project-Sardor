@@ -7,7 +7,6 @@ import {
   Check,
   ChevronLeft,
   Clock,
-  CreditCard,
   GraduationCap,
   Package,
   QrCode,
@@ -22,7 +21,6 @@ import { createClient } from "@/lib/supabase/client";
 import { buildIcs, downloadIcs } from "@/lib/ics";
 import { formatFullDate, formatTime } from "@/lib/datetime";
 import { Avatar } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -92,6 +90,7 @@ export function BookingDetail({ bookingId }: { bookingId: string }) {
   const [pkgLeft, setPkgLeft] = useState<number | null>(null);
   const [payingPkg, setPayingPkg] = useState(false);
   const [pkgErr, setPkgErr] = useState(false);
+  const [paidModal, setPaidModal] = useState(false);
 
   const load = useCallback(async () => {
     const supabase = createClient();
@@ -173,6 +172,7 @@ export function BookingDetail({ bookingId }: { bookingId: string }) {
       return;
     }
     await load();
+    setPaidModal(true);
   };
 
   if (phase === "loading") {
@@ -305,14 +305,11 @@ export function BookingDetail({ bookingId }: { bookingId: string }) {
   // pay button stay disabled with a "soon" note — the layout is payment-ready.
   if (needsPayment) {
     const priceLabel = tUi("price", { price: formatUzs(booking.price, locale) });
-    const methods: Array<{ key: string; icon: typeof Wallet; label: string }> = [
-      { key: "balance", icon: Wallet, label: t("balance") },
-      { key: "payme", icon: CreditCard, label: "Payme" },
-      { key: "click", icon: CreditCard, label: "Click" },
-      { key: "uzum", icon: CreditCard, label: "Uzum" },
-    ];
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=10&data=${encodeURIComponent(
+      `https://payme.uz/${booking.id}`,
+    )}`;
     return (
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 sm:px-6 sm:py-10">
+      <main className="mx-auto w-full max-w-md flex-1 px-4 py-8 sm:px-6 sm:py-10">
         <Link
           href="/cabinet/lessons"
           className="inline-flex items-center gap-1 text-sm font-medium text-zinc-500 transition-colors hover:text-zinc-800"
@@ -321,165 +318,127 @@ export function BookingDetail({ bookingId }: { bookingId: string }) {
           {t("myLessons")}
         </Link>
 
-        <div className="mt-5 grid gap-6 lg:grid-cols-[1fr_360px]">
-          {/* Left: payment options */}
-          <div className="space-y-5">
-            {pkgLeft != null && pkgLeft > 0 && (
-              <Card className="border-brand-200 p-5 sm:p-6">
-                <div className="flex items-center gap-2">
-                  <Package size={18} className="text-brand-600" aria-hidden="true" />
-                  <h2 className="text-base font-bold text-zinc-900">
-                    Оплатить пакетом
-                  </h2>
-                </div>
-                <p className="mt-1 text-sm text-zinc-600">
-                  У вас есть пакет на этот урок — осталось {pkgLeft}. Спишется
-                  1 урок, доплачивать не нужно.
-                </p>
-                <Button
-                  className="mt-3 w-full sm:w-auto"
-                  loading={payingPkg}
-                  onClick={payWithPackage}
-                >
-                  Списать 1 урок из пакета
-                </Button>
-                {pkgErr && (
-                  <p role="alert" className="mt-2 text-sm text-red-600">
-                    Не удалось списать урок. Попробуйте ещё раз.
-                  </p>
-                )}
-              </Card>
-            )}
-            {/* Payme QR — interface preview; the data becomes the real Payme
-                checkout link once the merchant keys are connected. */}
-            <Card className="p-5 text-center sm:p-6">
-              <div className="flex items-center justify-center gap-2">
-                <QrCode size={18} className="text-brand-600" aria-hidden="true" />
-                <h2 className="text-base font-bold text-zinc-900">
-                  Оплата через Payme
-                </h2>
-              </div>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=10&data=${encodeURIComponent(
-                  `https://payme.uz/${booking.id}`,
-                )}`}
-                alt="QR Payme"
-                className="mx-auto mt-4 h-52 w-52 rounded-2xl border border-zinc-200 bg-white"
-              />
-              <p className="mt-4 text-sm text-zinc-700">
-                Отсканируйте QR в приложении{" "}
-                <span className="font-semibold">Payme</span> и оплатите{" "}
-                <span className="font-semibold">{priceLabel}</span>.
-              </p>
-              <p className="mt-1 text-xs text-zinc-500">
-                После подтверждения оплаты доступ к уроку откроется автоматически.
-              </p>
-              <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700">
-                Онлайн-оплата подключается — это превью интерфейса
-              </p>
-            </Card>
-
-            <Card className="p-5 sm:p-6">
+        {pkgLeft != null && pkgLeft > 0 && (
+          <Card className="mt-5 border-brand-200 p-5 sm:p-6">
+            <div className="flex items-center gap-2">
+              <Package size={18} className="text-brand-600" aria-hidden="true" />
               <h2 className="text-base font-bold text-zinc-900">
-                {t("paymentTitle")}
+                Оплатить пакетом
               </h2>
-              <ul className="mt-3 divide-y divide-zinc-100">
-                {methods.map(({ key, icon: Icon, label }) => (
-                  <li key={key} className="flex items-center gap-3 py-3.5">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-zinc-100 text-zinc-500">
-                      <Icon size={18} aria-hidden="true" />
-                    </span>
-                    <span className="flex-1 font-semibold text-zinc-700">
-                      {label}
-                    </span>
-                    <Badge variant="neutral">{t("soon")}</Badge>
-                  </li>
-                ))}
-              </ul>
-              <p className="mt-3 text-xs leading-relaxed text-zinc-500">
-                {t("paymentNote")}
+            </div>
+            <p className="mt-1 text-sm text-zinc-600">
+              У вас есть пакет на этот урок — осталось {pkgLeft}. Спишется 1 урок,
+              доплачивать не нужно.
+            </p>
+            <Button
+              className="mt-3 w-full"
+              loading={payingPkg}
+              onClick={payWithPackage}
+            >
+              Списать 1 урок из пакета
+            </Button>
+            {pkgErr && (
+              <p role="alert" className="mt-2 text-sm text-red-600">
+                Не удалось списать урок. Попробуйте ещё раз.
               </p>
-            </Card>
+            )}
+          </Card>
+        )}
+
+        {/* One clean order + QR block: details on top, QR below — no pay button
+            (Payme confirms the payment itself). */}
+        <Card className="mt-5 p-5 sm:p-6">
+          <Link
+            href={`/t/${booking.teacher?.slug ?? ""}`}
+            className="group flex items-center gap-3"
+          >
+            <Avatar
+              src={booking.teacher?.profiles?.avatar_url}
+              name={teacherName}
+              size="md"
+            />
+            <span className="min-w-0">
+              <span className="block truncate font-bold text-zinc-900 group-hover:text-brand-700">
+                {teacherName}
+              </span>
+              <span className="block truncate text-sm text-zinc-500">
+                {subjectName}
+              </span>
+            </span>
+          </Link>
+
+          <dl className="mt-5 space-y-2.5 border-t border-zinc-100 pt-5 text-sm">
+            <div className="flex justify-between gap-3">
+              <dt className="text-zinc-500">{tW("date")}</dt>
+              <dd className="text-right font-semibold text-zinc-900">
+                {formatFullDate(start, locale)}
+              </dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-zinc-500">{tW("time")}</dt>
+              <dd className="text-right font-semibold text-zinc-900">
+                {formatTime(start, locale)}–{formatTime(end, locale)} ·{" "}
+                {tW("durationValue", { min: booking.duration_min })}
+              </dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-zinc-500">{tW("subject")}</dt>
+              <dd className="text-right font-semibold text-zinc-900">
+                {subjectName}
+              </dd>
+            </div>
+          </dl>
+
+          <div className="mt-5 flex items-center justify-between border-t border-zinc-100 pt-5">
+            <span className="font-bold text-zinc-900">{t("total")}</span>
+            <span className="text-xl font-extrabold text-zinc-900">
+              {priceLabel}
+            </span>
           </div>
 
-          {/* Right: sticky order summary */}
-          <aside className="h-fit lg:sticky lg:top-24">
-            <Card className="p-5 sm:p-6">
-              <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
-                {t("checkoutSummary")}
+          <div className="mt-6 flex flex-col items-center border-t border-zinc-100 pt-6 text-center">
+            <div className="flex items-center gap-2">
+              <QrCode size={18} className="text-brand-600" aria-hidden="true" />
+              <h2 className="text-base font-bold text-zinc-900">
+                Оплата через Payme
+              </h2>
+            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={qrUrl}
+              alt="QR Payme"
+              className="mt-4 h-52 w-52 rounded-2xl border border-zinc-200 bg-white"
+            />
+            <p className="mt-4 text-sm text-zinc-700">
+              Отсканируйте QR в приложении{" "}
+              <span className="font-semibold">Payme</span> и оплатите{" "}
+              <span className="font-semibold">{priceLabel}</span>.
+            </p>
+            <p className="mt-1 text-xs text-zinc-500">
+              Кнопка не нужна — после оплаты доступ к уроку откроется
+              автоматически.
+            </p>
+            <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700">
+              Онлайн-оплата подключается — превью интерфейса
+            </p>
+          </div>
+
+          <div className="mt-5 flex items-start gap-2.5 rounded-xl bg-emerald-50 p-3.5">
+            <ShieldCheck
+              size={18}
+              className="mt-0.5 shrink-0 text-emerald-600"
+              aria-hidden="true"
+            />
+            <div>
+              <p className="text-sm font-bold text-emerald-800">
+                {t("guaranteeTitle")}
               </p>
-              <Link
-                href={`/t/${booking.teacher?.slug ?? ""}`}
-                className="group mt-3 flex items-center gap-3"
-              >
-                <Avatar
-                  src={booking.teacher?.profiles?.avatar_url}
-                  name={teacherName}
-                  size="md"
-                />
-                <span className="min-w-0">
-                  <span className="block truncate font-bold text-zinc-900 group-hover:text-brand-700">
-                    {teacherName}
-                  </span>
-                  <span className="block truncate text-sm text-zinc-500">
-                    {subjectName}
-                  </span>
-                </span>
-              </Link>
-
-              <dl className="mt-5 space-y-2.5 border-t border-zinc-100 pt-5 text-sm">
-                <div className="flex justify-between gap-3">
-                  <dt className="text-zinc-500">{tW("date")}</dt>
-                  <dd className="text-right font-semibold text-zinc-900">
-                    {formatFullDate(start, locale)}
-                  </dd>
-                </div>
-                <div className="flex justify-between gap-3">
-                  <dt className="text-zinc-500">{tW("time")}</dt>
-                  <dd className="text-right font-semibold text-zinc-900">
-                    {formatTime(start, locale)}–{formatTime(end, locale)} ·{" "}
-                    {tW("durationValue", { min: booking.duration_min })}
-                  </dd>
-                </div>
-                <div className="flex justify-between gap-3">
-                  <dt className="text-zinc-500">{tW("subject")}</dt>
-                  <dd className="text-right font-semibold text-zinc-900">
-                    {subjectName}
-                  </dd>
-                </div>
-              </dl>
-
-              <div className="mt-5 flex items-center justify-between border-t border-zinc-100 pt-5">
-                <span className="font-bold text-zinc-900">{t("total")}</span>
-                <span className="text-lg font-extrabold text-zinc-900">
-                  {priceLabel}
-                </span>
-              </div>
-
-              <Button size="lg" className="mt-5 w-full" disabled>
-                {t("payCta", { amount: priceLabel })}
-              </Button>
-              <p className="mt-2 text-center text-xs text-zinc-400">{t("soon")}</p>
-
-              <div className="mt-5 flex items-start gap-2.5 rounded-xl bg-emerald-50 p-3.5">
-                <ShieldCheck
-                  size={18}
-                  className="mt-0.5 shrink-0 text-emerald-600"
-                  aria-hidden="true"
-                />
-                <div>
-                  <p className="text-sm font-bold text-emerald-800">
-                    {t("guaranteeTitle")}
-                  </p>
-                  <p className="mt-0.5 text-xs leading-relaxed text-emerald-700">
-                    {t("guaranteeBody")}
-                  </p>
-                </div>
-              </div>
-            </Card>
-          </aside>
-        </div>
+              <p className="mt-0.5 text-xs leading-relaxed text-emerald-700">
+                {t("guaranteeBody")}
+              </p>
+            </div>
+          </div>
+        </Card>
       </main>
     );
   }
@@ -731,6 +690,35 @@ export function BookingDetail({ bookingId }: { bookingId: string }) {
           <Button variant="danger" loading={cancelling} onClick={doCancel}>
             {t("cancelConfirm")}
           </Button>
+        </div>
+      </Modal>
+
+      {/* Payment success (dimmed backdrop). Shown after a package payment; once
+          Payme is connected its webhook → reload will trigger this too. */}
+      <Modal open={paidModal} onClose={() => setPaidModal(false)}>
+        <div className="py-2 text-center">
+          <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+            <Check size={32} strokeWidth={3} aria-hidden="true" />
+          </span>
+          <p className="mt-4 text-xl font-bold text-zinc-900">
+            Оплата прошла успешно!
+          </p>
+          <p className="mt-1 text-sm leading-relaxed text-zinc-600">
+            Доступ к уроку открыт. Ссылку на занятие преподаватель добавит ближе к
+            началу — вы увидите её на этой странице.
+          </p>
+          <div className="mt-5 flex flex-col gap-2">
+            <Button className="w-full" onClick={() => setPaidModal(false)}>
+              Перейти к уроку
+            </Button>
+            <ButtonLink
+              href="/cabinet/lessons"
+              variant="secondary"
+              className="w-full"
+            >
+              Мои уроки
+            </ButtonLink>
+          </div>
         </div>
       </Modal>
     </main>
