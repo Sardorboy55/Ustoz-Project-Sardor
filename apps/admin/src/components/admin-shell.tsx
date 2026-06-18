@@ -11,6 +11,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   Banknote,
   CalendarCheck2,
+  ClipboardCheck,
   CreditCard,
   FolderTree,
   GraduationCap,
@@ -32,6 +33,7 @@ const NAV: NavItem[] = [
   { href: "/", label: "Дашборд", icon: LayoutDashboard },
   { href: "/users", label: "Пользователи", icon: Users },
   { href: "/teachers", label: "Преподаватели", icon: GraduationCap },
+  { href: "/applications", label: "Заявки преп.", icon: ClipboardCheck },
   { href: "/bookings", label: "Брони", icon: CalendarCheck2 },
   { href: "/payments", label: "Платежи", icon: CreditCard },
   { href: "/payouts", label: "Выплаты", icon: Banknote },
