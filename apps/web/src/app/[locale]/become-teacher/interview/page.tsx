@@ -666,80 +666,80 @@ function ResultCard({
  * placeholder keeps the rest of the flow testable.
  */
 function InterviewWidget({ subject }: { subject: string }) {
-  const ref = useRef<HTMLDivElement>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
 
   useEffect(() => {
     if (!AGENT_ID) return;
     let cancelled = false;
 
-    // Insert the element only AFTER the custom element is registered, so it
-    // renders reliably (no dependence on lazy upgrade ordering).
+    // Mount the widget element directly on <body> (not inside the card): the
+    // floating call button is position:fixed, and a card ancestor with
+    // transform/blur would otherwise become its containing block and hide it.
     const mount = () => {
-      if (cancelled || !ref.current) return;
-      const vars = JSON.stringify({ subject: subject || "выбранный предмет" });
-      ref.current.innerHTML = `<elevenlabs-convai agent-id="${AGENT_ID}" dynamic-variables='${vars}'></elevenlabs-convai>`;
+      if (cancelled) return;
+      document.querySelectorAll("elevenlabs-convai").forEach((n) => n.remove());
+      const el = document.createElement("elevenlabs-convai");
+      el.setAttribute("agent-id", AGENT_ID);
+      el.setAttribute(
+        "dynamic-variables",
+        JSON.stringify({ subject: subject || "выбранный предмет" }),
+      );
+      document.body.appendChild(el);
       setStatus("ready");
     };
 
     if (window.customElements?.get("elevenlabs-convai")) {
       mount();
-      return;
+    } else {
+      if (!document.querySelector(`script[src="${WIDGET_SRC}"]`)) {
+        const s = document.createElement("script");
+        s.src = WIDGET_SRC;
+        s.async = true;
+        s.type = "text/javascript";
+        s.onerror = () => {
+          if (!cancelled) setStatus("error");
+        };
+        document.body.appendChild(s);
+      }
+      window.customElements?.whenDefined("elevenlabs-convai").then(mount);
     }
 
-    if (!document.querySelector(`script[src="${WIDGET_SRC}"]`)) {
-      const s = document.createElement("script");
-      s.src = WIDGET_SRC;
-      s.async = true;
-      s.type = "text/javascript";
-      s.onerror = () => {
-        if (!cancelled) setStatus("error");
-      };
-      document.body.appendChild(s);
-    }
-
-    window.customElements?.whenDefined("elevenlabs-convai").then(mount);
-    // If the script never loads (blocked/offline), surface a clear message.
     const timer = setTimeout(() => {
       if (!cancelled) setStatus((s) => (s === "loading" ? "error" : s));
     }, 12000);
 
+    // Remove the floating widget when leaving the interview step.
     return () => {
       cancelled = true;
       clearTimeout(timer);
+      document.querySelectorAll("elevenlabs-convai").forEach((n) => n.remove());
     };
   }, [subject]);
 
-  if (!AGENT_ID) {
+  if (!AGENT_ID || status === "error") {
     return (
-      <div className="flex flex-col items-center rounded-xl border border-dashed border-zinc-300 bg-zinc-50 px-6 py-10 text-center">
-        <span className="flex h-14 w-14 items-center justify-center rounded-full bg-brand-50 text-brand-600">
-          <Mic size={26} aria-hidden="true" />
-        </span>
-        <p className="mt-4 font-semibold text-zinc-800">ИИ‑рекрутёр почти готов</p>
-        <p className="mt-1 max-w-sm text-sm text-zinc-500">
-          Голосовой агент подключается. Как только настройка завершится,
-          собеседование запустится прямо здесь.
-        </p>
+      <div className="rounded-xl bg-amber-50 px-4 py-4 text-center text-sm leading-relaxed text-amber-700">
+        Не удалось загрузить голосового агента. Обновите страницу или попробуйте
+        чуть позже.
       </div>
     );
   }
 
   return (
-    <div>
-      <div ref={ref} className="flex min-h-[96px] items-center justify-center" />
-      {status === "loading" && (
-        <p className="text-center text-sm text-zinc-400">
-          Загружаем голосового агента…
-        </p>
-      )}
-      {status === "error" && (
-        <div className="rounded-xl bg-amber-50 px-4 py-3 text-center text-sm leading-relaxed text-amber-700">
-          Не удалось загрузить голосового агента. Скорее всего, мешает
-          блокировщик рекламы или расширение браузера. Откройте страницу в
-          режиме инкогнито (Cmd+Shift+N) или отключите блокировщики и обновите.
-        </div>
-      )}
+    <div className="rounded-xl border border-brand-100 bg-brand-50/60 px-5 py-6 text-center">
+      <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-brand-600 text-white">
+        <Mic size={26} aria-hidden="true" />
+      </span>
+      <p className="mt-3 font-semibold text-zinc-900">
+        {status === "loading"
+          ? "Загружаем голосового агента…"
+          : "Агент готов к разговору"}
+      </p>
+      <p className="mx-auto mt-1 max-w-sm text-sm text-zinc-600">
+        Кнопка собеседования — это{" "}
+        <span className="font-semibold text-brand-700">синий кружок в правом нижнем углу экрана</span>.
+        Нажмите его, разрешите доступ к микрофону и начните разговор.
+      </p>
     </div>
   );
 }
