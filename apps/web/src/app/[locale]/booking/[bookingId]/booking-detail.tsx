@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  BadgeCheck,
   CalendarPlus,
   CalendarX2,
   Check,
@@ -9,6 +10,7 @@ import {
   Clock,
   GraduationCap,
   Package,
+  Paperclip,
   QrCode,
   ShieldCheck,
   Star,
@@ -91,6 +93,10 @@ export function BookingDetail({ bookingId }: { bookingId: string }) {
   const [payingPkg, setPayingPkg] = useState(false);
   const [pkgErr, setPkgErr] = useState(false);
   const [paidModal, setPaidModal] = useState(false);
+  const [proofSent, setProofSent] = useState(false);
+  const [uploadingProof, setUploadingProof] = useState(false);
+  const [proofErr, setProofErr] = useState<string | null>(null);
+  const receiptRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
     const supabase = createClient();
@@ -117,8 +123,50 @@ export function BookingDetail({ bookingId }: { bookingId: string }) {
       return;
     }
     setBooking(data as unknown as BookingRow);
+    // Уже отправлен чек на проверку по этой броне?
+    const { data: pay } = await supabase
+      .from("manual_payments")
+      .select("id")
+      .eq("booking_id", bookingId)
+      .eq("status", "pending")
+      .maybeSingle();
+    setProofSent(!!pay);
     setPhase("ready");
   }, [bookingId, router]);
+
+  // Загрузка чека → submit_payment_proof → «на проверке».
+  const onReceipt = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (receiptRef.current) receiptRef.current.value = "";
+    if (!file || !uid) return;
+    if (file.size > 10 * 1024 * 1024) {
+      setProofErr("Файл больше 10 МБ.");
+      return;
+    }
+    setUploadingProof(true);
+    setProofErr(null);
+    const supabase = createClient();
+    const safe = file.name.replace(/[^a-zA-Z0-9._-]+/g, "_");
+    const path = `${uid}/${crypto.randomUUID()}-${safe}`;
+    const { error: upErr } = await supabase.storage
+      .from("payment-receipts")
+      .upload(path, file, { upsert: false });
+    if (upErr) {
+      setUploadingProof(false);
+      setProofErr("Не удалось загрузить файл.");
+      return;
+    }
+    const { error: rpcErr } = await supabase.rpc("submit_payment_proof", {
+      p_booking_id: bookingId,
+      p_receipt_path: path,
+    });
+    setUploadingProof(false);
+    if (rpcErr) {
+      setProofErr("Не удалось отправить чек. Попробуйте ещё раз.");
+      return;
+    }
+    setProofSent(true);
+  };
 
   useEffect(() => {
     queueMicrotask(() => void load());
@@ -305,9 +353,6 @@ export function BookingDetail({ bookingId }: { bookingId: string }) {
   // pay button stay disabled with a "soon" note — the layout is payment-ready.
   if (needsPayment) {
     const priceLabel = tUi("price", { price: formatUzs(booking.price, locale) });
-    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=10&data=${encodeURIComponent(
-      `https://payme.uz/${booking.id}`,
-    )}`;
     return (
       <main className="mx-auto w-full max-w-md flex-1 px-4 py-8 sm:px-6 sm:py-10">
         <Link
@@ -396,31 +441,83 @@ export function BookingDetail({ bookingId }: { bookingId: string }) {
             </span>
           </div>
 
-          <div className="mt-6 flex flex-col items-center border-t border-zinc-100 pt-6 text-center">
-            <div className="flex items-center gap-2">
+          <div className="mt-6 border-t border-zinc-100 pt-6">
+            <div className="flex items-center justify-center gap-2">
               <QrCode size={18} className="text-brand-600" aria-hidden="true" />
               <h2 className="text-base font-bold text-zinc-900">
-                Оплата через Payme
+                Оплата через Paynet
               </h2>
             </div>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={qrUrl}
-              alt="QR Payme"
-              className="mt-4 h-52 w-52 rounded-2xl border border-zinc-200 bg-white"
-            />
-            <p className="mt-4 text-sm text-zinc-700">
-              Отсканируйте QR в приложении{" "}
-              <span className="font-semibold">Payme</span> и оплатите{" "}
-              <span className="font-semibold">{priceLabel}</span>.
-            </p>
-            <p className="mt-1 text-xs text-zinc-500">
-              Кнопка не нужна — после оплаты доступ к уроку откроется
-              автоматически.
-            </p>
-            <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700">
-              Онлайн-оплата подключается — превью интерфейса
-            </p>
+
+            {proofSent ? (
+              <div className="mt-4 flex flex-col items-center rounded-2xl bg-amber-50 px-5 py-6 text-center">
+                <BadgeCheck size={28} className="text-amber-600" aria-hidden="true" />
+                <p className="mt-2 font-bold text-amber-800">
+                  Чек отправлен — оплата на проверке
+                </p>
+                <p className="mt-1 text-sm text-amber-700">
+                  Мы проверим поступление и откроем доступ к уроку. Обычно это
+                  занимает немного времени.
+                </p>
+              </div>
+            ) : (
+              <div className="mt-4 flex flex-col items-center text-center">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/paynet-qr.png"
+                  alt="QR Paynet"
+                  onError={(e) => {
+                    e.currentTarget.style.display = "none";
+                  }}
+                  className="h-52 w-52 rounded-2xl border border-zinc-200 bg-white object-contain"
+                />
+                <p className="mt-4 text-sm text-zinc-700">
+                  Отсканируйте QR в приложении{" "}
+                  <span className="font-semibold">Paynet</span> (или оплатите на
+                  счёт ниже) на сумму{" "}
+                  <span className="font-semibold">{priceLabel}</span>.
+                </p>
+                <div className="mt-3 w-full rounded-xl bg-zinc-50 px-4 py-3 text-sm">
+                  <div className="flex justify-between gap-3">
+                    <span className="text-zinc-500">Получатель</span>
+                    <span className="font-semibold text-zinc-900">
+                      TEMUR BASHIROV
+                    </span>
+                  </div>
+                  <div className="mt-1 flex justify-between gap-3">
+                    <span className="text-zinc-500">Счёт Paynet</span>
+                    <span className="font-mono font-semibold text-zinc-900">
+                      8888012884806485
+                    </span>
+                  </div>
+                </div>
+
+                <input
+                  ref={receiptRef}
+                  type="file"
+                  accept="image/*,application/pdf"
+                  onChange={onReceipt}
+                  className="hidden"
+                />
+                <Button
+                  className="mt-4 w-full"
+                  loading={uploadingProof}
+                  onClick={() => receiptRef.current?.click()}
+                >
+                  <Paperclip size={16} aria-hidden="true" />
+                  Я оплатил — загрузить чек
+                </Button>
+                {proofErr && (
+                  <p role="alert" className="mt-2 text-sm font-medium text-red-600">
+                    {proofErr}
+                  </p>
+                )}
+                <p className="mt-2 text-xs text-zinc-500">
+                  После проверки администратором доступ к уроку откроется
+                  автоматически.
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="mt-5 flex items-start gap-2.5 rounded-xl bg-emerald-50 p-3.5">
