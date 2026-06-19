@@ -450,15 +450,23 @@ export function BookingDetail({ bookingId }: { bookingId: string }) {
             </div>
 
             {proofSent ? (
-              <div className="mt-4 flex flex-col items-center rounded-2xl bg-amber-50 px-5 py-6 text-center">
-                <BadgeCheck size={28} className="text-amber-600" aria-hidden="true" />
-                <p className="mt-2 font-bold text-amber-800">
-                  Чек отправлен — оплата на проверке
+              <div className="mt-4 flex flex-col items-center rounded-2xl bg-amber-50 px-5 py-7 text-center">
+                <BadgeCheck size={34} className="text-amber-600" aria-hidden="true" />
+                <p className="mt-3 text-lg font-bold text-amber-800">
+                  Оплата на проверке
                 </p>
-                <p className="mt-1 text-sm text-amber-700">
-                  Мы проверим поступление и откроем доступ к уроку. Обычно это
-                  занимает немного времени.
+                <p className="mt-1 max-w-xs text-sm text-amber-700">
+                  Чек отправлен. Как только мы подтвердим оплату —{" "}
+                  <span className="font-semibold">урок откроется</span>, и вы
+                  сможете зайти на занятие. Обычно это занимает немного времени.
                 </p>
+                <ButtonLink
+                  href="/cabinet/lessons"
+                  variant="secondary"
+                  className="mt-4"
+                >
+                  Мои уроки
+                </ButtonLink>
               </div>
             ) : (
               <div className="mt-4 flex flex-col items-center text-center">
