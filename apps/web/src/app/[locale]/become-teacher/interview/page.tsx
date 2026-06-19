@@ -466,7 +466,9 @@ export default function InterviewPage() {
               <Bullet icon={ShieldCheck}>Запись послушает наш специалист.</Bullet>
             </ul>
 
-            <InterviewWidget subject={currentSubject ? subjectName(currentSubject) : ""} />
+            {/* Pass the subject in the agent's spoken language (Uzbek) so the
+                name isn't read in a mismatched language mid-sentence. */}
+            <InterviewWidget subject={currentSubject ? currentSubject.name_uz : ""} />
 
             {error && (
               <p role="alert" className="mt-4 text-sm font-medium text-red-600">
