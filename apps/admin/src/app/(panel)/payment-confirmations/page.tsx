@@ -187,7 +187,7 @@ export default function PaymentConfirmationsPage() {
     setBusy(false);
     if (e) {
       console.error("confirm failed:", e);
-      toast("Не удалось сохранить решение. Попробуйте ещё раз.", "error");
+      toast(`Ошибка: ${e.message || "не удалось сохранить"}`, "error");
       return;
     }
     toast(

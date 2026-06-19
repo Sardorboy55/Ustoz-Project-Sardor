@@ -165,7 +165,7 @@ export default function ApplicationsPage() {
     setBusy(false);
     if (e) {
       console.error("review failed:", e);
-      toast("Не удалось сохранить решение. Попробуйте ещё раз.", "error");
+      toast(`Ошибка: ${e.message || "не удалось сохранить"}`, "error");
       return;
     }
     toast(confirm.approve ? "Заявка одобрена — преподаватель создан" : "Заявка отклонена");
