@@ -278,14 +278,8 @@ export default function ApplicationsPage() {
                       </Button>
                     ))
                   )}
-                  {app.recording_url && (
-                    <Button
-                      variant="secondary"
-                      className="px-3 py-1.5 text-sm"
-                      onClick={() => window.open(app.recording_url!, "_blank", "noopener")}
-                    >
-                      🎧 Запись
-                    </Button>
+                  {app.conversation_id && (
+                    <RecordingPlayer conversationId={app.conversation_id} />
                   )}
                 </div>
 
@@ -405,6 +399,43 @@ export default function ApplicationsPage() {
         )}
       </Modal>
     </div>
+  );
+}
+
+// Кнопка «Слушать собеседование» → тянет аудио из Edge Function interview-audio
+// (она берёт запись из ElevenLabs по conversation_id с серверным ключом).
+function RecordingPlayer({ conversationId }: { conversationId: string }) {
+  const toast = useToast();
+  const [url, setUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const load = async () => {
+    setLoading(true);
+    const supabase = createClient();
+    const { data, error } = await supabase.functions.invoke("interview-audio", {
+      body: { conversation_id: conversationId },
+    });
+    setLoading(false);
+    if (error || !data) {
+      toast("Не удалось загрузить запись (возможно, ещё обрабатывается).", "error");
+      return;
+    }
+    const blob = data instanceof Blob ? data : new Blob([data], { type: "audio/mpeg" });
+    setUrl(URL.createObjectURL(blob));
+  };
+
+  if (url) {
+    return <audio controls autoPlay src={url} className="mt-2 w-full max-w-md" />;
+  }
+  return (
+    <Button
+      variant="secondary"
+      className="px-3 py-1.5 text-sm"
+      loading={loading}
+      onClick={load}
+    >
+      🎧 Слушать собеседование
+    </Button>
   );
 }
 

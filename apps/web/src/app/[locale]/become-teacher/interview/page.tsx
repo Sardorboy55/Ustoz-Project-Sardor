@@ -244,6 +244,10 @@ export default function InterviewPage() {
     setStage("interview");
   };
 
+  // ElevenLabs id разговора, пойманный при подключении — по нему админка
+  // потом достаёт аудиозапись собеседования.
+  const convIdRef = useRef<string | null>(null);
+
   // Шаг 3 → отправка: собеседование завершено → на проверку.
   const finishInterview = async () => {
     if (!appId) return;
@@ -252,7 +256,7 @@ export default function InterviewPage() {
     const supabase = createClient();
     const { error: rpcErr } = await supabase.rpc("submit_teacher_application", {
       p_application_id: appId,
-      p_conversation_id: null,
+      p_conversation_id: convIdRef.current,
     });
     setBusy(false);
     if (rpcErr) {
@@ -468,7 +472,12 @@ export default function InterviewPage() {
 
             {/* Pass the subject in the agent's spoken language (Uzbek) so the
                 name isn't read in a mismatched language mid-sentence. */}
-            <InterviewWidget subject={currentSubject ? currentSubject.name_uz : ""} />
+            <InterviewWidget
+              subject={currentSubject ? currentSubject.name_uz : ""}
+              onConversationId={(id) => {
+                convIdRef.current = id;
+              }}
+            />
 
             {error && (
               <p role="alert" className="mt-4 text-sm font-medium text-red-600">
@@ -667,19 +676,32 @@ function ResultCard({
  * {{subject}} dynamic variable. When no agent id is configured yet, a clear
  * placeholder keeps the rest of the flow testable.
  */
-function InterviewWidget({ subject }: { subject: string }) {
+function InterviewWidget({
+  subject,
+  onConversationId,
+}: {
+  subject: string;
+  onConversationId: (id: string) => void;
+}) {
   // The prebuilt ElevenLabs widget doesn't support Uzbek (its language table
   // lacks "uz"), so we drive the agent directly via the React SDK instead.
   return (
     <ConversationProvider>
-      <InterviewCall subject={subject} />
+      <InterviewCall subject={subject} onConversationId={onConversationId} />
     </ConversationProvider>
   );
 }
 
-function InterviewCall({ subject }: { subject: string }) {
+function InterviewCall({
+  subject,
+  onConversationId,
+}: {
+  subject: string;
+  onConversationId: (id: string) => void;
+}) {
   const [error, setError] = useState<string | null>(null);
   const conversation = useConversation({
+    onConnect: ({ conversationId }) => onConversationId(conversationId),
     onError: () => setError("Связь прервалась. Нажмите «Начать разговор» ещё раз."),
   });
   const status = conversation.status; // disconnected | connecting | connected | error
