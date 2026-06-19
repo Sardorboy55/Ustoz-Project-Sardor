@@ -94,7 +94,6 @@ export function BookingDetail({ bookingId }: { bookingId: string }) {
   const [pkgErr, setPkgErr] = useState(false);
   const [paidModal, setPaidModal] = useState(false);
   const [proofSent, setProofSent] = useState(false);
-  const [payAmount, setPayAmount] = useState<number | null>(null);
   const [uploadingProof, setUploadingProof] = useState(false);
   const [proofErr, setProofErr] = useState<string | null>(null);
   const receiptRef = useRef<HTMLInputElement>(null);
@@ -124,20 +123,14 @@ export function BookingDetail({ bookingId }: { bookingId: string }) {
       return;
     }
     setBooking(data as unknown as BookingRow);
-    const bk = data as unknown as BookingRow;
-    if (bk.status === "pending_payment" && bk.price > 0) {
-      // Создаём/получаем заявку с уникальной суммой-кодом + узнаём, отправлен ли чек.
-      const { data: pay } = await supabase.rpc("ensure_lesson_payment", {
-        p_booking_id: bookingId,
-      });
-      const row = (Array.isArray(pay) ? pay[0] : pay) as
-        | { pay_amount: number | null; receipt_path: string | null }
-        | null;
-      if (row) {
-        setPayAmount(row.pay_amount);
-        setProofSent(!!row.receipt_path);
-      }
-    }
+    // Уже отправлен чек на проверку по этой броне?
+    const { data: pay } = await supabase
+      .from("manual_payments")
+      .select("id")
+      .eq("booking_id", bookingId)
+      .eq("status", "pending")
+      .maybeSingle();
+    setProofSent(!!pay);
     setPhase("ready");
   }, [bookingId, router]);
 
@@ -360,11 +353,6 @@ export function BookingDetail({ bookingId }: { bookingId: string }) {
   // pay button stay disabled with a "soon" note — the layout is payment-ready.
   if (needsPayment) {
     const priceLabel = tUi("price", { price: formatUzs(booking.price, locale) });
-    // Точная сумма с уникальным кодом — её надо оплатить «ровно».
-    const payLabel =
-      payAmount != null
-        ? tUi("price", { price: formatUzs(payAmount, locale) })
-        : priceLabel;
     return (
       <main className="mx-auto w-full max-w-md flex-1 px-4 py-8 sm:px-6 sm:py-10">
         <Link
@@ -447,14 +435,11 @@ export function BookingDetail({ bookingId }: { bookingId: string }) {
           </dl>
 
           <div className="mt-5 flex items-center justify-between border-t border-zinc-100 pt-5">
-            <span className="font-bold text-zinc-900">К оплате</span>
-            <span className="text-xl font-extrabold text-brand-700">
-              {payLabel}
+            <span className="font-bold text-zinc-900">{t("total")}</span>
+            <span className="text-xl font-extrabold text-zinc-900">
+              {priceLabel}
             </span>
           </div>
-          <p className="mt-1 text-right text-xs text-zinc-500">
-            Оплатите ровно эту сумму — по ней мы найдём ваш платёж.
-          </p>
 
           <div className="mt-6 border-t border-zinc-100 pt-6">
             <div className="flex items-center justify-center gap-2">
@@ -497,11 +482,8 @@ export function BookingDetail({ bookingId }: { bookingId: string }) {
                 <p className="mt-4 text-sm text-zinc-700">
                   Отсканируйте QR в приложении{" "}
                   <span className="font-semibold">Paynet</span> (или оплатите на
-                  счёт ниже){" "}
-                  <span className="font-semibold text-brand-700">
-                    ровно на {payLabel}
-                  </span>
-                  .
+                  счёт ниже) на сумму{" "}
+                  <span className="font-semibold">{priceLabel}</span>.
                 </p>
                 <div className="mt-3 w-full rounded-xl bg-zinc-50 px-4 py-3 text-sm">
                   <div className="flex justify-between gap-3">
