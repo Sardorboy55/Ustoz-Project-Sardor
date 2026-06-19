@@ -4,6 +4,15 @@
 
 import { createServerClient } from "@supabase/ssr";
 
+// Временная диагностика: показывает, видит ли сервер ключ (без значения).
+export function GET(): Response {
+  return Response.json({
+    hasKey: !!process.env.ELEVENLABS_API_KEY,
+    keyLength: (process.env.ELEVENLABS_API_KEY ?? "").length,
+    matchingNames: Object.keys(process.env).filter((k) => /eleven/i.test(k)),
+  });
+}
+
 export async function POST(req: Request): Promise<Response> {
   const token = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
   if (!token) {
