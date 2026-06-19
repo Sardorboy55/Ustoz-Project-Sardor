@@ -9,6 +9,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
+  BadgeCheck,
   Banknote,
   CalendarCheck2,
   ClipboardCheck,
@@ -36,6 +37,7 @@ const NAV: NavItem[] = [
   { href: "/applications", label: "Заявки преп.", icon: ClipboardCheck },
   { href: "/bookings", label: "Брони", icon: CalendarCheck2 },
   { href: "/payments", label: "Платежи", icon: CreditCard },
+  { href: "/payment-confirmations", label: "Оплаты (QR)", icon: BadgeCheck },
   { href: "/payouts", label: "Выплаты", icon: Banknote },
   { href: "/reviews", label: "Отзывы", icon: Star },
   { href: "/categories", label: "Категории", icon: FolderTree },
