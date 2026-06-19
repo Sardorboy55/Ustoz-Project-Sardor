@@ -419,3 +419,4 @@ async function fetchResolved(): Promise<Application[]> {
   if (error) throw error;
   return enrich((data ?? []) as Application[]);
 }
+
