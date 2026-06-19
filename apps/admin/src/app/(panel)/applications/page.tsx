@@ -228,26 +228,21 @@ export default function ApplicationsPage() {
                   </span>
                 </div>
 
-                <dl className="mt-3 grid grid-cols-2 gap-x-6 gap-y-1 text-sm sm:grid-cols-3">
+                <dl className="mt-3 text-sm">
                   <div>
                     <dt className="text-zinc-500">Опыт</dt>
                     <dd className="font-medium text-zinc-900">
                       {app.experience_years} лет
                     </dd>
                   </div>
-                  <div className="col-span-2 sm:col-span-1">
-                    <dt className="text-zinc-500">Оценка ИИ</dt>
-                    <dd className="font-medium text-zinc-900">
-                      {app.ai_score != null ? (
-                        <Badge tone={scoreTone(app.ai_score)}>
-                          {app.ai_score}/100 · {scoreLabel(app.ai_score)}
-                        </Badge>
-                      ) : (
-                        <span className="text-zinc-400">ещё не оценено</span>
-                      )}
-                    </dd>
-                  </div>
                 </dl>
+
+                <div className="mt-3">
+                  <p className="text-sm text-zinc-500">Оценка ИИ</p>
+                  <div className="mt-1">
+                    <AiScore conversationId={app.conversation_id} />
+                  </div>
+                </div>
 
                 {app.bio && (
                   <p className="mt-3 whitespace-pre-wrap rounded-xl bg-zinc-50 p-3 text-sm text-zinc-700">
@@ -463,6 +458,106 @@ function RecordingPlayer({ conversationId }: { conversationId: string }) {
     >
       🎧 Слушать собеседование
     </Button>
+  );
+}
+
+// Оценка ИИ: по кнопке тянет анализ разговора из ElevenLabs (через API-роут
+// /api/interview-analysis) и показывает балл 0–100 + итог + критерии.
+type AnalysisResult = {
+  score: number | null;
+  callSuccessful: string;
+  summary: string;
+  criteria: { name: string; pass: boolean; rationale: string }[];
+};
+
+function AiScore({ conversationId }: { conversationId: string | null }) {
+  const toast = useToast();
+  const [data, setData] = useState<AnalysisResult | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  if (!conversationId) {
+    return <span className="text-sm text-zinc-400">нет разговора</span>;
+  }
+
+  const load = async () => {
+    setLoading(true);
+    const supabase = createClient();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    const token = session?.access_token;
+    if (!token) {
+      setLoading(false);
+      toast("Сессия истекла — перезайдите.", "error");
+      return;
+    }
+    const res = await fetch("/api/interview-analysis", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ conversation_id: conversationId }),
+    });
+    setLoading(false);
+    if (!res.ok) {
+      let code = "";
+      try {
+        code = ((await res.json()) as { error?: string })?.error ?? "";
+      } catch {
+        // не JSON
+      }
+      toast(
+        code === "NOT_READY"
+          ? "Оценка ещё готовится — попробуйте через минуту."
+          : code === "NO_KEY"
+            ? "Ключ ElevenLabs не задан на сервере."
+            : "Не удалось получить оценку.",
+        "error",
+      );
+      return;
+    }
+    setData((await res.json()) as AnalysisResult);
+  };
+
+  if (!data) {
+    return (
+      <Button
+        variant="secondary"
+        className="px-3 py-1.5 text-sm"
+        loading={loading}
+        onClick={load}
+      >
+        Оценить ИИ
+      </Button>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      {data.score != null ? (
+        <Badge tone={scoreTone(data.score)}>
+          {data.score}/100 · {scoreLabel(data.score)}
+        </Badge>
+      ) : (
+        <Badge tone={data.callSuccessful === "success" ? "emerald" : "zinc"}>
+          {data.callSuccessful === "success"
+            ? "Пройдено"
+            : data.callSuccessful === "failure"
+              ? "Не пройдено"
+              : "Оценка недоступна"}
+        </Badge>
+      )}
+      {data.summary && (
+        <p className="text-sm leading-relaxed text-zinc-600">{data.summary}</p>
+      )}
+      {data.criteria.length > 0 && (
+        <ul className="space-y-0.5 text-xs text-zinc-500">
+          {data.criteria.map((c, i) => (
+            <li key={i}>
+              {c.pass ? "✅" : "❌"} {c.rationale || c.name}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
 
