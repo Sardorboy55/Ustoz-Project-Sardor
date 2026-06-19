@@ -412,16 +412,29 @@ function RecordingPlayer({ conversationId }: { conversationId: string }) {
   const load = async () => {
     setLoading(true);
     const supabase = createClient();
-    const { data, error } = await supabase.functions.invoke("interview-audio", {
-      body: { conversation_id: conversationId },
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    const token = session?.access_token;
+    if (!token) {
+      setLoading(false);
+      toast("Сессия истекла — перезайдите.", "error");
+      return;
+    }
+    const res = await fetch("/api/interview-audio", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ conversation_id: conversationId }),
     });
     setLoading(false);
-    if (error || !data) {
+    if (!res.ok) {
       toast("Не удалось загрузить запись (возможно, ещё обрабатывается).", "error");
       return;
     }
-    const blob = data instanceof Blob ? data : new Blob([data], { type: "audio/mpeg" });
-    setUrl(URL.createObjectURL(blob));
+    setUrl(URL.createObjectURL(await res.blob()));
   };
 
   if (url) {
