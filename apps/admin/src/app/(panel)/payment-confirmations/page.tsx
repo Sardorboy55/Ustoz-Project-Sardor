@@ -33,6 +33,8 @@ type Payment = {
   // обогащение
   studentName: string;
   teacherName: string;
+  studentAvatar: string | null;
+  teacherAvatar: string | null;
   teacherSlug: string | null;
   studentSlug: string | null;
   subjectName: string;
@@ -50,6 +52,25 @@ const KIND_LABEL: Record<string, string> = {
 
 // Ссылки на публичные профили преподавателей (отдельный домен сайта).
 const WEB_URL = "https://ustoz-web-two.vercel.app";
+
+function Avatar({ src, name }: { src: string | null; name: string }) {
+  if (src) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return (
+      <img
+        src={src}
+        alt=""
+        className="h-7 w-7 shrink-0 rounded-full object-cover"
+      />
+    );
+  }
+  const initial = (name || "?").trim().charAt(0).toUpperCase();
+  return (
+    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-tint text-xs font-bold text-brand">
+      {initial}
+    </span>
+  );
+}
 
 function TeacherLink({ name, slug }: { name: string; slug: string | null }) {
   if (!slug) return <b>{name}</b>;
@@ -127,12 +148,16 @@ async function enrich(rows: Payment[]): Promise<Payment[]> {
     ]),
   );
   const names = new Map<string, string>();
+  const avatars = new Map<string, string | null>();
   if (personIds.length > 0) {
     const { data } = await supabase
       .from("profiles")
-      .select("id, full_name")
+      .select("id, full_name, avatar_url")
       .in("id", personIds);
-    for (const p of data ?? []) names.set(p.id, p.full_name);
+    for (const p of data ?? []) {
+      names.set(p.id, p.full_name);
+      avatars.set(p.id, p.avatar_url);
+    }
   }
 
   // slug профилей преподавателей (для ссылок). У учеников slug нет.
@@ -151,6 +176,8 @@ async function enrich(rows: Payment[]): Promise<Payment[]> {
       ...r,
       studentName: names.get(r.student_id) || "—",
       teacherName: b ? names.get(b.teacher_id) || "—" : "—",
+      studentAvatar: avatars.get(r.student_id) ?? null,
+      teacherAvatar: b ? avatars.get(b.teacher_id) ?? null : null,
       teacherSlug: b ? slugs.get(b.teacher_id) ?? null : null,
       studentSlug: slugs.get(r.student_id) ?? null,
       subjectName: b ? subjNames.get(b.teacher_subject_id) || "—" : "—",
@@ -297,19 +324,22 @@ export default function PaymentConfirmationsPage() {
                       )}
                     </div>
                     {p.purpose === "pro" ? (
-                      <p className="mt-1 text-sm text-zinc-600">
-                        Платит:{" "}
+                      <p className="mt-1 flex flex-wrap items-center gap-1.5 text-sm text-zinc-600">
+                        Платит:
+                        <Avatar src={p.studentAvatar} name={p.studentName} />
                         <TeacherLink name={p.studentName} slug={p.studentSlug} /> · за
                         Pro-подписку
                       </p>
                     ) : (
-                      <div className="mt-1 space-y-0.5 text-sm">
-                        <p className="text-zinc-600">
-                          Платит (ученик):{" "}
+                      <div className="mt-1 space-y-1 text-sm">
+                        <p className="flex items-center gap-1.5 text-zinc-600">
+                          Платит (ученик):
+                          <Avatar src={p.studentAvatar} name={p.studentName} />
                           <b className="text-zinc-900">{p.studentName}</b>
                         </p>
-                        <p className="text-zinc-600">
-                          Получит (преподаватель):{" "}
+                        <p className="flex items-center gap-1.5 text-zinc-600">
+                          Получит (преподаватель):
+                          <Avatar src={p.teacherAvatar} name={p.teacherName} />
                           <TeacherLink name={p.teacherName} slug={p.teacherSlug} />
                         </p>
                       </div>
