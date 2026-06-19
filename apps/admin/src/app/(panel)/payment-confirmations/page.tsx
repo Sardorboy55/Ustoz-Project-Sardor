@@ -37,6 +37,15 @@ type Payment = {
   studentSlug: string | null;
   subjectName: string;
   startAt: string | null;
+  duration: number | null;
+  kind: string | null;
+};
+
+const KIND_LABEL: Record<string, string> = {
+  regular: "Обычный урок",
+  trial_free: "Бесплатный пробный",
+  trial_discount: "Пробный со скидкой",
+  package: "Урок из пакета",
 };
 
 // Ссылки на публичные профили преподавателей (отдельный домен сайта).
@@ -66,12 +75,18 @@ async function enrich(rows: Payment[]): Promise<Payment[]> {
   );
   const bookings = new Map<
     string,
-    { teacher_id: string; teacher_subject_id: string; start_at: string }
+    {
+      teacher_id: string;
+      teacher_subject_id: string;
+      start_at: string;
+      duration_min: number;
+      kind: string;
+    }
   >();
   if (bookingIds.length > 0) {
     const { data } = await supabase
       .from("bookings")
-      .select("id, teacher_id, teacher_subject_id, start_at")
+      .select("id, teacher_id, teacher_subject_id, start_at, duration_min, kind")
       .in("id", bookingIds);
     for (const b of data ?? []) bookings.set(b.id, b);
   }
@@ -140,6 +155,8 @@ async function enrich(rows: Payment[]): Promise<Payment[]> {
       studentSlug: slugs.get(r.student_id) ?? null,
       subjectName: b ? subjNames.get(b.teacher_subject_id) || "—" : "—",
       startAt: b?.start_at ?? null,
+      duration: b?.duration_min ?? null,
+      kind: b?.kind ?? null,
     };
   });
 }
@@ -297,10 +314,15 @@ export default function PaymentConfirmationsPage() {
                         </p>
                       </div>
                     )}
-                    {p.startAt && (
-                      <p className="text-sm text-zinc-500">
-                        Урок: {formatDateTime(p.startAt)}
-                      </p>
+                    {p.purpose !== "pro" && (
+                      <div className="mt-1 text-sm text-zinc-500">
+                        <p>
+                          Урок: <span className="text-zinc-700">{p.subjectName}</span>
+                          {p.startAt ? ` · ${formatDateTime(p.startAt)}` : ""}
+                          {p.duration ? ` · ${p.duration} мин` : ""}
+                        </p>
+                        {p.kind && <p>Тип: {KIND_LABEL[p.kind] ?? p.kind}</p>}
+                      </div>
                     )}
                   </div>
                   <span className="whitespace-nowrap text-xs text-zinc-500">
