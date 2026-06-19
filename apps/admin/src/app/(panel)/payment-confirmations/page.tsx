@@ -25,6 +25,8 @@ type Payment = {
   student_id: string;
   purpose: string;
   amount: number;
+  pay_amount: number | null;
+  verify_code: number | null;
   receipt_path: string | null;
   status: string;
   review_note: string | null;
@@ -87,7 +89,7 @@ function TeacherLink({ name, slug }: { name: string; slug: string | null }) {
 }
 
 const FIELDS =
-  "id, booking_id, student_id, purpose, amount, receipt_path, status, review_note, reviewed_at, created_at";
+  "id, booking_id, student_id, purpose, amount, pay_amount, verify_code, receipt_path, status, review_note, reviewed_at, created_at";
 
 async function enrich(rows: Payment[]): Promise<Payment[]> {
   const supabase = createClient();
@@ -315,7 +317,7 @@ export default function PaymentConfirmationsPage() {
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="text-lg font-extrabold text-zinc-900">
-                        {formatSum(p.amount)}
+                        {formatSum(p.pay_amount ?? p.amount)}
                       </span>
                       {p.purpose === "pro" ? (
                         <Badge tone="amber">Pro подписка</Badge>
@@ -358,6 +360,13 @@ export default function PaymentConfirmationsPage() {
                   <span className="whitespace-nowrap text-xs text-zinc-500">
                     Отправлено: {formatDateTime(p.created_at)}
                   </span>
+                </div>
+
+                <div className="mt-3 rounded-xl bg-amber-50 px-3 py-2.5 text-sm leading-relaxed text-amber-800">
+                  🔎 Найдите в Paynet поступление <b>ровно на {formatSum(p.pay_amount ?? p.amount)}</b>. Подтверждайте только если такая сумма реально пришла — скрин чека сам по себе не доказательство.
+                  {p.purpose !== "pro" && (
+                    <> Преподавателю зачислится {formatSum(p.amount)}.</>
+                  )}
                 </div>
 
                 <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -454,7 +463,9 @@ export default function PaymentConfirmationsPage() {
         {confirm && (
           <div className="space-y-3">
             <div className="rounded-xl bg-zinc-50 p-3 text-sm">
-              <div className="font-bold text-zinc-900">{formatSum(confirm.pay.amount)}</div>
+              <div className="font-bold text-zinc-900">
+                {formatSum(confirm.pay.pay_amount ?? confirm.pay.amount)}
+              </div>
               <p className="text-zinc-600">
                 {confirm.pay.purpose === "pro"
                   ? `${confirm.pay.studentName} · Pro подписка`

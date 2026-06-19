@@ -16,6 +16,7 @@ type State = "loading" | "guest" | "not_teacher" | "ready" | "sent";
 export function ProPayClient({ priceLabel }: { priceLabel: string }) {
   const [state, setState] = useState<State>("loading");
   const [uid, setUid] = useState<string | null>(null);
+  const [payAmount, setPayAmount] = useState<number | null>(null);
   const [uploading, setUploading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -36,13 +37,16 @@ export function ProPayClient({ priceLabel }: { priceLabel: string }) {
         .maybeSingle();
       if (!tp) return setState("not_teacher");
 
-      const { data: pay } = await supabase
-        .from("manual_payments")
-        .select("id")
-        .eq("purpose", "pro")
-        .eq("status", "pending")
-        .maybeSingle();
-      setState(pay ? "sent" : "ready");
+      const { data: pay } = await supabase.rpc("ensure_pro_payment");
+      const row = (Array.isArray(pay) ? pay[0] : pay) as
+        | { pay_amount: number | null; receipt_path: string | null }
+        | null;
+      if (row) {
+        setPayAmount(row.pay_amount);
+        setState(row.receipt_path ? "sent" : "ready");
+      } else {
+        setState("ready");
+      }
     });
   }, []);
 
@@ -77,6 +81,12 @@ export function ProPayClient({ priceLabel }: { priceLabel: string }) {
     }
     setState("sent");
   };
+
+  // Точная сумма с уникальным кодом (в целых сумах) — её платят «ровно».
+  const payLabel =
+    payAmount != null
+      ? `${Math.round(payAmount / 100).toLocaleString("ru-RU")} сум`
+      : priceLabel;
 
   if (state === "loading") {
     return (
@@ -143,8 +153,11 @@ export function ProPayClient({ priceLabel }: { priceLabel: string }) {
       />
       <p className="mt-3 text-sm text-zinc-700">
         Отсканируйте QR в <span className="font-semibold">Paynet</span> (или
-        оплатите на счёт ниже) на сумму{" "}
-        <span className="font-semibold">{priceLabel}</span>.
+        оплатите на счёт ниже){" "}
+        <span className="font-semibold text-brand-700">ровно на {payLabel}</span>.
+      </p>
+      <p className="mt-1 text-xs text-zinc-500">
+        Оплатите ровно эту сумму — по ней мы найдём ваш платёж.
       </p>
       <div className="mt-3 rounded-xl bg-zinc-50 px-3 py-2.5 text-left text-sm">
         <div className="flex justify-between gap-2">
