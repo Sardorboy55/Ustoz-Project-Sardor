@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
-import { Check, ChevronLeft, CreditCard } from "lucide-react";
+import { Check, ChevronLeft } from "lucide-react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
+import { ProPayClient } from "./pro-pay-client";
 
 export async function generateMetadata({
   params,
@@ -28,7 +29,6 @@ export default async function ProCheckoutPage({
   const t = await getTranslations({ locale, namespace: "Pricing" });
 
   const features = [t("pro1"), t("pro2"), t("pro3"), t("pro4")];
-  const methods = ["Click", "Payme", "Uzum"];
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
@@ -78,38 +78,8 @@ export default async function ProCheckoutPage({
           </ul>
         </div>
 
-        {/* Payment methods (coming soon) */}
-        <aside className="h-fit rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
-          <p className="text-sm font-bold text-zinc-900">
-            {t("checkoutPayTitle")}
-          </p>
-          <ul className="mt-3 space-y-2">
-            {methods.map((m) => (
-              <li
-                key={m}
-                className="flex items-center gap-3 rounded-xl border border-zinc-200 px-3 py-3"
-              >
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-zinc-100 text-zinc-500">
-                  <CreditCard size={18} aria-hidden="true" />
-                </span>
-                <span className="flex-1 font-semibold text-zinc-700">{m}</span>
-                <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-500">
-                  {t("soon")}
-                </span>
-              </li>
-            ))}
-          </ul>
-          <button
-            type="button"
-            disabled
-            className="mt-4 inline-flex h-11 w-full cursor-not-allowed items-center justify-center rounded-xl bg-zinc-200 text-sm font-semibold text-zinc-500"
-          >
-            {t("checkoutPayBtn")}
-          </button>
-          <p className="mt-3 text-xs leading-relaxed text-zinc-500">
-            {t("checkoutSoonNote")}
-          </p>
-        </aside>
+        {/* Оплата Pro по QR (ручное подтверждение админом) */}
+        <ProPayClient priceLabel={t("proPrice")} />
       </div>
     </main>
   );

@@ -21,8 +21,9 @@ import {
 
 type Payment = {
   id: string;
-  booking_id: string;
+  booking_id: string | null;
   student_id: string;
+  purpose: string;
   amount: number;
   receipt_path: string | null;
   status: string;
@@ -37,11 +38,13 @@ type Payment = {
 };
 
 const FIELDS =
-  "id, booking_id, student_id, amount, receipt_path, status, review_note, reviewed_at, created_at";
+  "id, booking_id, student_id, purpose, amount, receipt_path, status, review_note, reviewed_at, created_at";
 
 async function enrich(rows: Payment[]): Promise<Payment[]> {
   const supabase = createClient();
-  const bookingIds = Array.from(new Set(rows.map((r) => r.booking_id)));
+  const bookingIds = Array.from(
+    new Set(rows.map((r) => r.booking_id).filter(Boolean) as string[]),
+  );
   const bookings = new Map<
     string,
     { teacher_id: string; teacher_subject_id: string; start_at: string }
@@ -99,7 +102,7 @@ async function enrich(rows: Payment[]): Promise<Payment[]> {
   }
 
   return rows.map((r) => {
-    const b = bookings.get(r.booking_id);
+    const b = r.booking_id ? bookings.get(r.booking_id) : undefined;
     return {
       ...r,
       studentName: names.get(r.student_id) || "—",
@@ -191,9 +194,11 @@ export default function PaymentConfirmationsPage() {
       return;
     }
     toast(
-      confirm.approve
-        ? "Оплата подтверждена — деньги начислены преподавателю"
-        : "Оплата отклонена",
+      !confirm.approve
+        ? "Оплата отклонена"
+        : confirm.pay.purpose === "pro"
+          ? "Оплата подтверждена — Pro активирован"
+          : "Оплата подтверждена — деньги начислены преподавателю",
     );
     closeConfirm();
     retry();
@@ -237,11 +242,23 @@ export default function PaymentConfirmationsPage() {
                       <span className="text-lg font-extrabold text-zinc-900">
                         {formatSum(p.amount)}
                       </span>
-                      <Badge tone="sky">{p.subjectName}</Badge>
+                      {p.purpose === "pro" ? (
+                        <Badge tone="amber">Pro подписка</Badge>
+                      ) : (
+                        <Badge tone="sky">{p.subjectName}</Badge>
+                      )}
                     </div>
                     <p className="mt-1 text-sm text-zinc-600">
-                      Ученик <b>{p.studentName}</b> → преподаватель{" "}
-                      <b>{p.teacherName}</b>
+                      {p.purpose === "pro" ? (
+                        <>
+                          Преподаватель <b>{p.studentName}</b> покупает Pro
+                        </>
+                      ) : (
+                        <>
+                          Ученик <b>{p.studentName}</b> → преподаватель{" "}
+                          <b>{p.teacherName}</b>
+                        </>
+                      )}
                     </p>
                     {p.startAt && (
                       <p className="text-sm text-zinc-500">
@@ -307,7 +324,9 @@ export default function PaymentConfirmationsPage() {
                 <div className="flex items-center gap-2">
                   <span className="font-semibold text-zinc-900">{formatSum(p.amount)}</span>
                   <span className="text-zinc-500">
-                    · {p.studentName} → {p.teacherName}
+                    {p.purpose === "pro"
+                      ? `· Pro · ${p.studentName}`
+                      : `· ${p.studentName} → ${p.teacherName}`}
                   </span>
                 </div>
                 <div className="flex items-center gap-3">
@@ -348,15 +367,17 @@ export default function PaymentConfirmationsPage() {
             <div className="rounded-xl bg-zinc-50 p-3 text-sm">
               <div className="font-bold text-zinc-900">{formatSum(confirm.pay.amount)}</div>
               <p className="text-zinc-600">
-                {confirm.pay.studentName} → {confirm.pay.teacherName} ·{" "}
-                {confirm.pay.subjectName}
+                {confirm.pay.purpose === "pro"
+                  ? `${confirm.pay.studentName} · Pro подписка`
+                  : `${confirm.pay.studentName} → ${confirm.pay.teacherName} · ${confirm.pay.subjectName}`}
               </p>
             </div>
             {confirm.approve ? (
               <p className="text-sm text-zinc-500">
-                Сначала убедитесь, что деньги реально пришли на счёт Paynet. После
-                подтверждения бронь станет оплаченной, а сумма (минус эквайринг)
-                сразу зачислится на баланс преподавателя.
+                Сначала убедитесь, что деньги реально пришли на счёт Paynet.{" "}
+                {confirm.pay.purpose === "pro"
+                  ? "После подтверждения подписка Pro активируется на 30 дней."
+                  : "После подтверждения бронь станет оплаченной, а сумма (минус эквайринг) сразу зачислится на баланс преподавателя."}
               </p>
             ) : (
               <p className="text-sm text-zinc-500">

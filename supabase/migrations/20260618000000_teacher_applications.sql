@@ -275,7 +275,7 @@ begin
   if not found then raise exception 'APPLICATION_NOT_FOUND'; end if;
 
   update teacher_applications
-    set status      = case when p_approve then 'approved' else 'rejected' end,
+    set status      = (case when p_approve then 'approved' else 'rejected' end)::teacher_application_status,
         review_note = p_note,
         reviewer_id = auth.uid(),
         reviewed_at = now(),
