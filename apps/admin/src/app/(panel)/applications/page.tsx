@@ -431,7 +431,21 @@ function RecordingPlayer({ conversationId }: { conversationId: string }) {
     });
     setLoading(false);
     if (!res.ok) {
-      toast("Не удалось загрузить запись (возможно, ещё обрабатывается).", "error");
+      let code = "";
+      try {
+        code = ((await res.json()) as { error?: string })?.error ?? "";
+      } catch {
+        // тело не JSON — оставляем общий текст
+      }
+      const msg =
+        code === "NO_KEY"
+          ? "Ключ ElevenLabs не задан на сервере. Добавьте ELEVENLABS_API_KEY в Vercel и сделайте Redeploy."
+          : code === "NOT_READY"
+            ? "Запись ещё обрабатывается в ElevenLabs — попробуйте через 1–2 минуты."
+            : code === "ELEVENLABS_ERROR"
+              ? "ElevenLabs отклонил запрос — проверьте, что ключ именно от ElevenLabs (а не от другого сервиса)."
+              : "Не удалось загрузить запись.";
+      toast(msg, "error");
       return;
     }
     setUrl(URL.createObjectURL(await res.blob()));
