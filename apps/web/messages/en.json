@@ -602,7 +602,11 @@
       "cancelledBody": "The booking was cancelled — check the details.",
       "reviewTitle": "Rate the lesson",
       "reviewBody": "The lesson is over — leave a review about the tutor.",
-      "genericTitle": "Notification"
+      "genericTitle": "Notification",
+      "purchaseStudentTitle": "Lesson purchased 🎉",
+      "purchaseStudentBody": "Congratulations! Good luck and enjoy your lessons.",
+      "purchaseTeacherTitle": "Your lesson was purchased",
+      "purchaseTeacherBody": "A student paid {amount} so'm for a lesson — funds added to your balance."
     },
     "payments": {
       "title": "Payments",

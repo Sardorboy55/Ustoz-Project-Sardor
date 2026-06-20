@@ -602,7 +602,11 @@
       "cancelledBody": "Бронь отменена — посмотрите детали.",
       "reviewTitle": "Оцените урок",
       "reviewBody": "Урок завершён — оставьте отзыв о преподавателе.",
-      "genericTitle": "Уведомление"
+      "genericTitle": "Уведомление",
+      "purchaseStudentTitle": "Урок куплен 🎉",
+      "purchaseStudentBody": "Поздравляем! Удачи и приятных уроков.",
+      "purchaseTeacherTitle": "У вас купили урок",
+      "purchaseTeacherBody": "Ученик оплатил урок на {amount} сум — деньги зачислены на баланс."
     },
     "payments": {
       "title": "Платежи",

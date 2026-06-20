@@ -2,7 +2,15 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { LucideIcon } from "lucide-react";
-import { Bell, CalendarX2, CheckCheck, Clock, Star } from "lucide-react";
+import {
+  Bell,
+  CalendarX2,
+  CheckCheck,
+  Clock,
+  GraduationCap,
+  Star,
+  Wallet,
+} from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { Locale } from "@ustoz/shared";
 import { useRouter } from "@/i18n/navigation";
@@ -18,7 +26,7 @@ import { useCabinet } from "@/components/cabinet/cabinet-shell";
 type NotificationRow = {
   id: string;
   template: string;
-  payload: { booking_id?: string } | null;
+  payload: { booking_id?: string; amount?: number } | null;
   scheduled_at: string;
   read_at: string | null;
 };
@@ -54,6 +62,18 @@ const TEMPLATES: Record<string, TemplateMeta> = {
     iconClass: "bg-accent-50 text-accent-600",
     titleKey: "reviewTitle",
     bodyKey: "reviewBody",
+  },
+  purchase_student: {
+    icon: GraduationCap,
+    iconClass: "bg-emerald-50 text-emerald-600",
+    titleKey: "purchaseStudentTitle",
+    bodyKey: "purchaseStudentBody",
+  },
+  purchase_teacher: {
+    icon: Wallet,
+    iconClass: "bg-emerald-50 text-emerald-600",
+    titleKey: "purchaseTeacherTitle",
+    bodyKey: "purchaseTeacherBody",
   },
 };
 
@@ -212,7 +232,13 @@ export default function NotificationsPage() {
                         )}
                       </span>
                       <span className="mt-0.5 block text-sm text-zinc-500">
-                        {meta ? t(meta.bodyKey) : row.template}
+                        {meta
+                          ? t(meta.bodyKey, {
+                              amount: Math.round(
+                                (row.payload?.amount ?? 0) / 100,
+                              ).toLocaleString("ru-RU"),
+                            })
+                          : row.template}
                       </span>
                       <span className="mt-1 block text-xs text-zinc-400">
                         {formatDayMonth(when, locale)}, {formatTime(when, locale)}

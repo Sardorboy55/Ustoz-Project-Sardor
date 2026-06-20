@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { CalendarDays, Eye, GraduationCap, TrendingUp } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { BookingStatus, Locale } from "@ustoz/shared";
+import { Link } from "@/i18n/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
   formatMonthShort,
@@ -59,9 +60,11 @@ export function TeacherDashboard() {
         .select(SELECT)
         .eq("teacher_id", userId)
         .in("status", ["pending_payment", "paid", "in_progress"])
-        .gte("start_at", now.toISOString())
+        // Окно −6ч: чтобы уже идущий урок (start_at в прошлом) не исчезал —
+        // ниже отфильтруем по реальному концу урока.
+        .gte("start_at", new Date(now.getTime() - 6 * 3_600_000).toISOString())
         .order("start_at", { ascending: true })
-        .limit(5),
+        .limit(10),
       supabase
         .from("wallet_transactions")
         .select("amount")
@@ -78,7 +81,15 @@ export function TeacherDashboard() {
       setPhase("error");
       return;
     }
-    setUpcoming((upRes.data ?? []) as unknown as UpcomingRow[]);
+    const nowMs = now.getTime();
+    setUpcoming(
+      ((upRes.data ?? []) as unknown as UpcomingRow[])
+        .filter(
+          (r) =>
+            new Date(r.start_at).getTime() + r.duration_min * 60_000 > nowMs,
+        )
+        .slice(0, 5),
+    );
     setIncomeMonth(
       (incomeRes.data ?? []).reduce(
         (sum, r) => sum + ((r as { amount: number }).amount ?? 0),
@@ -170,10 +181,11 @@ export function TeacherDashboard() {
                   : "";
                 const studentName = row.student?.full_name ?? "";
                 return (
-                  <li
-                    key={row.id}
-                    className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl border border-zinc-200 bg-white p-4"
-                  >
+                  <li key={row.id}>
+                   <Link
+                    href={`/booking/${row.id}`}
+                    className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl border border-zinc-200 bg-white p-4 transition hover:border-brand-300 hover:shadow-sm"
+                   >
                     <div className="flex w-14 shrink-0 flex-col items-center justify-center rounded-xl bg-brand-50 py-2 text-brand-800">
                       <span className="text-[11px] font-semibold uppercase leading-none">
                         {formatWeekdayShort(start, locale)}
@@ -200,6 +212,7 @@ export function TeacherDashboard() {
                       <span className="max-w-32 truncate">{studentName}</span>
                     </div>
                     <StatusBadge status={row.status} />
+                   </Link>
                   </li>
                 );
               })}

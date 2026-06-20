@@ -602,7 +602,11 @@
       "cancelledBody": "Bron bekor qilindi — tafsilotlarni ko'ring.",
       "reviewTitle": "Darsni baholang",
       "reviewBody": "Dars yakunlandi — ustoz haqida sharh qoldiring.",
-      "genericTitle": "Bildirishnoma"
+      "genericTitle": "Bildirishnoma",
+      "purchaseStudentTitle": "Dars sotib olindi 🎉",
+      "purchaseStudentBody": "Tabriklaymiz! Omad va xush darslar.",
+      "purchaseTeacherTitle": "Darsingiz sotib olindi",
+      "purchaseTeacherBody": "O'quvchi {amount} so'mlik darsni to'ladi — pul hisobingizga tushdi."
     },
     "payments": {
       "title": "To'lovlar",
