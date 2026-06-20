@@ -169,7 +169,11 @@ export function BookingDetail({ bookingId }: { bookingId: string }) {
     });
     setUploadingProof(false);
     if (rpcErr) {
-      setProofErr("Не удалось отправить чек. Попробуйте ещё раз.");
+      setProofErr(
+        rpcErr.message.includes("BOOKING_NOT_PENDING")
+          ? "Эта бронь уже оплачена или не ждёт оплаты."
+          : `Не удалось отправить чек: ${rpcErr.message}`,
+      );
       return;
     }
     setProofSent(true);
