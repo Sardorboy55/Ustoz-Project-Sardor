@@ -15,6 +15,12 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: monorepoRoot,
   },
+  // OAuth callback lives under [locale] (as-needed locale routing has no
+  // middleware, so a bare /auth/callback isn't matched). Supabase redirects to
+  // the prefix-less /auth/callback — rewrite it to the default-locale handler.
+  async rewrites() {
+    return [{ source: "/auth/callback", destination: "/uz/auth/callback" }];
+  },
 };
 
 export default withNextIntl(nextConfig);
