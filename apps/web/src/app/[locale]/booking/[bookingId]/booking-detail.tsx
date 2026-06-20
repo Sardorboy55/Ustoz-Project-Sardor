@@ -731,13 +731,15 @@ export function BookingDetail({ bookingId }: { bookingId: string }) {
         </div>
       )}
 
-      {/* Lesson (Google Meet link + join + teacher completes) */}
+      {/* Lesson (Jitsi: встроенное видео, комната = id брони) */}
       {(booking.status === "paid" || booking.status === "in_progress") && (
         <LessonPanel
           bookingId={booking.id}
           isTeacher={isTeacherViewer}
           startAtMs={start.getTime()}
-          initialMeetingUrl={booking.lesson?.meeting_url ?? null}
+          displayName={
+            isTeacherViewer ? teacherName || "Преподаватель" : "Ученик"
+          }
           onCompleted={() => void load()}
         />
       )}

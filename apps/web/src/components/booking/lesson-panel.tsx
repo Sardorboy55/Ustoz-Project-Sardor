@@ -1,39 +1,39 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Clock, Video } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { Clock, Video, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
-import { Button, buttonClasses } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { JitsiRoom } from "./jitsi-room";
+
+// За сколько до начала открывается кнопка «Войти».
+const JOIN_BEFORE_MS = 10 * 60_000;
 
 /**
- * Lesson panel for a confirmed booking (Google Meet model). The teacher attaches
- * a meeting link and, once the lesson has started, manually completes it (which
- * credits their wallet). Both sides get a "join" button and a live timer that
- * counts up from the lesson start. Payment already happened at booking time.
+ * Lesson panel (Jitsi model). The video room lives INSIDE the platform — the
+ * room name is derived from the booking id, so no manual links: both teacher and
+ * student press "Join" and land in the same embedded room. The teacher completes
+ * the lesson once it has started (which credits their wallet). Payment already
+ * happened at booking time.
  */
 export function LessonPanel({
   bookingId,
   isTeacher,
   startAtMs,
-  initialMeetingUrl,
+  displayName,
   onCompleted,
 }: {
   bookingId: string;
   isTeacher: boolean;
   startAtMs: number;
-  initialMeetingUrl: string | null;
+  displayName: string;
   onCompleted: () => void;
 }) {
   const t = useTranslations("Booking.page");
   const [now, setNow] = useState(() => Date.now());
-  const [url, setUrl] = useState(initialMeetingUrl);
-  const [editing, setEditing] = useState(isTeacher && !initialMeetingUrl);
-  const [input, setInput] = useState(initialMeetingUrl ?? "");
-  const [saving, setSaving] = useState(false);
-  const [linkErr, setLinkErr] = useState(false);
+  const [inRoom, setInRoom] = useState(false);
   const [completing, setCompleting] = useState(false);
   const [completeErr, setCompleteErr] = useState(false);
 
@@ -43,29 +43,14 @@ export function LessonPanel({
   }, []);
 
   const started = now >= startAtMs;
+  const canJoin = now >= startAtMs - JOIN_BEFORE_MS;
   const elapsed = Math.max(0, now - startAtMs);
   const mm = Math.floor(elapsed / 60_000);
   const ss = Math.floor((elapsed % 60_000) / 1000);
   const timer = `${mm}:${String(ss).padStart(2, "0")}`;
+  const room = `ustoz-${bookingId}`;
 
-  const saveLink = async () => {
-    const v = input.trim();
-    if (!v || saving) return;
-    setSaving(true);
-    setLinkErr(false);
-    const supabase = createClient();
-    const { error } = await supabase.rpc("lesson_set_meeting_url", {
-      p_booking_id: bookingId,
-      p_url: v,
-    });
-    setSaving(false);
-    if (error) {
-      setLinkErr(true);
-      return;
-    }
-    setUrl(v);
-    setEditing(false);
-  };
+  const leave = useCallback(() => setInRoom(false), []);
 
   const complete = async () => {
     if (completing) return;
@@ -80,6 +65,7 @@ export function LessonPanel({
       setCompleteErr(true);
       return;
     }
+    setInRoom(false);
     onCompleted();
   };
 
@@ -103,55 +89,22 @@ export function LessonPanel({
         )}
       </div>
 
-      {/* Meeting link */}
-      {isTeacher && editing ? (
+      {canJoin ? (
         <div className="mt-4">
-          <Input
-            type="url"
-            inputMode="url"
-            label={t("lessonLinkLabel")}
-            placeholder="https://meet.google.com/..."
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            error={linkErr ? t("lessonError") : undefined}
-          />
-          <div className="mt-2 flex flex-wrap gap-2">
-            <Button onClick={saveLink} loading={saving} disabled={!input.trim()}>
-              {t("lessonSave")}
-            </Button>
-            {url && (
-              <Button
-                variant="ghost"
-                disabled={saving}
-                onClick={() => {
-                  setEditing(false);
-                  setInput(url);
-                }}
-              >
-                {t("lessonCancelEdit")}
-              </Button>
-            )}
-          </div>
-        </div>
-      ) : url ? (
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          <a
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={buttonClasses("primary", "md")}
-          >
+          <Button onClick={() => setInRoom(true)}>
             <Video size={18} aria-hidden="true" />
             {t("lessonJoin")}
-          </a>
-          {isTeacher && (
-            <Button variant="ghost" onClick={() => setEditing(true)}>
-              {t("lessonEdit")}
-            </Button>
-          )}
+          </Button>
+          <p className="mt-2 text-xs leading-relaxed text-zinc-500">
+            Урок проходит прямо здесь, в браузере. Нажмите «Войти» и разрешите
+            доступ к камере и микрофону — вы попадёте в одну комнату с
+            собеседником.
+          </p>
         </div>
       ) : (
-        <p className="mt-4 text-sm text-zinc-500">{t("lessonNoLink")}</p>
+        <p className="mt-4 text-sm text-zinc-500">
+          Кнопка «Войти» появится за 10 минут до начала урока.
+        </p>
       )}
 
       {/* Teacher: complete the lesson once it has started */}
@@ -168,6 +121,22 @@ export function LessonPanel({
               {t("lessonError")}
             </p>
           )}
+        </div>
+      )}
+
+      {/* Полноэкранная встроенная видео-комната */}
+      {inRoom && (
+        <div className="fixed inset-0 z-50 bg-black">
+          <JitsiRoom room={room} displayName={displayName} onLeave={leave} />
+          <button
+            type="button"
+            onClick={leave}
+            aria-label="Выйти из урока"
+            className="absolute right-4 top-4 z-10 flex items-center gap-1.5 rounded-xl bg-white/90 px-3 py-2 text-sm font-semibold text-zinc-900 shadow-lg transition hover:bg-white"
+          >
+            <X size={16} aria-hidden="true" />
+            Выйти
+          </button>
         </div>
       )}
     </Card>
