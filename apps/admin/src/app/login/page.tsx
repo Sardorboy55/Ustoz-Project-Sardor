@@ -5,9 +5,9 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ShieldCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase";
 import { Button, Input } from "@/components/ui";
+import { LogoMark } from "@/components/logo";
 
 const normalizePhone = (raw: string) => {
   const digits = raw.replace(/\D/g, "");
@@ -112,8 +112,8 @@ function LoginForm() {
     <main className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm">
         <div className="flex flex-col items-center gap-2 text-center">
-          <div className="rounded-2xl bg-brand-tint p-3 text-brand">
-            <ShieldCheck className="h-6 w-6" aria-hidden />
+          <div className="rounded-2xl bg-brand-tint p-3.5 text-brand">
+            <LogoMark className="h-6 w-auto" />
           </div>
           <h1 className="text-xl font-extrabold tracking-wide text-zinc-900">
             IBILIM <span className="font-semibold text-brand">Admin</span>

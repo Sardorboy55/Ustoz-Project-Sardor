@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase";
 import { Spinner, ToastProvider } from "@/components/ui";
+import { LogoMark } from "@/components/logo";
 
 type NavItem = { href: string; label: string; icon: LucideIcon };
 
@@ -112,7 +113,8 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   if (!admin) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-background">
-        <div className="text-lg font-extrabold tracking-wide text-brand">
+        <div className="flex items-center gap-2 text-lg font-extrabold tracking-wide text-brand">
+          <LogoMark className="h-5 w-auto" />
           IBILIM <span className="font-medium text-zinc-400">admin</span>
         </div>
         <Spinner />
@@ -125,7 +127,8 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
     <ToastProvider>
       <div className="flex min-h-screen">
         <aside className="fixed inset-y-0 left-0 z-20 flex w-60 flex-col border-r border-zinc-200 bg-white">
-          <div className="px-5 pb-2 pt-5 text-lg font-extrabold tracking-wide text-brand">
+          <div className="flex items-center gap-2 px-5 pb-2 pt-5 text-lg font-extrabold tracking-wide text-brand">
+            <LogoMark className="h-5 w-auto" />
             IBILIM <span className="font-medium text-zinc-400">admin</span>
           </div>
           <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-3">
