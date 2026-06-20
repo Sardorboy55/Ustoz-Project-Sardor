@@ -2,7 +2,7 @@
 
 // Мини-кит UI админки IBILIM: Card, StatCard, Table, Badge, Button, Modal,
 // Input/Select, EmptyState, Spinner, Skeleton, Toast.
-// Дизайн-система: teal #0E7C66, карточки 16px, кнопки 12px, чипы full.
+// Дизайн-система: blue #2563EB, карточки 16px, кнопки 12px, чипы full.
 
 import {
   createContext,

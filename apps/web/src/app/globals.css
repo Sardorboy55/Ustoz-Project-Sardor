@@ -2,22 +2,22 @@
 
 /*
  * USTOZ design tokens (Tailwind v4 @theme).
- * Brand teal scale is derived from the primary #0E7C66:
- *   600 = primary, 700 = hover/dark, 100 = light tint (#E6F4F1 from the design system).
+ * Brand blue scale is derived from the primary #2563EB:
+ *   600 = primary, 700 = hover/dark, 100 = light tint (#DBEAFE from the design system).
  * Accent amber (#F59E0B) is used for ratings and the PRO badge.
  */
 @theme {
-  /* Brand (teal) */
-  --color-brand-50: #f0f9f7;
-  --color-brand-100: #e6f4f1;
-  --color-brand-200: #c4e6de;
-  --color-brand-300: #93d1c4;
-  --color-brand-400: #54b29d;
-  --color-brand-500: #1f9078;
-  --color-brand-600: #0e7c66;
-  --color-brand-700: #0a5f4e;
-  --color-brand-800: #094e41;
-  --color-brand-900: #073f35;
+  /* Brand (blue) */
+  --color-brand-50: #eff6ff;
+  --color-brand-100: #dbeafe;
+  --color-brand-200: #bfdbfe;
+  --color-brand-300: #93c5fd;
+  --color-brand-400: #60a5fa;
+  --color-brand-500: #3b82f6;
+  --color-brand-600: #2563eb;
+  --color-brand-700: #1d4ed8;
+  --color-brand-800: #1e40af;
+  --color-brand-900: #1e3a8a;
 
   /* Accent (amber) */
   --color-accent-50: #fffbeb;
