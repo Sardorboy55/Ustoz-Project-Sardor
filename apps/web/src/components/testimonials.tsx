@@ -12,13 +12,13 @@ export type Testimonial = {
   rating: number;
 };
 
-const AUTOPLAY_MS = 7000;
+const AUTOPLAY_MS = 5000;
 
 /**
  * Landing testimonials carousel (italki-style): one centered card with the
  * neighbours peeking, arrows + dots, scroll-snap for touch. The active card is
  * centred exactly via scrollLeft (so the first card opens centred too), and it
- * auto-advances every 7s, pausing while the pointer is over it.
+ * auto-advances every 5s, looping continuously.
  */
 export function Testimonials({
   title,
@@ -30,7 +30,6 @@ export function Testimonials({
   const trackRef = useRef<HTMLDivElement>(null);
   const cardRefs = useRef<Array<HTMLDivElement | null>>([]);
   const activeRef = useRef(0);
-  const pausedRef = useRef(false);
   const [active, setActive] = useState(0);
 
   // Centre card [i] in the viewport by setting scrollLeft directly — reliable
@@ -81,11 +80,10 @@ export function Testimonials({
     return () => window.removeEventListener("resize", onResize);
   }, [centerCard]);
 
-  // Auto-advance, looping; paused while hovered.
+  // Auto-advance continuously, looping back to the first card.
   useEffect(() => {
     if (items.length <= 1) return;
     const id = setInterval(() => {
-      if (pausedRef.current) return;
       centerCard((activeRef.current + 1) % items.length, true);
     }, AUTOPLAY_MS);
     return () => clearInterval(id);
@@ -98,11 +96,7 @@ export function Testimonials({
           {title}
         </h2>
 
-        <div
-          className="relative mt-10"
-          onMouseEnter={() => (pausedRef.current = true)}
-          onMouseLeave={() => (pausedRef.current = false)}
-        >
+        <div className="relative mt-10">
           <button
             type="button"
             onClick={() => goTo(active - 1)}
