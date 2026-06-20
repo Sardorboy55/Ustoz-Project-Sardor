@@ -15,6 +15,7 @@ import { createClient } from "@/lib/supabase/client";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton, SkeletonCard } from "@/components/ui/skeleton";
 import { CabinetNav } from "./cabinet-nav";
+import { UpcomingLessonBanner } from "./upcoming-lesson-banner";
 
 export type CabinetProfile = {
   id: string;
@@ -154,7 +155,13 @@ export function CabinetShell({ children }: { children: ReactNode }) {
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 lg:py-10">
         <div className="flex flex-col gap-6 lg:flex-row lg:gap-10">
           <CabinetNav isTeacher={profile.is_teacher} unreadCount={unreadCount} />
-          <div className="min-w-0 flex-1">{children}</div>
+          <div className="min-w-0 flex-1">
+            <UpcomingLessonBanner
+              userId={profile.id}
+              studentName={profile.full_name}
+            />
+            {children}
+          </div>
         </div>
       </main>
     </CabinetContext.Provider>
