@@ -8,6 +8,10 @@ import { cn } from "@/lib/cn";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Wordmark } from "@/components/brand";
+import {
+  TelegramLoginButton,
+  type TelegramUser,
+} from "@/components/auth/telegram-login";
 
 const RESEND_SECONDS = 60;
 
@@ -29,14 +33,6 @@ function GoogleIcon({ className }: { className?: string }) {
       <path fill="#34A853" d="M12 24c3.24 0 5.96-1.08 7.95-2.91l-3.86-3c-1.08.72-2.45 1.16-4.09 1.16-3.14 0-5.8-2.12-6.76-4.98H1.26v3.09A12 12 0 0 0 12 24z" />
       <path fill="#FBBC05" d="M5.24 14.27a7.2 7.2 0 0 1 0-4.54V6.64H1.26a12 12 0 0 0 0 10.72l3.98-3.09z" />
       <path fill="#EA4335" d="M12 4.77c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.96 1.19 15.24 0 12 0A12 12 0 0 0 1.26 6.64l3.98 3.09C6.2 6.89 8.86 4.77 12 4.77z" />
-    </svg>
-  );
-}
-
-function TelegramIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className={className}>
-      <path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71L12.6 16.3l-1.99 1.93c-.23.23-.42.42-.83.42z" />
     </svg>
   );
 }
@@ -115,9 +111,44 @@ export function AuthForm({ next }: { next: string }) {
       setError(t("googleFailed"));
     }
   };
-  // Telegram needs a custom edge function (verify the login widget hash + mint a
-  // session) — not a native Supabase provider. Still "coming soon".
-  const loginTelegram = () => setNotice(t("tgSoon"));
+  // Telegram: the widget gives us signed user data; our edge function verifies
+  // it and returns a one-time OTP, which we exchange for a real session.
+  const telegramAuth = async (user: TelegramUser) => {
+    setBusy(true);
+    reset();
+    const supabase = createClient();
+    const { data, error } = await supabase.functions.invoke("telegram-auth", {
+      body: user,
+    });
+    if (error || !data?.otp || !data?.email) {
+      setBusy(false);
+      setError(t("tgFailed"));
+      return;
+    }
+    // verifyOtp type: try "email" first, then "magiclink" as a fallback
+    let vErr = (
+      await supabase.auth.verifyOtp({
+        email: data.email,
+        token: data.otp,
+        type: "email",
+      })
+    ).error;
+    if (vErr) {
+      vErr = (
+        await supabase.auth.verifyOtp({
+          email: data.email,
+          token: data.otp,
+          type: "magiclink",
+        })
+      ).error;
+    }
+    if (vErr) {
+      setBusy(false);
+      setError(t("tgFailed"));
+      return;
+    }
+    router.push(next);
+  };
 
   // ---------- Phone OTP ----------
   const sendCode = async () => {
@@ -227,14 +258,7 @@ export function AuthForm({ next }: { next: string }) {
           <GoogleIcon className="h-5 w-5" />
           {t("continueGoogle")}
         </button>
-        <button
-          type="button"
-          onClick={loginTelegram}
-          className="flex h-12 w-full items-center justify-center gap-2.5 rounded-xl bg-[#229ED9] font-semibold text-white shadow-sm outline-none transition hover:bg-[#1d8ec4] focus-visible:ring-2 focus-visible:ring-[#229ED9] focus-visible:ring-offset-2"
-        >
-          <TelegramIcon className="h-5 w-5" />
-          {t("continueTelegram")}
-        </button>
+        <TelegramLoginButton onAuth={telegramAuth} />
       </div>
 
       <div className="my-5 flex items-center gap-3 text-xs text-zinc-400">

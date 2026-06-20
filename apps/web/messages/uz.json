@@ -224,7 +224,8 @@
     "rateLimited": "Juda ko'p urinish. Birozdan keyin urinib ko'ring.",
     "sendFailed": "Kod yuborilmadi. Qayta urinib ko'ring.",
     "codeWrong": "Kod noto'g'ri yoki muddati o'tgan",
-    "googleFailed": "Google orqali kirib bo'lmadi. Qaytadan urinib ko'ring."
+    "googleFailed": "Google orqali kirib bo'lmadi. Qaytadan urinib ko'ring.",
+    "tgFailed": "Telegram orqali kirib bo'lmadi. Qaytadan urinib ko'ring."
   },
   "TeacherCard": {
     "perLesson": " / 60 daq",

@@ -224,7 +224,8 @@
     "rateLimited": "Too many attempts. Please try again a bit later.",
     "sendFailed": "Couldn't send the code. Please try again.",
     "codeWrong": "Wrong or expired code",
-    "googleFailed": "Couldn't sign in with Google. Please try again."
+    "googleFailed": "Couldn't sign in with Google. Please try again.",
+    "tgFailed": "Couldn't sign in with Telegram. Please try again."
   },
   "TeacherCard": {
     "perLesson": " / 60 min",
