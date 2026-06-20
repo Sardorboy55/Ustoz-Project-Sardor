@@ -23,6 +23,7 @@ import { Price } from "@/components/ui/price";
 import { SkeletonCard } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Textarea } from "@/components/ui/textarea";
+import { JoinLessonButton } from "@/components/booking/join-lesson-button";
 import { ReviewForm } from "@/components/lessons/review-form";
 import { ContactTeacherButton } from "@/components/teacher/contact-button";
 import { useCabinet } from "@/components/cabinet/cabinet-shell";
@@ -61,7 +62,7 @@ export default function LessonsPage() {
   const t = useTranslations("Cabinet.lessons");
   const tCommon = useTranslations("Cabinet.common");
   const locale = useLocale() as Locale;
-  const { userId } = useCabinet();
+  const { userId, profile } = useCabinet();
 
   const [phase, setPhase] = useState<"loading" | "error" | "ready">("loading");
   const [rows, setRows] = useState<LessonRow[]>([]);
@@ -168,6 +169,7 @@ export default function LessonsPage() {
               row={row}
               locale={locale}
               upcoming={tab === "upcoming"}
+              studentName={profile.full_name}
               onCancel={() => setCancelTarget(row)}
               onReview={() => setReviewTarget(row)}
             />
@@ -193,12 +195,14 @@ function LessonCard({
   row,
   locale,
   upcoming,
+  studentName,
   onCancel,
   onReview,
 }: {
   row: LessonRow;
   locale: Locale;
   upcoming: boolean;
+  studentName: string;
   onCancel: () => void;
   onReview: () => void;
 }) {
@@ -215,6 +219,8 @@ function LessonCard({
   const end = new Date(start.getTime() + row.duration_min * 60_000);
   const cancellable =
     upcoming && (row.status === "pending_payment" || row.status === "paid");
+  const joinable =
+    upcoming && (row.status === "paid" || row.status === "in_progress");
   const reviewable = row.status === "completed" && !row.review;
 
   return (
@@ -280,6 +286,13 @@ function LessonCard({
 
       {/* Actions */}
       <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-zinc-100 pt-3">
+        {joinable && (
+          <JoinLessonButton
+            bookingId={row.id}
+            startAtMs={start.getTime()}
+            displayName={studentName}
+          />
+        )}
         <ButtonLink href={`/booking/${row.id}`} variant="ghost" size="sm">
           {t("details")}
         </ButtonLink>

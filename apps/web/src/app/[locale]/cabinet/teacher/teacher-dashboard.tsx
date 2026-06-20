@@ -6,6 +6,7 @@ import { useLocale, useTranslations } from "next-intl";
 import type { BookingStatus, Locale } from "@ustoz/shared";
 import { Link } from "@/i18n/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { JoinLessonButton } from "@/components/booking/join-lesson-button";
 import {
   formatMonthShort,
   formatTime,
@@ -43,7 +44,7 @@ export function TeacherDashboard() {
   const t = useTranslations("Cabinet.teacher");
   const tCommon = useTranslations("Cabinet.common");
   const locale = useLocale() as Locale;
-  const { userId } = useCabinet();
+  const { userId, profile } = useCabinet();
 
   const [phase, setPhase] = useState<"loading" | "error" | "ready">("loading");
   const [upcoming, setUpcoming] = useState<UpcomingRow[]>([]);
@@ -180,39 +181,56 @@ export function TeacherDashboard() {
                     : subjectRow.name_uz
                   : "";
                 const studentName = row.student?.full_name ?? "";
+                const joinable =
+                  row.status === "paid" || row.status === "in_progress";
                 return (
-                  <li key={row.id}>
-                   <Link
-                    href={`/booking/${row.id}`}
-                    className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl border border-zinc-200 bg-white p-4 transition hover:border-brand-300 hover:shadow-sm"
-                   >
-                    <div className="flex w-14 shrink-0 flex-col items-center justify-center rounded-xl bg-brand-50 py-2 text-brand-800">
-                      <span className="text-[11px] font-semibold uppercase leading-none">
-                        {formatWeekdayShort(start, locale)}
-                      </span>
-                      <span className="mt-1 text-lg font-bold leading-none">
-                        {tashkentDayNumber(start)}
-                      </span>
-                      <span className="mt-1 text-[11px] font-medium uppercase leading-none">
-                        {formatMonthShort(start, locale)}
-                      </span>
+                  <li
+                    key={row.id}
+                    className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl border border-zinc-200 bg-white p-4"
+                  >
+                    <Link
+                      href={`/booking/${row.id}`}
+                      className="flex min-w-0 flex-1 items-center gap-x-4 rounded-lg outline-none transition hover:opacity-80 focus-visible:ring-2 focus-visible:ring-brand-600"
+                    >
+                      <div className="flex w-14 shrink-0 flex-col items-center justify-center rounded-xl bg-brand-50 py-2 text-brand-800">
+                        <span className="text-[11px] font-semibold uppercase leading-none">
+                          {formatWeekdayShort(start, locale)}
+                        </span>
+                        <span className="mt-1 text-lg font-bold leading-none">
+                          {tashkentDayNumber(start)}
+                        </span>
+                        <span className="mt-1 text-[11px] font-medium uppercase leading-none">
+                          {formatMonthShort(start, locale)}
+                        </span>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-zinc-900">{subject}</p>
+                        <p className="text-sm text-zinc-500">
+                          {formatTime(start, locale)}–{formatTime(end, locale)}
+                        </p>
+                        <span className="mt-1 flex items-center gap-2 text-sm text-zinc-700">
+                          <Avatar
+                            src={row.student?.avatar_url}
+                            name={studentName}
+                            size="sm"
+                          />
+                          <span className="max-w-32 truncate">
+                            {studentName}
+                          </span>
+                        </span>
+                        {/* avatar row kept inline to stay valid inside the link */}
+                      </div>
+                    </Link>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <StatusBadge status={row.status} />
+                      {joinable && (
+                        <JoinLessonButton
+                          bookingId={row.id}
+                          startAtMs={start.getTime()}
+                          displayName={profile.full_name || "Преподаватель"}
+                        />
+                      )}
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-zinc-900">{subject}</p>
-                      <p className="text-sm text-zinc-500">
-                        {formatTime(start, locale)}–{formatTime(end, locale)}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-zinc-700">
-                      <Avatar
-                        src={row.student?.avatar_url}
-                        name={studentName}
-                        size="sm"
-                      />
-                      <span className="max-w-32 truncate">{studentName}</span>
-                    </div>
-                    <StatusBadge status={row.status} />
-                   </Link>
                   </li>
                 );
               })}
