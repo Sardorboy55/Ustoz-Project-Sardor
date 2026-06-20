@@ -54,9 +54,14 @@ const SELECT = `
 
 const ACTIVE: BookingStatus[] = ["pending_payment", "paid", "in_progress"];
 const CANCEL_WINDOW_H = 12;
+// Урок остаётся «активным» (виден + можно зайти) ещё 2 часа после планового
+// конца — на случай, если он затянулся или кто-то случайно вышел и хочет вернуться.
+const ACTIVE_GRACE_MS = 2 * 60 * 60_000;
 
 const endOf = (row: LessonRow) =>
   new Date(row.start_at).getTime() + row.duration_min * 60_000;
+const isLive = (row: LessonRow, now: number) =>
+  ACTIVE.includes(row.status) && endOf(row) + ACTIVE_GRACE_MS > now;
 
 export default function LessonsPage() {
   const t = useTranslations("Cabinet.lessons");
@@ -92,9 +97,9 @@ export default function LessonsPage() {
   }, [load]);
 
   const upcoming = rows
-    .filter((r) => ACTIVE.includes(r.status) && endOf(r) > now)
+    .filter((r) => isLive(r, now))
     .sort((a, b) => +new Date(a.start_at) - +new Date(b.start_at));
-  const past = rows.filter((r) => !(ACTIVE.includes(r.status) && endOf(r) > now));
+  const past = rows.filter((r) => !isLive(r, now));
   const visible = tab === "upcoming" ? upcoming : past;
 
   const patchRow = (id: string, patch: Partial<LessonRow>) =>

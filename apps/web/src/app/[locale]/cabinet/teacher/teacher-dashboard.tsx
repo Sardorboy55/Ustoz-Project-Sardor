@@ -82,12 +82,16 @@ export function TeacherDashboard() {
       setPhase("error");
       return;
     }
+    // Урок остаётся в списке ещё 2 часа после планового конца (затянулся /
+    // преподаватель случайно вышел и хочет вернуться).
     const nowMs = now.getTime();
+    const graceMs = 2 * 60 * 60_000;
     setUpcoming(
       ((upRes.data ?? []) as unknown as UpcomingRow[])
         .filter(
           (r) =>
-            new Date(r.start_at).getTime() + r.duration_min * 60_000 > nowMs,
+            new Date(r.start_at).getTime() + r.duration_min * 60_000 + graceMs >
+            nowMs,
         )
         .slice(0, 5),
     );

@@ -11,6 +11,8 @@ import { JoinLessonButton } from "@/components/booking/join-lesson-button";
 
 // За сколько до начала показываем кнопку «Войти».
 const JOIN_BEFORE_MS = 10 * 60_000;
+// Урок остаётся активным ещё 2 часа после планового конца (затянулся / перезайти).
+const ACTIVE_GRACE_MS = 2 * 60 * 60_000;
 const DISMISS_KEY = "ibilim:lesson-banner-dismissed";
 
 type Row = {
@@ -90,7 +92,11 @@ export function UpcomingLessonBanner({
       .limit(8);
     const nowMs = Date.now();
     const next = ((data ?? []) as unknown as Row[]).find(
-      (r) => new Date(r.start_at).getTime() + r.duration_min * 60_000 > nowMs,
+      (r) =>
+        new Date(r.start_at).getTime() +
+          r.duration_min * 60_000 +
+          ACTIVE_GRACE_MS >
+        nowMs,
     );
     setRow(next ?? null);
   }, [userId]);
