@@ -196,7 +196,7 @@ async function fetchByStatus(statuses: string[]): Promise<Payment[]> {
     .from("manual_payments")
     .select(FIELDS)
     .in("status", statuses)
-    .order("created_at", { ascending: statuses.includes("pending") })
+    .order("created_at", { ascending: false })
     .limit(100);
   if (error) throw error;
   return enrich((data ?? []) as Payment[]);

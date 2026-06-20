@@ -78,7 +78,7 @@ async function fetchByStatus(status: string): Promise<Application[]> {
     .select(FIELDS)
     .eq("status", status)
     .order(status === "pending_review" ? "created_at" : "reviewed_at", {
-      ascending: status === "pending_review",
+      ascending: false,
     })
     .limit(100);
   if (error) throw error;

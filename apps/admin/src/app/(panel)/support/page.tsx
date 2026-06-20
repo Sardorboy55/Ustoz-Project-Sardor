@@ -45,7 +45,7 @@ async function fetchTickets(
       count: "exact",
     })
     .eq("status", status)
-    .order("created_at", { ascending: status === "open" })
+    .order("created_at", { ascending: false })
     .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1);
   if (error) throw error;
 

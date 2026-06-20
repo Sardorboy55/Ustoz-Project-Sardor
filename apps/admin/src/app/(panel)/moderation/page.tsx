@@ -115,7 +115,7 @@ async function fetchPending(): Promise<QueueItem[]> {
     .from("moderation_queue")
     .select(QUEUE_FIELDS)
     .eq("status", "pending")
-    .order("created_at", { ascending: true })
+    .order("created_at", { ascending: false })
     .limit(100);
   if (error) throw error;
   return enrich((data ?? []) as QueueItem[]);

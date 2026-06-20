@@ -81,7 +81,7 @@ async function fetchPending(): Promise<PayoutRow[]> {
     .from("payout_requests")
     .select(PAYOUT_FIELDS)
     .eq("status", "pending")
-    .order("created_at", { ascending: true })
+    .order("created_at", { ascending: false })
     .limit(100);
   if (error) throw error;
   return withTeacherInfo(data ?? [], true);
