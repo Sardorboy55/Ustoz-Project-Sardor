@@ -101,7 +101,7 @@ abstract class AppLocalizations {
   /// No description provided for @appTitle.
   ///
   /// In uz, this message translates to:
-  /// **'USTOZ'**
+  /// **'IBILIM'**
   String get appTitle;
 
   /// No description provided for @splashTagline.
@@ -179,7 +179,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeSubtitle.
   ///
   /// In uz, this message translates to:
-  /// **'USTOZ ilovasiga xush kelibsiz. Bu — Faza 0 skeleti: navigatsiya, mavzu va uz/ru lokalizatsiya tayyor.'**
+  /// **'IBILIM ilovasiga xush kelibsiz. Bu — Faza 0 skeleti: navigatsiya, mavzu va uz/ru lokalizatsiya tayyor.'**
   String get homeSubtitle;
 
   /// No description provided for @settingsTitle.

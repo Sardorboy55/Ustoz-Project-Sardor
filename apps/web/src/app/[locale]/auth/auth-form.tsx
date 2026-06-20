@@ -97,12 +97,26 @@ export function AuthForm({ next }: { next: string }) {
   }, [step, resendIn]);
 
   // ---------- Social ----------
-  // Google OAuth needs an /auth/callback route (to exchange the code for a
-  // session) plus the provider enabled in Supabase. Neither exists yet, so a
-  // real signInWithOAuth would bounce the user to a dead /auth/callback (404)
-  // and never sign them in. Until that's wired, show the same "coming soon"
-  // notice as Telegram instead of starting a broken redirect.
-  const loginGoogle = () => setNotice(t("googleSoon"));
+  // Google OAuth: redirect to Google, then back to /auth/callback which exchanges
+  // the code for a session and continues to `next`. Requires the Google provider
+  // enabled in Supabase (dashboard) + redirect URL whitelisted.
+  const loginGoogle = async () => {
+    setBusy(true);
+    reset();
+    const { error } = await createClient().auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
+      },
+    });
+    // On success the browser navigates away to Google; only errors return here.
+    if (error) {
+      setBusy(false);
+      setError(t("googleFailed"));
+    }
+  };
+  // Telegram needs a custom edge function (verify the login widget hash + mint a
+  // session) — not a native Supabase provider. Still "coming soon".
   const loginTelegram = () => setNotice(t("tgSoon"));
 
   // ---------- Phone OTP ----------

@@ -9,7 +9,7 @@ class AppLocalizationsRu extends AppLocalizations {
   AppLocalizationsRu([String locale = 'ru']) : super(locale);
 
   @override
-  String get appTitle => 'USTOZ';
+  String get appTitle => 'IBILIM';
 
   @override
   String get splashTagline => 'Найдите своего наставника';
@@ -52,7 +52,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get homeSubtitle =>
-      'Добро пожаловать в USTOZ. Это скелет Фазы 0: навигация, тема и локализация uz/ru готовы.';
+      'Добро пожаловать в IBILIM. Это скелет Фазы 0: навигация, тема и локализация uz/ru готовы.';
 
   @override
   String get settingsTitle => 'Настройки';
