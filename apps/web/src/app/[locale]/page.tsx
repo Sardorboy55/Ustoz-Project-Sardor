@@ -172,7 +172,7 @@ export default async function LandingPage({
         <div className="mx-auto flex max-w-3xl flex-col items-center px-4 pb-20 pt-20 text-center sm:px-6 lg:pb-28 lg:pt-28">
           <h1 className="text-4xl font-extrabold leading-tight tracking-tight text-white drop-shadow-sm sm:text-5xl">
             {t("heroTitlePre")}
-            <span className="text-brand-300">{t("heroTitleHighlight")}</span>
+            <span className="text-white">{t("heroTitleHighlight")}</span>
             {t("heroTitlePost")}
           </h1>
           <p className="mt-5 max-w-xl text-lg leading-relaxed text-zinc-100">
