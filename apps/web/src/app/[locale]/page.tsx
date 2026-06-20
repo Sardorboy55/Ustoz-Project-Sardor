@@ -331,7 +331,7 @@ export default async function LandingPage({
         </section>
       )}
 
-      {/* ============================ Why USTOZ ============================ */}
+      {/* ============================ Why IBILIM ============================ */}
       <section className="bg-white py-16">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="text-center">

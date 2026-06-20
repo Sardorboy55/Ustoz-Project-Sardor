@@ -1,6 +1,6 @@
 {
   "@@locale": "uz",
-  "appTitle": "USTOZ",
+  "appTitle": "IBILIM",
   "splashTagline": "O'z ustozingizni toping",
   "onboardingTitle1": "O'zingizga mos ustozni toping",
   "onboardingBody1": "Tillar, maktab fanlari, IT, psixologiya va boshqa yo'nalishlar — tajribali ustozlar bitta ilovada.",
@@ -13,7 +13,7 @@
   "onboardingSkip": "O'tkazib yuborish",
   "homeTitle": "Bosh sahifa",
   "homeGreeting": "Assalomu alaykum!",
-  "homeSubtitle": "USTOZ ilovasiga xush kelibsiz. Bu — Faza 0 skeleti: navigatsiya, mavzu va uz/ru lokalizatsiya tayyor.",
+  "homeSubtitle": "IBILIM ilovasiga xush kelibsiz. Bu — Faza 0 skeleti: navigatsiya, mavzu va uz/ru lokalizatsiya tayyor.",
   "settingsTitle": "Sozlamalar",
   "settingsLanguage": "Til",
   "languageUzbek": "O'zbekcha",

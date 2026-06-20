@@ -9,10 +9,10 @@ const geistSans = Geist({
 
 export const metadata: Metadata = {
   title: {
-    default: "USTOZ Admin",
-    template: "%s | USTOZ Admin",
+    default: "IBILIM Admin",
+    template: "%s | IBILIM Admin",
   },
-  description: "Админ-панель платформы USTOZ",
+  description: "Админ-панель платформы IBILIM",
   robots: { index: false, follow: false },
 };
 

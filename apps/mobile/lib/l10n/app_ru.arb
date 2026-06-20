@@ -1,6 +1,6 @@
 {
   "@@locale": "ru",
-  "appTitle": "USTOZ",
+  "appTitle": "IBILIM",
   "splashTagline": "Найдите своего наставника",
   "onboardingTitle1": "Найдите своего устоза",
   "onboardingBody1": "Языки, школьные предметы, IT, психология и другие направления — опытные наставники в одном приложении.",
@@ -13,7 +13,7 @@
   "onboardingSkip": "Пропустить",
   "homeTitle": "Главная",
   "homeGreeting": "Здравствуйте!",
-  "homeSubtitle": "Добро пожаловать в USTOZ. Это скелет Фазы 0: навигация, тема и локализация uz/ru готовы.",
+  "homeSubtitle": "Добро пожаловать в IBILIM. Это скелет Фазы 0: навигация, тема и локализация uz/ru готовы.",
   "settingsTitle": "Настройки",
   "settingsLanguage": "Язык",
   "languageUzbek": "Узбекский",

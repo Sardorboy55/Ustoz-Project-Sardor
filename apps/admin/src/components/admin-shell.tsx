@@ -101,7 +101,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
     const match = NAV.filter(
       (item) => pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href)),
     ).sort((a, b) => b.href.length - a.href.length)[0];
-    return match?.label ?? "USTOZ Admin";
+    return match?.label ?? "IBILIM Admin";
   }, [pathname]);
 
   const signOut = async () => {
@@ -113,7 +113,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-background">
         <div className="text-lg font-extrabold tracking-wide text-brand">
-          USTOZ <span className="font-medium text-zinc-400">admin</span>
+          IBILIM <span className="font-medium text-zinc-400">admin</span>
         </div>
         <Spinner />
         <p className="text-sm text-zinc-500">Проверяем доступ…</p>
@@ -126,7 +126,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
       <div className="flex min-h-screen">
         <aside className="fixed inset-y-0 left-0 z-20 flex w-60 flex-col border-r border-zinc-200 bg-white">
           <div className="px-5 pb-2 pt-5 text-lg font-extrabold tracking-wide text-brand">
-            USTOZ <span className="font-medium text-zinc-400">admin</span>
+            IBILIM <span className="font-medium text-zinc-400">admin</span>
           </div>
           <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-3">
             {NAV.map((item) => {
@@ -150,7 +150,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
             })}
           </nav>
           <div className="border-t border-zinc-100 px-5 py-3 text-xs text-zinc-400">
-            Внутренний инструмент USTOZ
+            Внутренний инструмент IBILIM
           </div>
         </aside>
 

@@ -1,6 +1,6 @@
 "use client";
 
-// Мини-кит UI админки USTOZ: Card, StatCard, Table, Badge, Button, Modal,
+// Мини-кит UI админки IBILIM: Card, StatCard, Table, Badge, Button, Modal,
 // Input/Select, EmptyState, Spinner, Skeleton, Toast.
 // Дизайн-система: teal #0E7C66, карточки 16px, кнопки 12px, чипы full.
 

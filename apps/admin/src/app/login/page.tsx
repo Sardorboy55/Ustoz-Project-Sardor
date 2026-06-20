@@ -116,7 +116,7 @@ function LoginForm() {
             <ShieldCheck className="h-6 w-6" aria-hidden />
           </div>
           <h1 className="text-xl font-extrabold tracking-wide text-zinc-900">
-            USTOZ <span className="font-semibold text-brand">Admin</span>
+            IBILIM <span className="font-semibold text-brand">Admin</span>
           </h1>
           <p className="text-sm text-zinc-500">Панель управления платформой</p>
         </div>

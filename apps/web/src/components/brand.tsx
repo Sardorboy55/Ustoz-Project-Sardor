@@ -2,7 +2,7 @@ import { GraduationCap } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/cn";
 
-/** USTOZ wordmark: teal mark + bold wordmark with an amber accent dot. */
+/** IBILIM wordmark: teal mark + bold wordmark with an amber accent dot. */
 export function Wordmark({ className }: { className?: string }) {
   return (
     <Link
@@ -16,7 +16,7 @@ export function Wordmark({ className }: { className?: string }) {
         <GraduationCap size={18} strokeWidth={2.25} aria-hidden="true" />
       </span>
       <span className="text-xl font-extrabold leading-none tracking-tight text-brand-700">
-        USTOZ
+        IBILIM
         <span className="text-accent-500">.</span>
       </span>
     </Link>

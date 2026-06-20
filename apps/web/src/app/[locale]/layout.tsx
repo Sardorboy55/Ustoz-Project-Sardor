@@ -15,8 +15,8 @@ const geistSans = Geist({
 
 export const metadata: Metadata = {
   title: {
-    default: "USTOZ — onlayn darslar platformasi",
-    template: "%s | USTOZ",
+    default: "IBILIM — onlayn darslar platformasi",
+    template: "%s | IBILIM",
   },
   description:
     "O'zbekiston uchun ustozlar va mutaxassislar marketpleysi: tillar, maktab fanlari, IT, psixologiya va boshqalar.",

@@ -95,7 +95,7 @@ export async function SiteFooter() {
 
         <div className="mt-10 flex flex-col items-center justify-between gap-3 border-t border-zinc-100 pt-6 text-sm text-zinc-500 sm:flex-row">
           <span>
-            © {new Date().getFullYear()} USTOZ. {t("rights")}.
+            © {new Date().getFullYear()} IBILIM. {t("rights")}.
           </span>
           <span>{t("madeIn")} 🇺🇿</span>
         </div>
