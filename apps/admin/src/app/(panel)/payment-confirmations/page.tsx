@@ -24,6 +24,8 @@ type Payment = {
   booking_id: string | null;
   student_id: string;
   purpose: string;
+  pkg_lessons: number | null;
+  pkg_duration_min: number | null;
   amount: number;
   pay_amount: number | null;
   verify_code: number | null;
@@ -89,7 +91,7 @@ function TeacherLink({ name, slug }: { name: string; slug: string | null }) {
 }
 
 const FIELDS =
-  "id, booking_id, student_id, purpose, amount, pay_amount, verify_code, receipt_path, status, review_note, reviewed_at, created_at";
+  "id, booking_id, student_id, purpose, amount, pay_amount, verify_code, receipt_path, status, review_note, reviewed_at, created_at, pkg_lessons, pkg_duration_min";
 
 async function enrich(rows: Payment[]): Promise<Payment[]> {
   const supabase = createClient();
@@ -321,6 +323,8 @@ export default function PaymentConfirmationsPage() {
                       </span>
                       {p.purpose === "pro" ? (
                         <Badge tone="amber">Pro подписка</Badge>
+                      ) : p.purpose === "package" ? (
+                        <Badge tone="emerald">Пакет уроков</Badge>
                       ) : (
                         <Badge tone="sky">{p.subjectName}</Badge>
                       )}
@@ -331,6 +335,14 @@ export default function PaymentConfirmationsPage() {
                         <Avatar src={p.studentAvatar} name={p.studentName} />
                         <TeacherLink name={p.studentName} slug={p.studentSlug} /> · за
                         Pro-подписку
+                      </p>
+                    ) : p.purpose === "package" ? (
+                      <p className="mt-1 flex flex-wrap items-center gap-1.5 text-sm text-zinc-600">
+                        Платит:
+                        <Avatar src={p.studentAvatar} name={p.studentName} />
+                        <b className="text-zinc-900">{p.studentName}</b> · за пакет
+                        {p.pkg_lessons ? ` ${p.pkg_lessons} уроков` : ""}
+                        {p.pkg_duration_min ? ` по ${p.pkg_duration_min} мин` : ""}
                       </p>
                     ) : (
                       <div className="mt-1 space-y-1 text-sm">
@@ -346,7 +358,7 @@ export default function PaymentConfirmationsPage() {
                         </p>
                       </div>
                     )}
-                    {p.purpose !== "pro" && (
+                    {p.purpose === "lesson" && (
                       <div className="mt-1 text-sm text-zinc-500">
                         <p>
                           Урок: <span className="text-zinc-700">{p.subjectName}</span>
@@ -364,7 +376,7 @@ export default function PaymentConfirmationsPage() {
 
                 <div className="mt-3 rounded-xl bg-amber-50 px-3 py-2.5 text-sm leading-relaxed text-amber-800">
                   🔎 Найдите в Paynet поступление <b>ровно на {formatSum(p.pay_amount ?? p.amount)}</b>. Подтверждайте только если такая сумма реально пришла — скрин чека сам по себе не доказательство.
-                  {p.purpose !== "pro" && (
+                  {p.purpose === "lesson" && (
                     <> Преподавателю зачислится {formatSum(p.amount)}.</>
                   )}
                 </div>
