@@ -26,10 +26,19 @@ jobs:
 
       - name: Point Bubblewrap to runner JDK + Android SDK
         run: |
+          SDK="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          # Bubblewrap expects the legacy tools/bin/sdkmanager; modern SDK puts it
+          # under cmdline-tools/. Symlink it to the path Bubblewrap validates.
+          SDKM=$(find "$SDK/cmdline-tools" -name sdkmanager -type f 2>/dev/null | head -1)
+          echo "sdkmanager found at: $SDKM"
+          mkdir -p "$SDK/tools/bin"
+          ln -sf "$SDKM" "$SDK/tools/bin/sdkmanager"
+          AVDM=$(find "$SDK/cmdline-tools" -name avdmanager -type f 2>/dev/null | head -1)
+          [ -n "$AVDM" ] && ln -sf "$AVDM" "$SDK/tools/bin/avdmanager" || true
           mkdir -p ~/.bubblewrap
-          printf '{"jdkPath":"%s","androidSdkPath":"%s"}\n' "$JAVA_HOME" "$ANDROID_SDK_ROOT" > ~/.bubblewrap/config.json
+          printf '{"jdkPath":"%s","androidSdkPath":"%s"}\n' "$JAVA_HOME" "$SDK" > ~/.bubblewrap/config.json
           echo "JDK: $JAVA_HOME"
-          echo "SDK: $ANDROID_SDK_ROOT"
+          echo "SDK: $SDK"
           cat ~/.bubblewrap/config.json
 
       - name: Restore signing keystore
