@@ -1,0 +1,58 @@
+name: Build TWA APK
+
+# Собирает Android-приложение (TWA) из PWA-сайта через Bubblewrap.
+# Внутри — наш сайт (IBILIM) в нативной обёртке; вход Google/Telegram работает.
+# Запуск: Actions → "Build TWA APK" → Run workflow. APK — в артефактах.
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
+      - name: Install Bubblewrap
+        run: npm install -g @bubblewrap/cli@latest
+
+      - name: Point Bubblewrap to runner JDK + Android SDK
+        run: |
+          mkdir -p ~/.bubblewrap
+          printf '{"jdkPath":"%s","androidSdkPath":"%s"}\n' "$JAVA_HOME" "$ANDROID_SDK_ROOT" > ~/.bubblewrap/config.json
+          echo "JDK: $JAVA_HOME"
+          echo "SDK: $ANDROID_SDK_ROOT"
+          cat ~/.bubblewrap/config.json
+
+      - name: Restore signing keystore
+        run: echo "${{ secrets.ANDROID_KEYSTORE_B64 }}" | base64 -d > twa/android.keystore
+
+      - name: Generate Android project from manifest
+        working-directory: twa
+        run: bubblewrap update --skipVersionUpgrade || true
+
+      - name: Build signed APK
+        working-directory: twa
+        env:
+          PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          BUBBLEWRAP_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          BUBBLEWRAP_KEY_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          printf '%s\n%s\n' "$PASS" "$PASS" | bubblewrap build --skipPwaValidation
+          echo "=== artifacts ==="
+          ls -la *.apk *.aab 2>/dev/null || true
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ibilim-twa-apk
+          path: twa/app-release-signed.apk
+          if-no-files-found: error

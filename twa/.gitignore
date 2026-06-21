@@ -1,0 +1,10 @@
+# Подписной ключ и артефакты сборки — НЕ коммитим (ключ восстанавливается в CI из секрета)
+android.keystore
+*.keystore
+*.apk
+*.aab
+app/
+.gradle/
+build/
+node_modules/
+store_icon.png
