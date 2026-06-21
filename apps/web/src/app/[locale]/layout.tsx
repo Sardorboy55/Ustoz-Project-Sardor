@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { notFound } from "next/navigation";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { setRequestLocale } from "next-intl/server";
@@ -6,6 +6,7 @@ import { Geist } from "next/font/google";
 import { routing } from "@/i18n/routing";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
+import { PwaRegister } from "@/components/pwa-register";
 import "../globals.css";
 
 const geistSans = Geist({
@@ -20,6 +21,13 @@ export const metadata: Metadata = {
   },
   description:
     "O'zbekiston uchun ustozlar va mutaxassislar marketpleysi: tillar, maktab fanlari, IT, psixologiya va boshqalar.",
+  manifest: "/manifest.webmanifest",
+  icons: { apple: "/apple-icon.png" },
+  appleWebApp: { capable: true, statusBarStyle: "default", title: "IBILIM" },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#2563eb",
 };
 
 export function generateStaticParams() {
@@ -46,6 +54,7 @@ export default async function LocaleLayout({
           <SiteHeader />
           {children}
           <SiteFooter />
+          <PwaRegister />
         </NextIntlClientProvider>
       </body>
     </html>
