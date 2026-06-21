@@ -378,7 +378,12 @@
       "errSlotTaken": "Sorry, this time was just taken. The schedule is updated — pick another slot.",
       "errTrialUsed": "You've already used the free trial with this tutor. Choose a regular lesson.",
       "errTeacherLimit": "The tutor has reached this month's lesson limit. Try another week or another tutor.",
-      "errGeneric": "Couldn't create the booking. Please try again a bit later."
+      "errGeneric": "Couldn't create the booking. Please try again a bit later.",
+      "errOwnProfile": "You can't book a lesson with yourself. Sign in as a student (another account).",
+      "errUnavailable": "This tutor is currently unavailable. Try another.",
+      "errDuration": "This duration is not offered for the selected subject.",
+      "errStart": "This time has already passed. Pick another.",
+      "errTrialDisabled": "This subject has no free trial lesson."
     },
     "page": {
       "title": "Booking",

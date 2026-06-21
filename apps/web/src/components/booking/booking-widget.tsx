@@ -34,6 +34,12 @@ const ERROR_KEY: Record<string, string> = {
   SLOT_TAKEN: "errSlotTaken",
   TRIAL_USED: "errTrialUsed",
   TEACHER_LIMIT: "errTeacherLimit",
+  OWN_PROFILE: "errOwnProfile",
+  TEACHER_UNAVAILABLE: "errUnavailable",
+  INVALID_DURATION: "errDuration",
+  INVALID_START: "errStart",
+  TRIAL_DISABLED: "errTrialDisabled",
+  SUBJECT_NOT_FOUND: "errUnavailable",
 };
 
 async function extractErrorCode(error: unknown): Promise<string> {
@@ -95,6 +101,7 @@ export function BookingWidget({
   const [refreshKey, setRefreshKey] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [errorKey, setErrorKey] = useState<string | null>(null);
+  const [errorCode, setErrorCode] = useState<string | null>(null);
   const [authed, setAuthed] = useState<boolean | null>(null);
 
   const pickDuration = (choice: DurationChoice) => {
@@ -153,6 +160,7 @@ export function BookingWidget({
     });
     if (error) {
       const code = await extractErrorCode(error);
+      setErrorCode(code);
       if (code === "UNAUTHENTICATED") {
         router.push(`/auth?next=${encodeURIComponent(`/t/${teacherSlug}`)}`);
         return;
@@ -435,7 +443,10 @@ export function BookingWidget({
                 className="mt-3 flex items-start gap-2 rounded-xl bg-red-50 p-3 text-sm text-red-700"
               >
                 <TriangleAlert size={16} className="mt-0.5 shrink-0" aria-hidden="true" />
-                {t(errorKey)}
+                <span>
+                  {t(errorKey)}
+                  {errorKey === "errGeneric" && errorCode ? ` (${errorCode})` : ""}
+                </span>
               </p>
             )}
 

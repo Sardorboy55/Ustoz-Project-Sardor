@@ -378,7 +378,12 @@
       "errSlotTaken": "Afsus, bu vaqt hozirgina band qilindi. Jadval yangilandi — boshqa vaqtni tanlang.",
       "errTrialUsed": "Bu ustoz bilan bepul sinov darsidan allaqachon foydalangansiz. Oddiy darsni tanlang.",
       "errTeacherLimit": "Ustozning bu oydagi darslar limiti to'ldi. Boshqa hafta yoki boshqa ustozni ko'ring.",
-      "errGeneric": "Bron yaratilmadi. Birozdan keyin qayta urinib ko'ring."
+      "errGeneric": "Bron yaratilmadi. Birozdan keyin qayta urinib ko'ring.",
+      "errOwnProfile": "O'zingizga dars bron qilib bo'lmaydi. O'quvchi sifatida (boshqa akkaunt) kiring.",
+      "errUnavailable": "Ustoz hozircha mavjud emas. Boshqasini tanlang.",
+      "errDuration": "Bu davomiylik tanlangan fan uchun mavjud emas.",
+      "errStart": "Bu vaqt allaqachon o'tib ketgan. Boshqasini tanlang.",
+      "errTrialDisabled": "Bu fanda bepul sinov darsi yoʻq."
     },
     "page": {
       "title": "Bron",
