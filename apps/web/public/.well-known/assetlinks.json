@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "uz.ibilim.twa",
+      "sha256_cert_fingerprints": [
+        "61:44:4B:9D:EE:08:11:83:1F:1A:39:83:19:DD:D4:E5:C4:8C:68:60:FC:3A:EA:1A:48:96:3A:CF:30:79:F0:1B"
+      ]
+    }
+  }
+]
