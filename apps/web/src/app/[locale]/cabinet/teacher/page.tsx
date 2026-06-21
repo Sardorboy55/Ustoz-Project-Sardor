@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/cn";
-import { Button } from "@/components/ui/button";
+import { ButtonLink } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCabinet } from "@/components/cabinet/cabinet-shell";
 import { TeacherDashboard } from "./teacher-dashboard";
@@ -37,7 +37,7 @@ const TAB_LABEL: Record<TabKey, string> = {
 
 export default function TeacherCabinetPage() {
   const t = useTranslations("Cabinet.teacher");
-  const { profile, userId, refreshProfile } = useCabinet();
+  const { profile, userId } = useCabinet();
   const [tab, setTab] = useState<TabKey>("anketa");
   const tabInitRef = useRef(false);
   const [hasLessons, setHasLessons] = useState<boolean | null>(null);
@@ -71,7 +71,7 @@ export default function TeacherCabinetPage() {
   }, [profile.is_teacher, checkSetup]);
 
   if (!profile.is_teacher) {
-    return <BecomeTeacherCard onDone={refreshProfile} />;
+    return <BecomeTeacherCard />;
   }
 
   if (hasLessons === null) {
@@ -176,25 +176,11 @@ export default function TeacherCabinetPage() {
 }
 
 /** Landing card for students: one click away from a teacher profile. */
-function BecomeTeacherCard({ onDone }: { onDone: () => Promise<void> }) {
+function BecomeTeacherCard() {
   const t = useTranslations("Cabinet.teacher");
-  const [busy, setBusy] = useState(false);
-  const [failed, setFailed] = useState(false);
 
-  const become = async () => {
-    setBusy(true);
-    setFailed(false);
-    const supabase = createClient();
-    const { error } = await supabase.rpc("become_teacher");
-    if (error) {
-      setBusy(false);
-      setFailed(true);
-      return;
-    }
-    await onDone();
-    setBusy(false);
-  };
-
+  // Не делаем преподавателем мгновенно — ведём на полный флоу: анкета +
+  // документы + AI-собеседование → заявка → проверка админом.
   return (
     <div className="flex flex-col items-start rounded-2xl border border-dashed border-brand-200 bg-brand-50/40 px-6 py-10">
       <span className="flex h-16 w-16 items-center justify-center rounded-full bg-brand-100 text-brand-700">
@@ -206,14 +192,9 @@ function BecomeTeacherCard({ onDone }: { onDone: () => Promise<void> }) {
       <p className="mt-2 max-w-md text-sm leading-relaxed text-zinc-600">
         {t("becomeBody")}
       </p>
-      {failed && (
-        <p role="alert" className="mt-3 text-sm text-red-600">
-          {t("becomeError")}
-        </p>
-      )}
-      <Button size="lg" loading={busy} onClick={become} className="mt-6">
+      <ButtonLink href="/become-teacher" size="lg" className="mt-6">
         {t("becomeCta")}
-      </Button>
+      </ButtonLink>
     </div>
   );
 }

@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 
 // ============================================================================
-// USTOZ design tokens — single source of truth for colors, radii and spacing.
-// Design system: teal brand, amber accent, zinc neutrals, marketplace style.
+// IBILIM design tokens — single source of truth for colors, radii and spacing.
+// Design system: blue brand (#2563EB), amber accent, zinc neutrals.
 // ============================================================================
 
 /// Brand & neutral palette (raw values from the design system).
 abstract final class AppColors {
-  // brand
-  static const primary = Color(0xFF0E7C66); // teal
-  static const primaryDark = Color(0xFF0A5F4E); // hover / pressed
-  static const primaryTint = Color(0xFFE6F4F1); // light teal surface
+  // brand (IBILIM blue — matches web brand-600/700/50)
+  static const primary = Color(0xFF2563EB); // blue-600
+  static const primaryDark = Color(0xFF1D4ED8); // blue-700 — hover / pressed
+  static const primaryTint = Color(0xFFEFF6FF); // blue-50 surface
   static const accent = Color(0xFFF59E0B); // amber — rating, PRO
 
   // semantic
