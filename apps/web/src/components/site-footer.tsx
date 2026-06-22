@@ -97,7 +97,6 @@ export async function SiteFooter() {
           <span>
             © {new Date().getFullYear()} IBILIM. {t("rights")}.
           </span>
-          <span>{t("madeIn")} 🇺🇿</span>
         </div>
       </div>
     </footer>
