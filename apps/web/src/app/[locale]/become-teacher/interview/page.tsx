@@ -710,7 +710,11 @@ function InterviewCall({
   const start = async () => {
     setError(null);
     try {
-      await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Запрашиваем доступ к микрофону и СРАЗУ отпускаем — иначе на Safari этот
+      // поток держит устройство, а SDK ElevenLabs открывает свой → конфликт аудио
+      // (голос агента может рваться). SDK сам возьмёт микрофон при startSession.
+      const probe = await navigator.mediaDevices.getUserMedia({ audio: true });
+      probe.getTracks().forEach((t) => t.stop());
     } catch {
       setError("Нужен доступ к микрофону. Разрешите его в браузере и попробуйте снова.");
       return;
