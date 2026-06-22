@@ -138,7 +138,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     if (confirmed != true || !mounted) return;
     await ref.read(authRepositoryProvider).signOut();
     ref.invalidate(ownProfileProvider);
-    if (mounted) context.go('/auth/phone');
+    if (mounted) context.go('/auth');
   }
 
   void _showAbout() {

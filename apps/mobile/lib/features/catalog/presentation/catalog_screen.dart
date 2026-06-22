@@ -28,11 +28,13 @@ class CatalogScreen extends ConsumerStatefulWidget {
     this.initialCategoryId,
     this.initialTrialOnly = false,
     this.autofocusSearch = false,
+    this.initialQuery,
   });
 
   final String? initialCategoryId;
   final bool initialTrialOnly;
   final bool autofocusSearch;
+  final String? initialQuery;
 
   @override
   ConsumerState<CatalogScreen> createState() => _CatalogScreenState();
@@ -58,7 +60,11 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
     _filters = _filters.copyWith(
       categoryId: () => widget.initialCategoryId,
       trialOnly: widget.initialTrialOnly,
+      query: widget.initialQuery,
     );
+    if ((widget.initialQuery ?? '').isNotEmpty) {
+      _searchController.text = widget.initialQuery!;
+    }
     _scroll.addListener(_onScroll);
     _load();
     if (widget.autofocusSearch) {
@@ -80,6 +86,12 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
     if (widget.initialTrialOnly != old.initialTrialOnly &&
         widget.initialTrialOnly) {
       _filters = _filters.copyWith(trialOnly: true);
+      changed = true;
+    }
+    if (widget.initialQuery != old.initialQuery &&
+        (widget.initialQuery ?? '').isNotEmpty) {
+      _filters = _filters.copyWith(query: widget.initialQuery);
+      _searchController.text = widget.initialQuery!;
       changed = true;
     }
     if (changed) _load();
@@ -627,8 +639,21 @@ class TeacherCard extends ConsumerWidget {
                     color: scheme.primary,
                   ),
                 ),
+              if (card['has_free_trial'] == true) ...[
+                const SizedBox(width: AppTokens.s8),
+                const TrialBadge(),
+              ],
               const Spacer(),
-              if (card['has_free_trial'] == true) const TrialBadge(),
+              FilledButton(
+                onPressed: () => context.push('/t/${card['slug']}'),
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size(0, 40),
+                  padding: const EdgeInsets.symmetric(horizontal: 18),
+                  textStyle:
+                      const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                ),
+                child: Text(locale.languageCode == 'ru' ? 'Выбрать' : 'Tanlash'),
+              ),
             ],
           ),
         ],
@@ -658,7 +683,7 @@ class _FavoriteHeart extends ConsumerWidget {
       ),
       onPressed: () async {
         if (ref.read(sessionControllerProvider) == null) {
-          context.push('/auth/phone');
+          context.push('/auth');
           return;
         }
         try {

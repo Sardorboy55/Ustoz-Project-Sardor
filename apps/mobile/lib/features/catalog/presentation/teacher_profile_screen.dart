@@ -73,7 +73,7 @@ class _TeacherProfileScreenState extends ConsumerState<TeacherProfileScreen> {
   Future<void> _writeToTeacher(String teacherId) async {
     final l10n = AppLocalizations.of(context)!;
     if (ref.read(sessionControllerProvider) == null) {
-      context.push('/auth/phone');
+      context.push('/auth');
       return;
     }
     try {
@@ -90,7 +90,7 @@ class _TeacherProfileScreenState extends ConsumerState<TeacherProfileScreen> {
 
   void _book(Map<String, dynamic> teacher, {DateTime? initialStart}) {
     if (ref.read(sessionControllerProvider) == null) {
-      context.push('/auth/phone');
+      context.push('/auth');
       return;
     }
     showBookingSheet(context, teacher, initialStart: initialStart);
@@ -418,7 +418,7 @@ class _AppBarHeart extends ConsumerWidget {
         ),
         onPressed: () async {
           if (ref.read(sessionControllerProvider) == null) {
-            context.push('/auth/phone');
+            context.push('/auth');
             return;
           }
           try {

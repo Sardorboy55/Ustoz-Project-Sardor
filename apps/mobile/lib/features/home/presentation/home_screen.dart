@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../app/theme.dart';
 import '../../../common/datetime.dart';
@@ -55,10 +56,9 @@ class HomeScreen extends ConsumerWidget {
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.only(bottom: AppTokens.s32),
             children: [
-              const SizedBox(height: AppTokens.s12),
-              _Header(profile: profile),
-              const SizedBox(height: AppTokens.s16),
-              const _SearchBarStub(),
+              const _Hero(),
+              const _TrustBand(),
+              const SizedBox(height: AppTokens.s8),
               const _NextLessonSection(),
               const SizedBox(height: AppTokens.s24),
               SectionHeader(
@@ -623,6 +623,267 @@ class _TeacherMiniCard extends StatelessWidget {
             ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// hero — marketing landing matching the website (apps/web home)
+// ---------------------------------------------------------------------------
+
+class _Hero extends StatefulWidget {
+  const _Hero();
+
+  @override
+  State<_Hero> createState() => _HeroState();
+}
+
+class _HeroState extends State<_Hero> {
+  final _searchCtrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  void _search() {
+    final q = _searchCtrl.text.trim();
+    context.go(q.isEmpty
+        ? '/catalog?focus=1'
+        : '/catalog?focus=1&q=${Uri.encodeComponent(q)}');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ru = Localizations.localeOf(context).languageCode == 'ru';
+    final title =
+        ru ? 'Найдите своего учителя' : "O'zingizga mos ustozni toping";
+    final subtitle = ru
+        ? 'Живые онлайн-уроки: удобное расписание, оплата и общение с преподавателем — всё на одной платформе. Более 35 предметов, от языков до IT.'
+        : "Jonli onlayn darslar: qulay jadval, to'lov va ustoz bilan muloqot — hammasi bitta platformada. Tillardan IT gacha 35+ fan.";
+    final hint = ru ? 'Предмет или преподаватель' : 'Fan yoki ustoz';
+    final findBtn = ru ? 'Найти' : 'Qidirish';
+    final ctaFind = ru ? 'Найти преподавателя' : 'Ustoz topish';
+    final ctaBecome = ru ? 'Стать преподавателем' : "Ustoz bo'lish";
+    const overlayDark = Color(0xFF09090B);
+
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: Image.asset('assets/images/hero.jpg', fit: BoxFit.cover),
+        ),
+        Positioned.fill(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  overlayDark.withValues(alpha: 0.78),
+                  AppColors.zinc900.withValues(alpha: 0.62),
+                  overlayDark.withValues(alpha: 0.85),
+                ],
+              ),
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 48),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  SvgPicture.asset(
+                    'assets/logo/logo.svg',
+                    height: 26,
+                    colorFilter: const ColorFilter.mode(
+                        Colors.white, BlendMode.srcIn),
+                  ),
+                  const Spacer(),
+                  TextButton(
+                    onPressed: () => context.go('/auth'),
+                    style: TextButton.styleFrom(foregroundColor: Colors.white),
+                    child: Text(ru ? 'Войти' : 'Kirish'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 36),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 560),
+                child: Column(
+                  children: [
+                    Text(
+                      title,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 34,
+                        fontWeight: FontWeight.w800,
+                        height: 1.1,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      subtitle,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.92),
+                        fontSize: 15,
+                        height: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 28),
+                    Material(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(14, 6, 6, 6),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.search_rounded,
+                                color: AppColors.zinc400),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: TextField(
+                                controller: _searchCtrl,
+                                textInputAction: TextInputAction.search,
+                                onSubmitted: (_) => _search(),
+                                style: const TextStyle(
+                                    color: AppColors.zinc900, fontSize: 15),
+                                decoration: InputDecoration(
+                                  isCollapsed: true,
+                                  border: InputBorder.none,
+                                  hintText: hint,
+                                  hintStyle: const TextStyle(
+                                      color: AppColors.zinc400),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            FilledButton(
+                              onPressed: _search,
+                              style: FilledButton.styleFrom(
+                                minimumSize: const Size(0, 44),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 18),
+                              ),
+                              child: Text(findBtn),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: FilledButton(
+                            onPressed: () => context.go('/catalog'),
+                            style: FilledButton.styleFrom(
+                                minimumSize: const Size(0, 50)),
+                            child: Text(ctaFind),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: FilledButton(
+                            onPressed: () => context.go('/profile'),
+                            style: FilledButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              foregroundColor: AppColors.primaryDark,
+                              minimumSize: const Size(0, 50),
+                            ),
+                            child: Text(ctaBecome),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _TrustBand extends StatelessWidget {
+  const _TrustBand();
+
+  @override
+  Widget build(BuildContext context) {
+    final ru = Localizations.localeOf(context).languageCode == 'ru';
+    final items = <(IconData, String, String)>[
+      (Icons.grid_view_rounded, '8', ru ? 'направлений' : "yo'nalish"),
+      (Icons.menu_book_rounded, '35+', ru ? 'предметов' : 'fan'),
+      (
+        Icons.verified_user_rounded,
+        ru ? 'Безопасно' : 'Xavfsiz',
+        ru ? 'Оплата внутри платформы' : "To'lov platforma ichida"
+      ),
+      (
+        Icons.forum_rounded,
+        ru ? 'Честно' : 'Halol',
+        ru ? 'Отзывы после уроков' : 'Sharhlar darslardan keyin'
+      ),
+    ];
+
+    Widget cell((IconData, String, String) it) => Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: AppColors.primaryTint,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(it.$1, color: AppColors.primary, size: 20),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(it.$2,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.w800)),
+                  Text(it.$3,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.zinc500,
+                          height: 1.15)),
+                ],
+              ),
+            ),
+          ],
+        );
+
+    return Container(
+      width: double.infinity,
+      color: AppColors.primaryTint.withValues(alpha: 0.5),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+      child: Column(
+        children: [
+          Row(children: [
+            Expanded(child: cell(items[0])),
+            const SizedBox(width: 12),
+            Expanded(child: cell(items[1])),
+          ]),
+          const SizedBox(height: 16),
+          Row(children: [
+            Expanded(child: cell(items[2])),
+            const SizedBox(width: 12),
+            Expanded(child: cell(items[3])),
+          ]),
+        ],
       ),
     );
   }

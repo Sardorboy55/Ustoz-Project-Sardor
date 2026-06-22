@@ -25,6 +25,32 @@ class AuthRepository {
 
   Future<void> signOut() => _client.auth.signOut();
 
+  /// Google OAuth via the SAME Supabase project as the website.
+  /// Opens a Custom Tab and returns via the `uz.ustoz.app://login-callback`
+  /// deep link, which supabase_flutter captures to finish the PKCE exchange.
+  Future<bool> signInWithGoogle() {
+    return _client.auth.signInWithOAuth(
+      OAuthProvider.google,
+      redirectTo: 'uz.ustoz.app://login-callback',
+    );
+  }
+
+  /// Telegram login: reuses the existing `telegram-auth` edge function,
+  /// then exchanges the returned OTP for a real session (same flow as web).
+  Future<void> signInWithTelegram(Map<String, dynamic> tgUser) async {
+    final res = await _client.functions.invoke('telegram-auth', body: tgUser);
+    final data = (res.data as Map).cast<String, dynamic>();
+    final email = data['email'] as String;
+    final otp = data['otp'] as String;
+    try {
+      await _client.auth
+          .verifyOTP(email: email, token: otp, type: OtpType.email);
+    } catch (_) {
+      await _client.auth
+          .verifyOTP(email: email, token: otp, type: OtpType.magiclink);
+    }
+  }
+
   static String normalizePhone(String input) {
     final digits = input.replaceAll(RegExp(r'\D'), '');
     if (digits.length == 9) return '+998$digits';

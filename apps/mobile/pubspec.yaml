@@ -34,6 +34,9 @@ dependencies:
   cupertino_icons: ^1.0.8
   cached_network_image: ^3.4.1
   video_player: ^2.11.1
+  flutter_svg: ^2.0.10
+  app_links: ^6.3.2
+  url_launcher: ^6.3.0
 
 dev_dependencies:
   flutter_test:
@@ -47,3 +50,7 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   generate: true # gen-l10n from lib/l10n/*.arb
+  assets:
+    - assets/images/
+    - assets/logo/
+    - assets/icons/

@@ -4,8 +4,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/config/env.dart';
-import '../features/auth/presentation/otp_screen.dart';
-import '../features/auth/presentation/phone_screen.dart';
+import '../features/auth/presentation/auth_screen.dart';
 import '../features/booking/presentation/booking_success_screen.dart';
 import '../features/booking/presentation/lessons_screen.dart';
 import '../features/catalog/presentation/catalog_screen.dart';
@@ -15,7 +14,6 @@ import '../features/chat/presentation/chat_thread_screen.dart';
 import '../features/favorites/presentation/favorites_screen.dart';
 import '../features/home/presentation/home_screen.dart';
 import '../features/notifications/presentation/notifications_screen.dart';
-import '../features/onboarding/presentation/onboarding_screen.dart';
 import '../features/profile/presentation/profile_screen.dart';
 import '../features/profile/presentation/profile_setup_screen.dart';
 import '../features/profile/presentation/support_screen.dart';
@@ -59,7 +57,7 @@ GoRouter router(Ref ref) {
       final loc = state.matchedLocation;
 
       final isProtected = _protectedPrefixes.any(loc.startsWith);
-      if (session == null && isProtected) return '/auth/phone';
+      if (session == null && isProtected) return '/auth';
       // splash decides /setup vs /home (needs an async profile lookup)
       if (session != null && loc.startsWith('/auth')) return '/';
       return null;
@@ -68,16 +66,17 @@ GoRouter router(Ref ref) {
       // ---- outside the shell (no bottom bar) ----
       GoRoute(path: '/', builder: (context, state) => const SplashScreen()),
       GoRoute(
-        path: '/onboarding',
-        builder: (context, state) => const OnboardingScreen(),
+        path: '/auth',
+        builder: (context, state) => const AuthScreen(),
       ),
+      // legacy paths kept as aliases → new Google/Telegram login screen
       GoRoute(
         path: '/auth/phone',
-        builder: (context, state) => const PhoneScreen(),
+        builder: (context, state) => const AuthScreen(),
       ),
       GoRoute(
         path: '/auth/otp',
-        builder: (context, state) => OtpScreen(phone: state.extra as String),
+        builder: (context, state) => const AuthScreen(),
       ),
       GoRoute(
         path: '/setup',
@@ -137,6 +136,7 @@ GoRouter router(Ref ref) {
                 initialCategoryId: state.uri.queryParameters['category'],
                 initialTrialOnly: state.uri.queryParameters['trial'] == '1',
                 autofocusSearch: state.uri.queryParameters['focus'] == '1',
+                initialQuery: state.uri.queryParameters['q'],
               ),
             ),
           ]),

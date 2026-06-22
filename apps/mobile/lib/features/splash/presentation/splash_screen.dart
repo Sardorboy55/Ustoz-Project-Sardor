@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../app/theme.dart';
@@ -24,15 +23,9 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _navigate() async {
-    final prefs = await SharedPreferences.getInstance();
-    final seenOnboarding = prefs.getBool('onboarding_seen') ?? false;
     await Future<void>.delayed(const Duration(milliseconds: 1200));
     if (!mounted) return;
 
-    if (!seenOnboarding) {
-      context.go('/onboarding');
-      return;
-    }
     if (!Env.hasSupabase) {
       context.go('/home'); // offline demo mode
       return;
@@ -40,7 +33,7 @@ class _SplashScreenState extends State<SplashScreen> {
     final client = Supabase.instance.client;
     final session = client.auth.currentSession;
     if (session == null) {
-      context.go('/auth/phone');
+      context.go('/auth');
       return;
     }
     // route to profile setup until the name is filled (docs/04 §4.1)
@@ -59,7 +52,7 @@ class _SplashScreenState extends State<SplashScreen> {
     if (profileMissing) {
       // session for a deleted account (or wiped dev DB) — sign out
       await client.auth.signOut();
-      if (mounted) context.go('/auth/phone');
+      if (mounted) context.go('/auth');
       return;
     }
     context.go(name.isEmpty ? '/setup' : '/home');
