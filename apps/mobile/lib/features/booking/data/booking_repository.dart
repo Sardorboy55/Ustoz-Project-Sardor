@@ -49,7 +49,11 @@ class BookingRepository {
         'kind': kind,
       });
       final data = res.data as Map<String, dynamic>?;
-      return (data?['booking'] as Map).cast<String, dynamic>();
+      final booking = (data?['booking'] as Map?)?.cast<String, dynamic>();
+      if (booking == null) {
+        throw BookingException('UNKNOWN', 'booking missing in response');
+      }
+      return booking;
     } on FunctionException catch (e) {
       throw _toBookingException(e);
     }
@@ -62,7 +66,8 @@ class BookingRepository {
         'bookingId': bookingId,
         'reason': ?reason,
       });
-      return (res.data as Map).cast<String, dynamic>();
+      final data = (res.data as Map?)?.cast<String, dynamic>();
+      return data ?? const <String, dynamic>{};
     } on FunctionException catch (e) {
       throw _toBookingException(e);
     }

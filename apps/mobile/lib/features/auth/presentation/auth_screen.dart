@@ -4,6 +4,7 @@ import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../app/theme.dart';
@@ -29,6 +30,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
 
   final _appLinks = AppLinks();
   StreamSubscription<Uri>? _sub;
+  Timer? _authTimer;
   bool _busy = false;
   String? _error;
 
@@ -48,10 +50,12 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   @override
   void dispose() {
     _sub?.cancel();
+    _authTimer?.cancel();
     super.dispose();
   }
 
   Future<void> _google() async {
+    _authTimer?.cancel();
     setState(() {
       _busy = true;
       _error = null;
@@ -59,15 +63,29 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     try {
       await ref.read(authRepositoryProvider).signInWithGoogle();
       // Sign-in completes asynchronously via the deep-link redirect →
-      // auth state change → router redirect to '/'.
+      // onAuthStateChange → router redirect. Keep the spinner until then,
+      // with a safety timeout so the user is never stuck on a dead spinner.
+      _authTimer = Timer(const Duration(seconds: 60), () {
+        if (mounted &&
+            Supabase.instance.client.auth.currentSession == null) {
+          setState(() {
+            _busy = false;
+            _error = _ru
+                ? 'Похоже, вход не завершился. Попробуйте снова.'
+                : 'Kirish yakunlanmadi. Qaytadan urinib ko\'ring.';
+          });
+        }
+      });
     } catch (_) {
+      _authTimer?.cancel();
       if (mounted) {
-        setState(() => _error = _ru
-            ? 'Не удалось войти через Google'
-            : 'Google orqali kirib bo\'lmadi');
+        setState(() {
+          _busy = false;
+          _error = _ru
+              ? 'Не удалось войти через Google'
+              : 'Google orqali kirib bo\'lmadi';
+        });
       }
-    } finally {
-      if (mounted) setState(() => _busy = false);
     }
   }
 
