@@ -21,11 +21,12 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return [
       { source: "/auth/callback", destination: "/uz/auth/callback" },
-      // Прокси Supabase: /_sb/* → обработчик внутри [locale] (внешние rewrite в
-      // этой связке не проксируют, а внутренние — работают). Обработчик сам
+      // Прокси Supabase: /supa/* → обработчик внутри [locale] (внешние rewrite в
+      // этой связке не проксируют, а внутренние — работают). Папка БЕЗ "_": имена
+      // с подчёркиванием Next считает приватными и не маршрутизирует. Обработчик
       // форвардит в Supabase. Нужно, т.к. узбекские провайдеры не резолвят
-      // *.supabase.co — приложение/сайт ходят на ibilim.uz/_sb (резолвится в UZ).
-      { source: "/_sb/:path*", destination: "/uz/_sb/:path*" },
+      // *.supabase.co — приложение/сайт ходят на ibilim.uz/supa (резолвится в UZ).
+      { source: "/supa/:path*", destination: "/uz/supa/:path*" },
     ];
   },
 };
