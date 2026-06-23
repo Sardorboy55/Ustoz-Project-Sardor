@@ -39,12 +39,36 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   @override
   void initState() {
     super.initState();
-    // capture the Telegram deep-link callback when the browser returns
-    _sub = _appLinks.uriLinkStream.listen((uri) {
-      if (uri.host == 'tg-callback') {
-        _completeTelegram(uri.queryParameters);
-      }
+    // Ловим deep-link возврат входа — и через поток (тёплый возврат из браузера),
+    // и через начальную ссылку (холодный старт, когда ОС убила приложение).
+    _sub = _appLinks.uriLinkStream.listen(_handleUri);
+    _appLinks.getInitialLink().then((uri) {
+      if (uri != null) _handleUri(uri);
     });
+  }
+
+  Future<void> _handleUri(Uri uri) async {
+    if (uri.host == 'login-callback') {
+      // Google: явно меняем OAuth-код на сессию (не полагаемся на авто-детект
+      // supabase_flutter — он в этой связке не срабатывал → возврат на /auth).
+      try {
+        await Supabase.instance.client.auth.getSessionFromUrl(uri);
+      } catch (_) {
+        // supabase мог уже обменять код сам — ошибку показываем только если
+        // сессии всё ещё нет.
+        if (mounted &&
+            Supabase.instance.client.auth.currentSession == null) {
+          setState(() {
+            _busy = false;
+            _error = _ru
+                ? 'Не удалось войти через Google'
+                : 'Google orqali kirib bo\'lmadi';
+          });
+        }
+      }
+    } else if (uri.host == 'tg-callback') {
+      _completeTelegram(uri.queryParameters);
+    }
   }
 
   @override
