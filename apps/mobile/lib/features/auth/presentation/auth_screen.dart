@@ -49,20 +49,26 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
 
   Future<void> _handleUri(Uri uri) async {
     if (uri.host == 'login-callback') {
-      // Google: явно меняем OAuth-код на сессию (не полагаемся на авто-детект
-      // supabase_flutter — он в этой связке не срабатывал → возврат на /auth).
+      // Google: явно меняем OAuth-код на сессию. Сначала прямой
+      // exchangeCodeForSession(code) (PKCE), затем getSessionFromUrl как фолбэк.
       try {
-        await Supabase.instance.client.auth.getSessionFromUrl(uri);
-      } catch (_) {
+        final err = uri.queryParameters['error_description'] ??
+            uri.queryParameters['error'];
+        if (err != null) throw err;
+        final code = uri.queryParameters['code'];
+        if (code != null && code.isNotEmpty) {
+          await Supabase.instance.client.auth.exchangeCodeForSession(code);
+        } else {
+          await Supabase.instance.client.auth.getSessionFromUrl(uri);
+        }
+      } catch (e) {
         // supabase мог уже обменять код сам — ошибку показываем только если
-        // сессии всё ещё нет.
+        // сессии всё ещё нет. Текст ошибки выводим для диагностики.
         if (mounted &&
             Supabase.instance.client.auth.currentSession == null) {
           setState(() {
             _busy = false;
-            _error = _ru
-                ? 'Не удалось войти через Google'
-                : 'Google orqali kirib bo\'lmadi';
+            _error = 'Google: $e';
           });
         }
       }

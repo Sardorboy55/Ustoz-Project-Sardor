@@ -38,7 +38,16 @@
         })
         .join("&");
       document.getElementById("status").textContent = "Готово, открываю приложение…";
-      window.location.href = "uz.ustoz.app://tg-callback?" + qs;
+      var ua = navigator.userAgent || "";
+      if (/android/i.test(ua)) {
+        // Chrome блокирует переход на кастомную схему из JS — используем intent://,
+        // который Android надёжно открывает (запускает приложение uz.ustoz.app).
+        window.location.href =
+          "intent://tg-callback?" + qs +
+          "#Intent;scheme=uz.ustoz.app;package=uz.ustoz.app;end";
+      } else {
+        window.location.href = "uz.ustoz.app://tg-callback?" + qs;
+      }
     }
     (function () {
       var s = document.createElement("script");
