@@ -149,12 +149,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     try {
       await ref.read(authRepositoryProvider).signInWithTelegram(params);
       // session → router redirect handles navigation to '/'.
-    } catch (_) {
-      if (mounted) {
-        setState(() => _error = _ru
-            ? 'Не удалось войти через Telegram'
-            : 'Telegram orqali kirib bo\'lmadi');
-      }
+    } catch (e) {
+      // Текст ошибки выводим для диагностики (как у Google).
+      if (mounted) setState(() => _error = 'Telegram: $e');
     } finally {
       if (mounted) setState(() => _busy = false);
     }

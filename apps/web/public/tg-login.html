@@ -26,6 +26,7 @@
     <h1>IBILIM</h1>
     <p>Telegram orqali kiring · Войдите через Telegram</p>
     <div id="tg"></div>
+    <a id="openapp" href="#" style="display:none;margin-top:14px;padding:14px 22px;background:#2563eb;color:#fff;border-radius:12px;font-weight:700;text-decoration:none;font-size:15px;">Открыть приложение IBILIM</a>
     <p id="status"></p>
   </div>
   <script>
@@ -37,17 +38,21 @@
           return encodeURIComponent(k) + "=" + encodeURIComponent(user[k]);
         })
         .join("&");
-      document.getElementById("status").textContent = "Готово, открываю приложение…";
       var ua = navigator.userAgent || "";
-      if (/android/i.test(ua)) {
-        // Chrome блокирует переход на кастомную схему из JS — используем intent://,
-        // который Android надёжно открывает (запускает приложение uz.ustoz.app).
-        window.location.href =
-          "intent://tg-callback?" + qs +
-          "#Intent;scheme=uz.ustoz.app;package=uz.ustoz.app;end";
-      } else {
-        window.location.href = "uz.ustoz.app://tg-callback?" + qs;
-      }
+      // Android: intent:// надёжно запускает приложение по ТАПУ; iOS: кастомная схема.
+      var deep = /android/i.test(ua)
+        ? "intent://tg-callback?" + qs +
+          "#Intent;scheme=uz.ustoz.app;package=uz.ustoz.app;end"
+        : "uz.ustoz.app://tg-callback?" + qs;
+      // Главное — видимая кнопка: авто-переход из JS браузеры часто блокируют,
+      // поэтому пользователь жмёт кнопку (это гарантированный жест → запуск app).
+      var btn = document.getElementById("openapp");
+      btn.href = deep;
+      btn.style.display = "inline-block";
+      document.getElementById("status").textContent =
+        "Готово! Если приложение не открылось — нажмите синюю кнопку выше.";
+      // Лучшее усилие — пробуем открыть автоматически (если браузер разрешит).
+      try { window.location.href = deep; } catch (e) {}
     }
     (function () {
       var s = document.createElement("script");
