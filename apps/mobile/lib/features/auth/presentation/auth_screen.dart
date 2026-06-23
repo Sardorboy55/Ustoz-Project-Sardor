@@ -93,9 +93,10 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
             Supabase.instance.client.auth.currentSession == null) {
           setState(() {
             _busy = false;
-            _error = _ru
-                ? 'Не удалось завершить вход. Попробуйте снова.'
-                : 'Kirishni yakunlab bo\'lmadi. Qaytadan urinib ko\'ring.';
+            _error = (_ru
+                    ? 'Не удалось завершить вход. Попробуйте снова.'
+                    : 'Kirishni yakunlab bo\'lmadi. Qaytadan urinib ko\'ring.') +
+                '\n[$e]';
           });
         }
       }
@@ -183,9 +184,10 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
     } catch (e) {
       debugPrint('Telegram login error: $e');
       if (mounted) {
-        setState(() => _error = _ru
-            ? 'Не удалось войти через Telegram. Попробуйте снова.'
-            : 'Telegram orqali kirib bo\'lmadi. Qaytadan urinib ko\'ring.');
+        setState(() => _error = (_ru
+                ? 'Не удалось войти через Telegram. Попробуйте снова.'
+                : 'Telegram orqali kirib bo\'lmadi. Qaytadan urinib ko\'ring.') +
+            '\n[$e]');
       }
     } finally {
       if (mounted) setState(() => _busy = false);
