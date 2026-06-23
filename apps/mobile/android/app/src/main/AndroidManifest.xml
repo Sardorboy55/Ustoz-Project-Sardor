@@ -6,6 +6,9 @@
          Объявляем явно для release. -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <!-- Микрофон: голосовое собеседование (ElevenLabs-агент в WebView) и видео-урок. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
     <application
         android:label="IBILIM"
         android:name="${applicationName}"

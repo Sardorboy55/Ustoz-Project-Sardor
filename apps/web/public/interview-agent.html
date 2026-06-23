@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="uz">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>IBILIM — собеседование</title>
+  <style>
+    :root { --brand: #2563eb; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; background: #fafafa; color: #18181b;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      display: flex; align-items: center; justify-content: center; padding: 20px;
+    }
+    .card { text-align: center; max-width: 380px; width: 100%; }
+    .mic {
+      width: 76px; height: 76px; border-radius: 50%; margin: 0 auto 16px;
+      background: var(--brand); color: #fff; display: flex; align-items: center;
+      justify-content: center; font-size: 34px; position: relative;
+    }
+    .mic.live::after {
+      content: ""; position: absolute; inset: 0; border-radius: 50%;
+      background: var(--brand); opacity: .5; animation: ping 1.4s ease-out infinite;
+    }
+    @keyframes ping { 0%{transform:scale(1);opacity:.5} 100%{transform:scale(1.8);opacity:0} }
+    h1 { font-size: 17px; font-weight: 800; margin: 0 0 6px; }
+    p { color: #71717a; font-size: 14px; margin: 0 0 18px; line-height: 1.4; }
+    button {
+      border: 0; border-radius: 12px; padding: 14px 22px; font-size: 16px;
+      font-weight: 700; cursor: pointer; width: 100%; max-width: 280px;
+    }
+    .primary { background: var(--brand); color: #fff; }
+    .secondary { background: #fff; color: #18181b; border: 1px solid #d4d4d8; }
+    #err { color: #b91c1c; font-size: 13px; margin-top: 12px; min-height: 16px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div id="mic" class="mic">🎙️</div>
+    <h1 id="title"></h1>
+    <p id="hint"></p>
+    <button id="startBtn" class="primary"></button>
+    <button id="stopBtn" class="secondary" style="display:none"></button>
+    <p id="err"></p>
+  </div>
+  <script type="module">
+    import { Conversation } from "https://esm.sh/@elevenlabs/client@0.1.4";
+
+    const AGENT_ID = "agent_7401kvd53vehfx4vz17gmaac7aw5";
+    const q = new URLSearchParams(location.search);
+    const subject = q.get("subject") || "";
+    const lang = (q.get("lang") || "uz").toLowerCase();
+
+    const T = {
+      uz: { idle: "Suhbatni boshlaymizmi?", hint: "Tugmani bosing, mikrofonga ruxsat bering — agent suhbatni boshlaydi.", start: "Suhbatni boshlash", live: "Suhbat ketyapti", liveHint: "Ovoz bilan javob bering. Agent xayrlashgach — tugatishingiz mumkin.", stop: "Suhbatni tugatish", micErr: "Mikrofonga ruxsat kerak.", connErr: "Ulanib bo'lmadi. Qaytadan urinib ko'ring." },
+      ru: { idle: "Начнём собеседование?", hint: "Нажмите кнопку, разрешите микрофон — агент начнёт разговор.", start: "Начать разговор", live: "Идёт разговор", liveHint: "Отвечайте вслух. Когда агент попрощается — можно завершить.", stop: "Завершить разговор", micErr: "Нужен доступ к микрофону.", connErr: "Не удалось подключиться. Попробуйте снова." },
+      en: { idle: "Start the interview?", hint: "Tap the button, allow the microphone — the agent will start.", start: "Start conversation", live: "Conversation in progress", liveHint: "Answer aloud. When the agent says goodbye, you can finish.", stop: "End conversation", micErr: "Microphone access is required.", connErr: "Could not connect. Try again." },
+    };
+    const L = T[lang] || T.uz;
+
+    const $ = (id) => document.getElementById(id);
+    $("title").textContent = L.idle;
+    $("hint").textContent = L.hint;
+    $("startBtn").textContent = L.start;
+    $("stopBtn").textContent = L.stop;
+
+    // Bridge to the Flutter app (JavaScriptChannel named IBILIM).
+    function post(obj) {
+      try { if (window.IBILIM && window.IBILIM.postMessage) window.IBILIM.postMessage(JSON.stringify(obj)); } catch (e) {}
+    }
+
+    let conv = null;
+
+    function setLive(live) {
+      $("mic").classList.toggle("live", live);
+      $("startBtn").style.display = live ? "none" : "block";
+      $("stopBtn").style.display = live ? "block" : "none";
+      $("title").textContent = live ? L.live : L.idle;
+      $("hint").textContent = live ? L.liveHint : L.hint;
+    }
+
+    async function start() {
+      $("err").textContent = "";
+      // probe mic then release (avoids audio-device contention with the SDK)
+      try {
+        const p = await navigator.mediaDevices.getUserMedia({ audio: true });
+        p.getTracks().forEach((t) => t.stop());
+      } catch (e) {
+        $("err").textContent = L.micErr;
+        post({ type: "error", reason: "mic" });
+        return;
+      }
+      try {
+        conv = await Conversation.startSession({
+          agentId: AGENT_ID,
+          connectionType: "websocket",
+          dynamicVariables: { subject: subject || "—" },
+          onConnect: (info) => {
+            const id = info && (info.conversationId || info.conversation_id);
+            post({ type: "connected", conversationId: id });
+            setLive(true);
+          },
+          onDisconnect: () => { post({ type: "disconnected" }); setLive(false); },
+          onError: (e) => { $("err").textContent = L.connErr; post({ type: "error", message: String(e) }); },
+        });
+      } catch (e) {
+        $("err").textContent = L.connErr;
+        post({ type: "error", message: String(e) });
+      }
+    }
+
+    async function stop() { try { if (conv) await conv.endSession(); } catch (e) {} setLive(false); }
+
+    $("startBtn").addEventListener("click", start);
+    $("stopBtn").addEventListener("click", stop);
+  </script>
+</body>
+</html>

@@ -22,6 +22,7 @@ import '../features/profile/presentation/profile_setup_screen.dart';
 import '../features/profile/presentation/support_screen.dart';
 import '../features/splash/presentation/splash_screen.dart';
 import '../features/teacher/presentation/teacher_screen.dart';
+import '../features/teacher_application/presentation/become_teacher_screen.dart';
 import 'app_shell.dart';
 
 part 'router.g.dart';
@@ -31,6 +32,7 @@ const _protectedPrefixes = [
   '/setup',
   '/profile',
   '/teacher',
+  '/become-teacher',
   '/lessons',
   '/chats',
   '/booking-success',
@@ -91,6 +93,10 @@ GoRouter router(Ref ref) {
       GoRoute(
         path: '/teacher',
         builder: (context, state) => const TeacherScreen(),
+      ),
+      GoRoute(
+        path: '/become-teacher',
+        builder: (context, state) => const BecomeTeacherScreen(),
       ),
       GoRoute(
         path: '/t/:slug',

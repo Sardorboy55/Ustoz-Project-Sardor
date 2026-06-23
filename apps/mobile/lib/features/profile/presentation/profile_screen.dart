@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../app/theme.dart';
 import '../../../common/format.dart';
@@ -97,17 +96,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       ),
     );
     if (confirmed != true || !mounted) return;
-    // The application includes a voice AI interview that runs on the website;
-    // open the full flow there (same account & backend). The old instant RPC is
-    // intentionally disabled server-side (must go through the interview flow).
-    final ok = await launchUrl(
-      Uri.parse('https://ibilim.uz/become-teacher'),
-      mode: LaunchMode.externalApplication,
-    );
-    if (!ok && mounted) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(l10n.commonError)));
-    }
+    // Native flow: anketa → documents → AI voice interview → submit, all on the
+    // same Supabase backend as the website.
+    context.push('/become-teacher');
   }
 
   Future<void> _signOut() async {
