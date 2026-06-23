@@ -45,8 +45,8 @@ class AuthRepository {
       data = (res.data as Map).cast<String, dynamic>();
     } on FunctionException catch (e) {
       // Функция ответила не-2xx (напр. bad signature / expired) —
-      // пробрасываем статус и тело для точной диагностики на экране.
-      throw 'tg-fn ${e.status}: ${e.details}';
+      // пробрасываем статус, тело и набор отправленных полей для диагностики.
+      throw 'tg-fn ${e.status}: ${e.details} keys=${tgUser.keys.join(",")}';
     }
     final email = data['email'] as String?;
     final otp = data['otp'] as String?;
@@ -57,8 +57,13 @@ class AuthRepository {
       await _client.auth
           .verifyOTP(email: email, token: otp, type: OtpType.email);
     } catch (_) {
-      await _client.auth
-          .verifyOTP(email: email, token: otp, type: OtpType.magiclink);
+      try {
+        await _client.auth
+            .verifyOTP(email: email, token: otp, type: OtpType.magiclink);
+      } catch (e2) {
+        // обе попытки verify не прошли — показываем причину.
+        throw 'tg-verify: $e2';
+      }
     }
   }
 
