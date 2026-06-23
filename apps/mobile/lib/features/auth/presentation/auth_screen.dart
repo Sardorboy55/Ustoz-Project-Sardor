@@ -33,6 +33,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   Timer? _authTimer;
   bool _busy = false;
   String? _error;
+  // один и тот же deep-link может прийти дважды (поток + начальная ссылка) —
+  // обрабатываем каждый ровно один раз.
+  final Set<String> _handledUris = {};
 
   bool get _ru => Localizations.localeOf(context).languageCode == 'ru';
 
@@ -48,6 +51,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   }
 
   Future<void> _handleUri(Uri uri) async {
+    if (!_handledUris.add(uri.toString())) return; // уже обработали этот линк
     if (uri.host == 'login-callback') {
       // Google: явно меняем OAuth-код на сессию. Сначала прямой
       // exchangeCodeForSession(code) (PKCE), затем getSessionFromUrl как фолбэк.

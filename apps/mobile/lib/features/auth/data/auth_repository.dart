@@ -38,10 +38,21 @@ class AuthRepository {
   /// Telegram login: reuses the existing `telegram-auth` edge function,
   /// then exchanges the returned OTP for a real session (same flow as web).
   Future<void> signInWithTelegram(Map<String, dynamic> tgUser) async {
-    final res = await _client.functions.invoke('telegram-auth', body: tgUser);
-    final data = (res.data as Map).cast<String, dynamic>();
-    final email = data['email'] as String;
-    final otp = data['otp'] as String;
+    final Map<String, dynamic> data;
+    try {
+      final res =
+          await _client.functions.invoke('telegram-auth', body: tgUser);
+      data = (res.data as Map).cast<String, dynamic>();
+    } on FunctionException catch (e) {
+      // Функция ответила не-2xx (напр. bad signature / expired) —
+      // пробрасываем статус и тело для точной диагностики на экране.
+      throw 'tg-fn ${e.status}: ${e.details}';
+    }
+    final email = data['email'] as String?;
+    final otp = data['otp'] as String?;
+    if (email == null || otp == null) {
+      throw 'tg-fn no otp: $data';
+    }
     try {
       await _client.auth
           .verifyOTP(email: email, token: otp, type: OtpType.email);
