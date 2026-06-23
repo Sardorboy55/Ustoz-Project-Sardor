@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../app/theme.dart';
 import '../../../common/format.dart';
@@ -29,7 +30,7 @@ class ProfileScreen extends ConsumerStatefulWidget {
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   bool _uploadingAvatar = false;
-  bool _becomingTeacher = false;
+  static const _becomingTeacher = false;
 
   String _formatPhone(String? raw) {
     final p = (raw ?? '').replaceAll(RegExp(r'\D'), '');
@@ -96,18 +97,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       ),
     );
     if (confirmed != true || !mounted) return;
-    setState(() => _becomingTeacher = true);
-    try {
-      await ref.read(profileRepositoryProvider).becomeTeacher();
-      ref.invalidate(ownProfileProvider);
-      if (mounted) context.push('/teacher');
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(l10n.commonError)));
-      }
-    } finally {
-      if (mounted) setState(() => _becomingTeacher = false);
+    // The application includes a voice AI interview that runs on the website;
+    // open the full flow there (same account & backend). The old instant RPC is
+    // intentionally disabled server-side (must go through the interview flow).
+    final ok = await launchUrl(
+      Uri.parse('https://ibilim.uz/become-teacher'),
+      mode: LaunchMode.externalApplication,
+    );
+    if (!ok && mounted) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l10n.commonError)));
     }
   }
 
@@ -403,6 +402,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               icon: Icons.school_outlined,
               title: l10n.teacherCabinet,
               onTap: () => context.push('/teacher'),
+            ),
+            const _MenuDivider(),
+            _MenuTile(
+              icon: Icons.workspace_premium_outlined,
+              title: 'IBILIM Pro',
+              onTap: () => context.push('/pricing/pro'),
             ),
             const _MenuDivider(),
           ],

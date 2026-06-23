@@ -309,6 +309,10 @@ class _LessonCard extends ConsumerWidget {
         start.toLocal().isAfter(DateTime.now());
     final reviewStars = _myReviewStars();
     final canReview = !asTeacher && status == 'completed' && reviewStars == null;
+    final canPay = !asTeacher &&
+        status == 'pending_payment' &&
+        !isTrial &&
+        price > 0;
 
     return AppCard(
       padding: const EdgeInsets.all(AppTokens.s12),
@@ -393,6 +397,22 @@ class _LessonCard extends ConsumerWidget {
                       fontSize: 13, fontWeight: FontWeight.w700),
                 ),
               ],
+            ),
+          ],
+          if (canPay) ...[
+            const SizedBox(height: AppTokens.s12),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: () => context.push(
+                  '/booking/${booking['id']}/pay',
+                  extra: booking,
+                ),
+                icon: const Icon(Icons.payments_rounded, size: 18),
+                label: Text(locale.languageCode == 'ru'
+                    ? 'Оплатить урок'
+                    : 'Darsni to\'lash'),
+              ),
             ),
           ],
           if (cancellable || canReview) ...[
