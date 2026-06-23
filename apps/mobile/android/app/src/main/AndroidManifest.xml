@@ -1,4 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Доступ в сеть. Flutter добавляет INTERNET только в debug/profile —
+         в release-сборке (наши APK) его НЕТ, поэтому приложение не выходило в
+         сеть вообще: getaddrinfo падал с errno=7, прямой connect — с errno=1.
+         Объявляем явно для release. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <application
         android:label="IBILIM"
         android:name="${applicationName}"
