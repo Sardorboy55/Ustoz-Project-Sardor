@@ -24,14 +24,24 @@
 <body>
   <div class="card">
     <h1>IBILIM</h1>
-    <p>Telegram orqali kiring · Войдите через Telegram</p>
+    <p id="subtitle"></p>
     <div id="tg"></div>
-    <a id="openapp" href="#" style="display:none;margin-top:14px;padding:14px 22px;background:#2563eb;color:#fff;border-radius:12px;font-weight:700;text-decoration:none;font-size:15px;">Открыть приложение IBILIM</a>
+    <a id="openapp" href="#" style="display:none;margin-top:14px;padding:14px 22px;background:#2563eb;color:#fff;border-radius:12px;font-weight:700;text-decoration:none;font-size:15px;"></a>
     <p id="status"></p>
   </div>
   <script>
     // Telegram Login Widget → возврат в нативное приложение по deep link.
     // bot и домен совпадают с веб-входом (BotFather /setdomain).
+    // Один язык — по ?lang (приложение передаёт текущую локаль).
+    var LANG = (new URLSearchParams(location.search).get("lang") || "uz").toLowerCase();
+    var STR = {
+      uz: { subtitle: "Davom etish uchun Telegram orqali kiring", open: "IBILIM ilovasini ochish", ok: "Tayyor! Agar ilova ochilmasa — yuqoridagi tugmani bosing." },
+      ru: { subtitle: "Войдите через Telegram, чтобы продолжить", open: "Открыть приложение IBILIM", ok: "Готово! Если приложение не открылось — нажмите кнопку выше." },
+      en: { subtitle: "Log in with Telegram to continue", open: "Open the IBILIM app", ok: "Done! If the app didn't open, tap the button above." }
+    };
+    var L = STR[LANG] || STR.uz;
+    document.getElementById("subtitle").textContent = L.subtitle;
+    document.getElementById("openapp").textContent = L.open;
     function onTelegramAuth(user) {
       var qs = Object.keys(user)
         .map(function (k) {
@@ -49,8 +59,7 @@
       var btn = document.getElementById("openapp");
       btn.href = deep;
       btn.style.display = "inline-block";
-      document.getElementById("status").textContent =
-        "Готово! Если приложение не открылось — нажмите синюю кнопку выше.";
+      document.getElementById("status").textContent = L.ok;
       // Лучшее усилие — пробуем открыть автоматически (если браузер разрешит).
       try { window.location.href = deep; } catch (e) {}
     }
@@ -62,7 +71,6 @@
       s.setAttribute("data-size", "large");
       s.setAttribute("data-radius", "12");
       s.setAttribute("data-onauth", "onTelegramAuth(user)");
-      s.setAttribute("data-request-access", "write");
       document.getElementById("tg").appendChild(s);
     })();
   </script>

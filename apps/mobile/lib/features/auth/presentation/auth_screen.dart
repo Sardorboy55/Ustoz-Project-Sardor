@@ -25,12 +25,14 @@ class AuthScreen extends ConsumerStatefulWidget {
   ConsumerState<AuthScreen> createState() => _AuthScreenState();
 }
 
-class _AuthScreenState extends ConsumerState<AuthScreen> {
+class _AuthScreenState extends ConsumerState<AuthScreen>
+    with WidgetsBindingObserver {
   static const _tgLoginUrl = 'https://ibilim.uz/tg-login.html';
 
   final _appLinks = AppLinks();
   StreamSubscription<Uri>? _sub;
   Timer? _authTimer;
+  Timer? _cancelTimer;
   bool _busy = false;
   String? _error;
   // один и тот же deep-link может прийти дважды (поток + начальная ссылка) —
@@ -44,10 +46,28 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     super.initState();
     // Ловим deep-link возврат входа — и через поток (тёплый возврат из браузера),
     // и через начальную ссылку (холодный старт, когда ОС убила приложение).
+    WidgetsBinding.instance.addObserver(this);
     _sub = _appLinks.uriLinkStream.listen(_handleUri);
     _appLinks.getInitialLink().then((uri) {
       if (uri != null) _handleUri(uri);
     });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Returning from the OAuth browser without finishing (e.g. Back pressed)
+    // → drop the spinner quickly instead of waiting for the long timeout.
+    if (state == AppLifecycleState.resumed && _busy) {
+      _cancelTimer?.cancel();
+      _cancelTimer = Timer(const Duration(milliseconds: 1200), () {
+        if (mounted &&
+            _busy &&
+            Supabase.instance.client.auth.currentSession == null) {
+          _authTimer?.cancel();
+          setState(() => _busy = false);
+        }
+      });
+    }
   }
 
   Future<void> _handleUri(Uri uri) async {
@@ -66,13 +86,16 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
           await Supabase.instance.client.auth.getSessionFromUrl(uri);
         }
       } catch (e) {
-        // supabase мог уже обменять код сам — ошибку показываем только если
-        // сессии всё ещё нет. Текст ошибки выводим для диагностики.
+        debugPrint('Google login callback error: $e');
+        // supabase may have already exchanged the code itself — only surface an
+        // error if there is still no session.
         if (mounted &&
             Supabase.instance.client.auth.currentSession == null) {
           setState(() {
             _busy = false;
-            _error = 'Google: $e';
+            _error = _ru
+                ? 'Не удалось завершить вход. Попробуйте снова.'
+                : 'Kirishni yakunlab bo\'lmadi. Qaytadan urinib ko\'ring.';
           });
         }
       }
@@ -83,8 +106,10 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _sub?.cancel();
     _authTimer?.cancel();
+    _cancelTimer?.cancel();
     super.dispose();
   }
 
@@ -99,8 +124,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
       // Sign-in completes asynchronously via the deep-link redirect →
       // onAuthStateChange → router redirect. Keep the spinner until then,
       // with a safety timeout so the user is never stuck on a dead spinner.
-      _authTimer = Timer(const Duration(seconds: 60), () {
+      _authTimer = Timer(const Duration(seconds: 30), () {
         if (mounted &&
+            _busy &&
             Supabase.instance.client.auth.currentSession == null) {
           setState(() {
             _busy = false;
@@ -126,8 +152,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   Future<void> _telegram() async {
     setState(() => _error = null);
     try {
+      final lang = Localizations.localeOf(context).languageCode;
       final ok = await launchUrl(
-        Uri.parse(_tgLoginUrl),
+        Uri.parse('$_tgLoginUrl?lang=$lang'),
         mode: LaunchMode.externalApplication,
       );
       if (!ok && mounted) {
@@ -154,8 +181,12 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
       await ref.read(authRepositoryProvider).signInWithTelegram(params);
       // session → router redirect handles navigation to '/'.
     } catch (e) {
-      // Текст ошибки выводим для диагностики (как у Google).
-      if (mounted) setState(() => _error = 'Telegram: $e');
+      debugPrint('Telegram login error: $e');
+      if (mounted) {
+        setState(() => _error = _ru
+            ? 'Не удалось войти через Telegram. Попробуйте снова.'
+            : 'Telegram orqali kirib bo\'lmadi. Qaytadan urinib ko\'ring.');
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
