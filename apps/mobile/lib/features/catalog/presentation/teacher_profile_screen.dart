@@ -203,8 +203,22 @@ class _TeacherProfileScreenState extends ConsumerState<TeacherProfileScreen> {
           SliverAppBar(
             expandedHeight: 240,
             pinned: true,
+            // White bar when collapsed; controls sit in dark scrim circles so
+            // they stay visible both over the photo and on the white bar.
+            backgroundColor: Colors.white,
+            surfaceTintColor: Colors.transparent,
             foregroundColor: Colors.white,
-            backgroundColor: AppColors.primaryDark,
+            leading: Padding(
+              padding: const EdgeInsets.only(left: AppTokens.s8),
+              child: IconButton(
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.black.withValues(alpha: 0.32),
+                ),
+                icon:
+                    const Icon(Icons.arrow_back_rounded, color: Colors.white),
+                onPressed: () => Navigator.of(context).maybePop(),
+              ),
+            ),
             actions: [
               _AppBarHeart(teacherId: teacherId),
             ],
@@ -340,15 +354,13 @@ class _TeacherProfileScreenState extends ConsumerState<TeacherProfileScreen> {
           child: Row(
             children: [
               Expanded(
-                child: OutlinedButton.icon(
+                child: OutlinedButton(
                   onPressed: isSelf ? null : () => _writeToTeacher(teacherId),
-                  icon: const Icon(Icons.chat_bubble_outline_rounded, size: 20),
-                  label: Text(l10n.teacherWrite),
+                  child: Text(l10n.teacherWrite),
                 ),
               ),
               const SizedBox(width: AppTokens.s12),
               Expanded(
-                flex: 2,
                 child: FilledButton(
                   onPressed: isSelf ? null : () => _book(t),
                   child: Text(l10n.bookingCta),
@@ -771,10 +783,9 @@ class _SubjectCard extends StatelessWidget {
             const SizedBox(height: AppTokens.s12),
             SizedBox(
               width: double.infinity,
-              child: OutlinedButton.icon(
+              child: FilledButton(
                 onPressed: onBuyPackage,
-                icon: const Icon(Icons.inventory_2_outlined, size: 18),
-                label: Text(
+                child: Text(
                   Localizations.localeOf(context).languageCode == 'ru'
                       ? 'Купить пакет уроков'
                       : 'Darslar paketini olish',

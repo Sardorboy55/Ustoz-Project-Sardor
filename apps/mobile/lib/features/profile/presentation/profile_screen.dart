@@ -326,52 +326,74 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final locale = Localizations.localeOf(context);
     final scheme = Theme.of(context).colorScheme;
     final balance = p['student_balance'] as num? ?? 0;
+    final ru = locale.languageCode == 'ru';
     return AppCard(
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: scheme.primary.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.account_balance_wallet_outlined,
-              size: 22,
-              color: scheme.primary,
-            ),
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: scheme.primary.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.account_balance_wallet_outlined,
+                  size: 22,
+                  color: scheme.primary,
+                ),
+              ),
+              const SizedBox(width: AppTokens.s12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l10n.profileBalanceTitle,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      formatTiyin(balance, locale),
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: AppTokens.s4),
+                    Text(
+                      l10n.profileBalanceNote,
+                      style: TextStyle(
+                        fontSize: 12,
+                        height: 1.3,
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: AppTokens.s12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l10n.profileBalanceTitle,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: scheme.onSurfaceVariant,
+          const SizedBox(height: AppTokens.s12),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(ru
+                        ? 'Пополнение появится после подключения онлайн-оплаты'
+                        : 'To\'ldirish onlayn to\'lov ulangach ishlaydi'),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  formatTiyin(balance, locale),
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: AppTokens.s4),
-                Text(
-                  l10n.profileBalanceNote,
-                  style: TextStyle(
-                    fontSize: 12,
-                    height: 1.3,
-                    color: scheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
+                );
+              },
+              child: Text(ru ? 'Пополнить баланс' : 'Hisobni to\'ldirish'),
             ),
           ),
         ],

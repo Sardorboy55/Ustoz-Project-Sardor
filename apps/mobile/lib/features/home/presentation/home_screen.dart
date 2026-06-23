@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../app/theme.dart';
+import '../../../core/providers/supabase_providers.dart';
 import '../../../common/datetime.dart';
 import '../../../common/format.dart';
 import '../../../common/widgets/app_avatar.dart';
@@ -361,6 +362,20 @@ class _NextLessonSection extends ConsumerWidget {
                       CountdownText(target: start.toLocal()),
                   ],
                 ),
+                const SizedBox(height: AppTokens.s12),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: () => context.go('/lessons'),
+                    style: FilledButton.styleFrom(
+                        minimumSize: const Size.fromHeight(44)),
+                    child: Text(pending
+                        ? (locale == 'ru' ? 'Оплатить' : 'To\'lash')
+                        : (locale == 'ru'
+                            ? 'Перейти к уроку'
+                            : 'Darsga o\'tish')),
+                  ),
+                ),
               ],
             ),
           ),
@@ -384,6 +399,20 @@ IconData categoryIcon(String? icon) => switch (icon) {
       'dumbbell' => Icons.fitness_center_rounded,
       'sparkles' => Icons.auto_awesome_rounded,
       _ => Icons.interests_outlined,
+    };
+
+/// Per-category accent (fg) + tint (bg), matching the web palette
+/// (indigo / emerald / sky / violet / amber / rose / teal / fuchsia).
+({Color fg, Color bg}) categoryColors(String? icon) => switch (icon) {
+      'languages' => (fg: Color(0xFF4F46E5), bg: Color(0xFFEEF2FF)),
+      'school' => (fg: Color(0xFF059669), bg: Color(0xFFECFDF5)),
+      'code' => (fg: Color(0xFF0284C7), bg: Color(0xFFF0F9FF)),
+      'brain' => (fg: Color(0xFF7C3AED), bg: Color(0xFFF5F3FF)),
+      'briefcase' => (fg: Color(0xFFD97706), bg: Color(0xFFFFFBEB)),
+      'music' => (fg: Color(0xFFE11D48), bg: Color(0xFFFFF1F2)),
+      'dumbbell' => (fg: Color(0xFF0D9488), bg: Color(0xFFF0FDFA)),
+      'sparkles' => (fg: Color(0xFFC026D3), bg: Color(0xFFFDF4FF)),
+      _ => (fg: AppColors.primary, bg: AppColors.primaryTint),
     };
 
 class _CategoriesRow extends ConsumerWidget {
@@ -424,9 +453,12 @@ class _CategoriesRow extends ConsumerWidget {
             final name = (locale == 'ru' ? c['name_ru'] : c['name_uz'])
                     as String? ??
                 '';
+            final colors = categoryColors(c['icon'] as String?);
             return _CategoryTile(
               icon: categoryIcon(c['icon'] as String?),
               label: name,
+              fg: colors.fg,
+              bg: colors.bg,
               onTap: () => context.go('/catalog?category=${c['id']}'),
             );
           },
@@ -441,16 +473,18 @@ class _CategoryTile extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.onTap,
+    required this.fg,
+    required this.bg,
   });
 
   final IconData icon;
   final String label;
   final VoidCallback onTap;
+  final Color fg;
+  final Color bg;
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final isLight = Theme.of(context).brightness == Brightness.light;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppTokens.radiusCard),
@@ -462,10 +496,10 @@ class _CategoryTile extends StatelessWidget {
               width: 56,
               height: 56,
               decoration: BoxDecoration(
-                color: isLight ? AppColors.primaryTint : scheme.primaryContainer,
+                color: bg,
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, color: scheme.primary, size: 26),
+              child: Icon(icon, color: fg, size: 26),
             ),
             const SizedBox(height: AppTokens.s8),
             Text(
@@ -496,7 +530,7 @@ class _TeacherRow extends ConsumerWidget {
     final cards = ref.watch(catalogCardsProvider(filters));
     return cards.when(
       loading: () => SizedBox(
-        height: 188,
+        height: 224,
         child: SkeletonPulse(
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
@@ -504,7 +538,7 @@ class _TeacherRow extends ConsumerWidget {
             itemCount: 3,
             separatorBuilder: (_, _) => const SizedBox(width: AppTokens.s12),
             itemBuilder: (_, _) => Container(
-              width: 156,
+              width: 168,
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(AppTokens.radiusCard),
@@ -534,7 +568,7 @@ class _CardsRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 188,
+      height: 224,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: AppTokens.s16),
@@ -564,8 +598,9 @@ class _TeacherMiniCard extends StatelessWidget {
             ? '${l10n.catalogFrom} ${formatTiyin(minPrice, locale)}'
             : '${formatTiyin(minPrice, locale)} ${l10n.catalogFrom}');
 
+    final ru = locale.languageCode == 'ru';
     return SizedBox(
-      width: 156,
+      width: 168,
       child: AppCard(
         padding: const EdgeInsets.all(AppTokens.s12),
         onTap: () => context.push('/t/${card['slug']}'),
@@ -578,7 +613,7 @@ class _TeacherMiniCard extends StatelessWidget {
                 AppAvatar(
                   imageUrl: card['avatar_url'] as String?,
                   name: name,
-                  size: 64,
+                  size: 60,
                 ),
                 if (card['tier'] == 'pro')
                   const Positioned(right: -10, top: -4, child: ProBadge()),
@@ -594,7 +629,7 @@ class _TeacherMiniCard extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                        fontSize: 13, fontWeight: FontWeight.w700),
+                        fontSize: 14, fontWeight: FontWeight.w700),
                   ),
                 ),
                 if (card['is_verified'] == true) ...[
@@ -603,7 +638,7 @@ class _TeacherMiniCard extends StatelessWidget {
                 ],
               ],
             ),
-            const SizedBox(height: AppTokens.s4),
+            const SizedBox(height: 3),
             RatingStars(rating: rating, size: 13, showValue: true),
             const Spacer(),
             if (priceLine != null)
@@ -612,8 +647,8 @@ class _TeacherMiniCard extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
                   color: Theme.of(context).colorScheme.primary,
                 ),
               ),
@@ -621,6 +656,19 @@ class _TeacherMiniCard extends StatelessWidget {
               const SizedBox(height: AppTokens.s4),
               const TrialBadge(),
             ],
+            const SizedBox(height: AppTokens.s8),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: () => context.push('/t/${card['slug']}'),
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(36),
+                  textStyle: const TextStyle(
+                      fontSize: 13, fontWeight: FontWeight.w700),
+                ),
+                child: Text(ru ? 'Выбрать' : 'Tanlash'),
+              ),
+            ),
           ],
         ),
       ),
@@ -632,14 +680,14 @@ class _TeacherMiniCard extends StatelessWidget {
 // hero — marketing landing matching the website (apps/web home)
 // ---------------------------------------------------------------------------
 
-class _Hero extends StatefulWidget {
+class _Hero extends ConsumerStatefulWidget {
   const _Hero();
 
   @override
-  State<_Hero> createState() => _HeroState();
+  ConsumerState<_Hero> createState() => _HeroState();
 }
 
-class _HeroState extends State<_Hero> {
+class _HeroState extends ConsumerState<_Hero> {
   final _searchCtrl = TextEditingController();
 
   @override
@@ -658,6 +706,7 @@ class _HeroState extends State<_Hero> {
   @override
   Widget build(BuildContext context) {
     final ru = Localizations.localeOf(context).languageCode == 'ru';
+    final loggedIn = ref.watch(sessionControllerProvider) != null;
     final title =
         ru ? 'Найдите своего учителя' : "O'zingizga mos ustozni toping";
     final subtitle = ru
@@ -702,11 +751,19 @@ class _HeroState extends State<_Hero> {
                         Colors.white, BlendMode.srcIn),
                   ),
                   const Spacer(),
-                  TextButton(
-                    onPressed: () => context.go('/auth'),
-                    style: TextButton.styleFrom(foregroundColor: Colors.white),
-                    child: Text(ru ? 'Войти' : 'Kirish'),
-                  ),
+                  if (loggedIn)
+                    IconButton(
+                      onPressed: () => context.go('/profile'),
+                      icon: const Icon(Icons.account_circle_outlined,
+                          color: Colors.white, size: 28),
+                    )
+                  else
+                    TextButton(
+                      onPressed: () => context.go('/auth'),
+                      style:
+                          TextButton.styleFrom(foregroundColor: Colors.white),
+                      child: Text(ru ? 'Войти' : 'Kirish'),
+                    ),
                 ],
               ),
               const SizedBox(height: 36),
@@ -754,7 +811,11 @@ class _HeroState extends State<_Hero> {
                                     color: AppColors.zinc900, fontSize: 15),
                                 decoration: InputDecoration(
                                   isCollapsed: true,
+                                  filled: false,
                                   border: InputBorder.none,
+                                  enabledBorder: InputBorder.none,
+                                  focusedBorder: InputBorder.none,
+                                  contentPadding: EdgeInsets.zero,
                                   hintText: hint,
                                   hintStyle: const TextStyle(
                                       color: AppColors.zinc400),
