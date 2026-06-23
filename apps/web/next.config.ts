@@ -19,23 +19,14 @@ const nextConfig: NextConfig = {
   // middleware, so a bare /auth/callback isn't matched). Supabase redirects to
   // the prefix-less /auth/callback — rewrite it to the default-locale handler.
   async rewrites() {
-    return {
-      // beforeFiles: проверяется ДО маршрутов/[locale], иначе locale-роутинг
-      // перехватывает /_sb. Прокси Supabase через наш домен: узбекские
-      // провайдеры не резолвят *.supabase.co (Cloudflare DNS) — приложение/сайт
-      // ходят на ibilim.uz/_sb (резолвится в UZ, Vercel), сервер проксирует в
-      // Supabase. Покрывает auth/rest/storage/functions (НЕ realtime — websockets).
-      beforeFiles: [
-        {
-          source: "/_sb/:path*",
-          destination: "https://pohlwvzwzcscsyigswod.supabase.co/:path*",
-        },
-      ],
-      afterFiles: [
-        { source: "/auth/callback", destination: "/uz/auth/callback" },
-      ],
-      fallback: [],
-    };
+    return [
+      { source: "/auth/callback", destination: "/uz/auth/callback" },
+      // Прокси Supabase: /_sb/* → обработчик внутри [locale] (внешние rewrite в
+      // этой связке не проксируют, а внутренние — работают). Обработчик сам
+      // форвардит в Supabase. Нужно, т.к. узбекские провайдеры не резолвят
+      // *.supabase.co — приложение/сайт ходят на ibilim.uz/_sb (резолвится в UZ).
+      { source: "/_sb/:path*", destination: "/uz/_sb/:path*" },
+    ];
   },
 };
 
