@@ -26,7 +26,7 @@ class AuthScreen extends ConsumerStatefulWidget {
 }
 
 class _AuthScreenState extends ConsumerState<AuthScreen> {
-  static const _tgLoginUrl = 'https://ustoz-web-two.vercel.app/tg-login.html';
+  static const _tgLoginUrl = 'https://ibilim.uz/tg-login.html';
 
   final _appLinks = AppLinks();
   StreamSubscription<Uri>? _sub;
