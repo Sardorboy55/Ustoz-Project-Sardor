@@ -27,8 +27,8 @@ android {
 
     defaultConfig {
         applicationId = "uz.ustoz.app"
-        // Android 7+ per docs/02-architecture.md
-        minSdk = maxOf(24, flutter.minSdkVersion)
+        // Jitsi Meet SDK requires Android 8+ (minSdk 26) for the in-app lesson room.
+        minSdk = maxOf(26, flutter.minSdkVersion)
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
@@ -65,4 +65,15 @@ kotlin {
 
 flutter {
     source = "../.."
+}
+
+// Jitsi SDK bundles its own media3 (inside react-native-video); video_player
+// pulls the standalone androidx.media3 modules → duplicate classes at build.
+// Drop the standalone media3 (RTSP/etc. unused by our HTTP intro videos; Jitsi
+// keeps its bundled copy) to resolve the conflict.
+configurations.all {
+    exclude(group = "androidx.media3", module = "media3-exoplayer-rtsp")
+    exclude(group = "androidx.media3", module = "media3-exoplayer-dash")
+    exclude(group = "androidx.media3", module = "media3-exoplayer-hls")
+    exclude(group = "androidx.media3", module = "media3-exoplayer-smoothstreaming")
 }

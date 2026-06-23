@@ -66,6 +66,10 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>Камера нужна для видео-урока внутри приложения.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Микрофон нужен для видео-урока внутри приложения.</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>

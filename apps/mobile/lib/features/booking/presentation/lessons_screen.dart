@@ -18,6 +18,7 @@ import '../../chat/data/chat_repository.dart';
 import '../../profile/data/profile_repository.dart';
 import '../../reviews/data/reviews_repository.dart';
 import '../data/booking_repository.dart';
+import 'join_lesson_button.dart';
 
 class LessonsScreen extends ConsumerStatefulWidget {
   const LessonsScreen({super.key});
@@ -279,11 +280,54 @@ class _LessonCard extends ConsumerWidget {
     if (submitted == true) onChanged();
   }
 
+  Future<void> _complete(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context)!;
+    final ru = Localizations.localeOf(context).languageCode == 'ru';
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: Text(ru ? 'Завершить урок?' : 'Darsni yakunlashmi?'),
+        content: Text(ru
+            ? 'Урок отметится завершённым, оплата зачислится вам на кошелёк.'
+            : 'Dars yakunlangan deb belgilanadi, to\'lov hamyoningizga tushadi.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(c, false),
+            child: Text(l10n.commonCancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(c, true),
+            child: Text(ru ? 'Завершить' : 'Yakunlash'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    try {
+      await ref
+          .read(bookingRepositoryProvider)
+          .completeLesson(booking['id'] as String);
+      onChanged();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(ru ? 'Урок завершён' : 'Dars yakunlandi'),
+        ));
+      }
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(l10n.commonError)));
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final locale = Localizations.localeOf(context);
     final scheme = Theme.of(context).colorScheme;
+    final myName =
+        ref.watch(ownProfileProvider).value?['full_name'] as String? ?? 'IBILIM';
     final start = DateTime.parse(booking['start_at'] as String);
     final status = booking['status'] as String;
     final subj = ((booking['teacher_subjects'] as Map?)?['subjects'] as Map?)
@@ -380,6 +424,46 @@ class _LessonCard extends ConsumerWidget {
           if (showCountdown && status != 'pending_payment') ...[
             const SizedBox(height: AppTokens.s4),
             CountdownText(target: start.toLocal()),
+          ],
+          if (['paid', 'in_progress'].contains(status)) ...[
+            Builder(builder: (context) {
+              final nowL = DateTime.now();
+              final startL = start.toLocal();
+              final joinOpen =
+                  nowL.isAfter(startL.subtract(const Duration(minutes: 10))) &&
+                      nowL.isBefore(startL.add(const Duration(hours: 3)));
+              final teacherCanComplete = asTeacher && nowL.isAfter(startL);
+              if (!joinOpen && !teacherCanComplete) {
+                return const SizedBox.shrink();
+              }
+              return Column(
+                children: [
+                  const SizedBox(height: AppTokens.s12),
+                  if (joinOpen)
+                    JoinLessonButton(
+                      bookingId: booking['id'] as String,
+                      startAt: start,
+                      displayName: myName,
+                      subject: subjectName,
+                      expanded: true,
+                    ),
+                  if (teacherCanComplete) ...[
+                    if (joinOpen) const SizedBox(height: AppTokens.s8),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () => _complete(context, ref),
+                        icon: const Icon(Icons.check_circle_outline_rounded,
+                            size: 18),
+                        label: Text(locale.languageCode == 'ru'
+                            ? 'Завершить урок'
+                            : 'Darsni yakunlash'),
+                      ),
+                    ),
+                  ],
+                ],
+              );
+            }),
           ],
           if (reviewStars != null) ...[
             const SizedBox(height: AppTokens.s8),

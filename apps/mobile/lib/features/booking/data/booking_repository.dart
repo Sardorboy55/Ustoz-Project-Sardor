@@ -73,6 +73,10 @@ class BookingRepository {
     }
   }
 
+  /// Teacher marks the lesson done → credits the wallet (RPC lesson_complete).
+  Future<void> completeLesson(String bookingId) =>
+      _client.rpc('lesson_complete', params: {'p_booking_id': bookingId});
+
   // invoke throws FunctionException on non-2xx; unwrap our {error:{code,message}}
   static BookingException _toBookingException(FunctionException e) {
     final details = e.details;
