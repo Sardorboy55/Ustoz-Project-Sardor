@@ -6,7 +6,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../app/theme.dart';
 import '../../../core/config/env.dart';
-import '../../../l10n/app_localizations.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -60,59 +59,13 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final l10n = AppLocalizations.of(context)!;
-    return Scaffold(
-      body: DecoratedBox(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [AppColors.primary, AppColors.primaryDark],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
-        child: Center(
-          child: TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0, end: 1),
-            duration: const Duration(milliseconds: 700),
-            curve: Curves.easeOutCubic,
-            builder: (context, t, child) => Opacity(
-              opacity: t,
-              child: Transform.scale(scale: 0.92 + 0.08 * t, child: child),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // wordmark
-                Text(
-                  l10n.appTitle,
-                  style: TextStyle(
-                    color: scheme.onPrimary,
-                    fontSize: 48,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 8,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Container(
-                  width: 56,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: AppColors.accent,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                const SizedBox(height: 14),
-                Text(
-                  l10n.splashTagline,
-                  style: TextStyle(
-                    color: scheme.onPrimary.withValues(alpha: 0.85),
-                    fontSize: 16,
-                  ),
-                ),
-              ],
-            ),
-          ),
+    // Полноэкранный сплэш-дизайн (картинка с логотипом IBILIM).
+    return const Scaffold(
+      backgroundColor: AppColors.primary,
+      body: SizedBox.expand(
+        child: Image(
+          image: AssetImage('assets/images/splash.png'),
+          fit: BoxFit.cover,
         ),
       ),
     );
