@@ -14,6 +14,9 @@ import '../features/chat/presentation/chat_thread_screen.dart';
 import '../features/favorites/presentation/favorites_screen.dart';
 import '../features/home/presentation/home_screen.dart';
 import '../features/notifications/presentation/notifications_screen.dart';
+import '../features/payments/presentation/lesson_payment_screen.dart';
+import '../features/payments/presentation/my_packages_screen.dart';
+import '../features/payments/presentation/pro_checkout_screen.dart';
 import '../features/profile/presentation/profile_screen.dart';
 import '../features/profile/presentation/profile_setup_screen.dart';
 import '../features/profile/presentation/support_screen.dart';
@@ -31,6 +34,9 @@ const _protectedPrefixes = [
   '/lessons',
   '/chats',
   '/booking-success',
+  '/booking',
+  '/packages',
+  '/pricing',
   '/notifications',
   '/favorites',
   '/support',
@@ -115,6 +121,23 @@ GoRouter router(Ref ref) {
       GoRoute(
         path: '/support',
         builder: (context, state) => const SupportScreen(),
+      ),
+      GoRoute(
+        path: '/booking/:id/pay',
+        builder: (context, state) => LessonPaymentScreen(
+          bookingId: state.pathParameters['id']!,
+          booking: state.extra is Map<String, dynamic>
+              ? state.extra as Map<String, dynamic>
+              : null,
+        ),
+      ),
+      GoRoute(
+        path: '/packages',
+        builder: (context, state) => const MyPackagesScreen(),
+      ),
+      GoRoute(
+        path: '/pricing/pro',
+        builder: (context, state) => const ProCheckoutScreen(),
       ),
 
       // ---- main shell: 5 tabs with persistent bottom navigation ----

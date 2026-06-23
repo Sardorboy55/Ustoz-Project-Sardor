@@ -215,10 +215,27 @@ class _BookingSuccessScreenState extends ConsumerState<BookingSuccessScreen> {
                       ),
                     ],
                     const Spacer(),
-                    FilledButton(
-                      onPressed: () => context.go('/lessons'),
-                      child: Text(l10n.bookingGoLessons),
-                    ),
+                    if (pending && !isTrial && price > 0) ...[
+                      FilledButton.icon(
+                        onPressed: () => context.push(
+                          '/booking/${booking!['id']}/pay',
+                          extra: booking,
+                        ),
+                        icon: const Icon(Icons.payments_rounded, size: 20),
+                        label: Text(locale.languageCode == 'ru'
+                            ? 'Оплатить урок'
+                            : 'Darsni to\'lash'),
+                      ),
+                      const SizedBox(height: AppTokens.s8),
+                      OutlinedButton(
+                        onPressed: () => context.go('/lessons'),
+                        child: Text(l10n.bookingGoLessons),
+                      ),
+                    ] else
+                      FilledButton(
+                        onPressed: () => context.go('/lessons'),
+                        child: Text(l10n.bookingGoLessons),
+                      ),
                     const SizedBox(height: AppTokens.s8),
                     if (args != null)
                       OutlinedButton.icon(

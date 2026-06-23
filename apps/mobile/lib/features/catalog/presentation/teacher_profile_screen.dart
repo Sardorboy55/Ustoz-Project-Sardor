@@ -19,6 +19,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../booking/presentation/booking_sheet.dart';
 import '../../chat/data/chat_repository.dart';
 import '../../favorites/data/favorites_repository.dart';
+import '../../payments/presentation/package_picker_sheet.dart';
 import '../../reviews/data/reviews_repository.dart';
 import '../data/catalog_repository.dart';
 
@@ -94,6 +95,32 @@ class _TeacherProfileScreenState extends ConsumerState<TeacherProfileScreen> {
       return;
     }
     showBookingSheet(context, teacher, initialStart: initialStart);
+  }
+
+  void _buyPackage(Map<String, dynamic> s) {
+    if (ref.read(sessionControllerProvider) == null) {
+      context.push('/auth');
+      return;
+    }
+    final locale = Localizations.localeOf(context).languageCode;
+    final subj = (s['subjects'] as Map?)?.cast<String, dynamic>() ?? const {};
+    final name =
+        (locale == 'ru' ? subj['name_ru'] : subj['name_uz']) as String? ?? '';
+    showPackagePickerSheet(
+      context,
+      teacherSubjectId: s['id'] as String,
+      subjectName: name,
+      prices: {
+        30: (s['price_30'] as num?)?.toInt(),
+        60: (s['price_60'] as num?)?.toInt(),
+        90: (s['price_90'] as num?)?.toInt(),
+      },
+      discounts: {
+        5: (s['pkg5_discount_pct'] as num?)?.toInt() ?? 0,
+        10: (s['pkg10_discount_pct'] as num?)?.toInt() ?? 0,
+        20: (s['pkg20_discount_pct'] as num?)?.toInt() ?? 0,
+      },
+    );
   }
 
   @override
@@ -262,7 +289,10 @@ class _TeacherProfileScreenState extends ConsumerState<TeacherProfileScreen> {
                       style: Theme.of(context).textTheme.titleMedium),
                   const SizedBox(height: AppTokens.s8),
                   for (final s in subjects) ...[
-                    _SubjectCard(subject: s),
+                    _SubjectCard(
+                      subject: s,
+                      onBuyPackage: isSelf ? null : () => _buyPackage(s),
+                    ),
                     const SizedBox(height: AppTokens.s8),
                   ],
                   const SizedBox(height: AppTokens.s16),
@@ -652,9 +682,10 @@ class _ExpandableTextState extends State<_ExpandableText> {
 // ---------------------------------------------------------------------------
 
 class _SubjectCard extends StatelessWidget {
-  const _SubjectCard({required this.subject});
+  const _SubjectCard({required this.subject, this.onBuyPackage});
 
   final Map<String, dynamic> subject;
+  final VoidCallback? onBuyPackage;
 
   @override
   Widget build(BuildContext context) {
@@ -736,6 +767,21 @@ class _SubjectCard extends StatelessWidget {
                 ),
             ],
           ),
+          if (onBuyPackage != null) ...[
+            const SizedBox(height: AppTokens.s12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: onBuyPackage,
+                icon: const Icon(Icons.inventory_2_outlined, size: 18),
+                label: Text(
+                  Localizations.localeOf(context).languageCode == 'ru'
+                      ? 'Купить пакет уроков'
+                      : 'Darslar paketini olish',
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );

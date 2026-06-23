@@ -129,6 +129,7 @@ class CatalogRepository {
           profiles!teacher_profiles_user_id_fkey ( full_name, avatar_url ),
           teacher_subjects ( id, price_30, price_60, price_90, trial_free_enabled,
                              trial_discount_pct, is_active,
+                             pkg5_discount_pct, pkg10_discount_pct, pkg20_discount_pct,
                              subjects ( name_uz, name_ru ) )
         ''')
         .eq('slug', slug)
