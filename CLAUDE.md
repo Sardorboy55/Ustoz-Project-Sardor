@@ -60,6 +60,17 @@ ustoz/
 8. Payment code (Payme/Click/Uzum) must be testable with sandbox/mock mode via env flag `PAYMENTS_MODE=test|live`.
 9. Video: code against the `VideoProvider` interface (`createRoom`, `joinToken`, `endRoom`, callbacks) — Agora is the first implementation, LiveKit will be the second.
 
+## Agents & pre-build verification
+
+Named specialist subagents live in `agents/` (symlinked from `.claude/agents/` — see `agents/README.md`):
+- **jony-bugs** — bugs / crashes / regressions in the mobile app & APK.
+- **hanna-auth** — registration & login (Google, Telegram, Supabase Auth, auth networking).
+- **ui-ux** — layout, design, parity with the website.
+
+Delegate by domain (bug → Jony, auth → Hanna, visuals → UI/UX).
+
+**MANDATORY before every APK build / deploy:** run a pre-build verification — delegate to the three agents in parallel to confirm their domains are correct (jony-bugs: no bugs/regressions, builds; hanna-auth: login intact — `SUPABASE_URL=ibilim.uz/supa`, pin, `INTERNET` permission; ui-ux: no overflow, brand-consistent, matches site). Build/deploy ONLY if all three confirm OK. If any finds a problem, fix it first, then rebuild.
+
 ## Env vars (initial set — keep .env.example current)
 
 ```
