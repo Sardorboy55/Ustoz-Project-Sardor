@@ -217,8 +217,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               children: [
                 _header(p),
                 const SizedBox(height: AppTokens.s16),
-                const _GamificationCard(),
-                const SizedBox(height: AppTokens.s12),
                 _balanceCard(p),
                 const SizedBox(height: AppTokens.s12),
                 _menuCard(isTeacher: isTeacher),
@@ -449,18 +447,24 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               l10n.settingsLanguage,
               style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
             ),
-            trailing: SegmentedButton<String>(
-              showSelectedIcon: false,
-              style: const ButtonStyle(visualDensity: VisualDensity.compact),
-              segments: const [
-                ButtonSegment(value: 'uz', label: Text('UZ')),
-                ButtonSegment(value: 'ru', label: Text('RU')),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  _languageName(locale.languageCode),
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(width: 2),
+                Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ],
-              selected: {locale.languageCode},
-              onSelectionChanged: (s) => ref
-                  .read(localeControllerProvider.notifier)
-                  .setLocale(Locale(s.first)),
             ),
+            onTap: _pickLanguage,
           ),
           const _MenuDivider(),
           _MenuTile(
@@ -470,6 +474,64 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  String _languageName(String code) => code == 'ru' ? 'Русский' : "O'zbekcha";
+
+  /// Interface-language picker as a bottom sheet (like the website dropdown).
+  Future<void> _pickLanguage() async {
+    final l10n = AppLocalizations.of(context)!;
+    final scheme = Theme.of(context).colorScheme;
+    final current = ref.read(localeControllerProvider).languageCode;
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (sheetCtx) {
+        Widget option(String label, String code) {
+          final selected = code == current;
+          return ListTile(
+            title: Text(
+              label,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+              ),
+            ),
+            trailing: selected
+                ? Icon(Icons.check_rounded, color: scheme.primary)
+                : null,
+            onTap: () {
+              ref
+                  .read(localeControllerProvider.notifier)
+                  .setLocale(Locale(code));
+              Navigator.of(sheetCtx).pop();
+            },
+          );
+        }
+
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                    AppTokens.s16, AppTokens.s12, AppTokens.s16, AppTokens.s4),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    l10n.settingsLanguage,
+                    style: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ),
+              option("O'zbekcha", 'uz'),
+              option('Русский', 'ru'),
+              const SizedBox(height: AppTokens.s8),
+            ],
+          ),
+        );
+      },
     );
   }
 

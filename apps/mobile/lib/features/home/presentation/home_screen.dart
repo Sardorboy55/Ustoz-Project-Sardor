@@ -746,9 +746,7 @@ class _HeroState extends ConsumerState<_Hero> {
                 children: [
                   SvgPicture.asset(
                     'assets/logo/logo.svg',
-                    height: 26,
-                    colorFilter: const ColorFilter.mode(
-                        Colors.white, BlendMode.srcIn),
+                    height: 28,
                   ),
                   const Spacer(),
                   if (loggedIn)
@@ -837,29 +835,29 @@ class _HeroState extends ConsumerState<_Hero> {
                       ),
                     ),
                     const SizedBox(height: 20),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: FilledButton(
-                            onPressed: () => context.go('/catalog'),
-                            style: FilledButton.styleFrom(
-                                minimumSize: const Size(0, 50)),
-                            child: Text(ctaFind),
-                          ),
+                    // Стопкой и на всю ширину — текст помещается в одну строку
+                    // (как на мобильной версии сайта).
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton(
+                        onPressed: () => context.go('/catalog'),
+                        style: FilledButton.styleFrom(
+                            minimumSize: const Size(0, 52)),
+                        child: Text(ctaFind),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton(
+                        onPressed: () => context.go('/profile'),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: AppColors.primaryDark,
+                          minimumSize: const Size(0, 52),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: FilledButton(
-                            onPressed: () => context.go('/profile'),
-                            style: FilledButton.styleFrom(
-                              backgroundColor: Colors.white,
-                              foregroundColor: AppColors.primaryDark,
-                              minimumSize: const Size(0, 50),
-                            ),
-                            child: Text(ctaBecome),
-                          ),
-                        ),
-                      ],
+                        child: Text(ctaBecome),
+                      ),
                     ),
                   ],
                 ),
