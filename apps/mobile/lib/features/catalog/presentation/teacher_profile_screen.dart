@@ -50,7 +50,9 @@ class _TeacherProfileScreenState extends ConsumerState<TeacherProfileScreen> {
       _reviewsError = false;
     });
     try {
-      final rows = await ref.read(reviewsRepositoryProvider).fetchTeacherReviews(
+      final rows = await ref
+          .read(reviewsRepositoryProvider)
+          .fetchTeacherReviews(
             teacherId,
             limit: _reviewsPageSize,
             offset: _reviews.length,
@@ -78,13 +80,15 @@ class _TeacherProfileScreenState extends ConsumerState<TeacherProfileScreen> {
       return;
     }
     try {
-      final chatId =
-          await ref.read(chatRepositoryProvider).ensureChatWithTeacher(teacherId);
+      final chatId = await ref
+          .read(chatRepositoryProvider)
+          .ensureChatWithTeacher(teacherId);
       if (mounted) context.push('/chats/$chatId');
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(l10n.commonError)));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.commonError)));
       }
     }
   }
@@ -145,7 +149,8 @@ class _TeacherProfileScreenState extends ConsumerState<TeacherProfileScreen> {
       error: (e, _) => Scaffold(
         appBar: AppBar(title: Text(l10n.teacherProfileTitle)),
         body: ErrorState(
-            onRetry: () => ref.invalidate(teacherBySlugProvider(widget.slug))),
+          onRetry: () => ref.invalidate(teacherBySlugProvider(widget.slug)),
+        ),
       ),
       data: (t) {
         if (t == null) {
@@ -153,16 +158,16 @@ class _TeacherProfileScreenState extends ConsumerState<TeacherProfileScreen> {
             appBar: AppBar(title: Text(l10n.teacherProfileTitle)),
             body: ErrorState(
               message: l10n.catalogEmpty,
-              onRetry: () =>
-                  ref.invalidate(teacherBySlugProvider(widget.slug)),
+              onRetry: () => ref.invalidate(teacherBySlugProvider(widget.slug)),
             ),
           );
         }
         final teacherId = t['user_id'] as String;
         if (_reviewsTeacherId != teacherId) {
           _reviewsTeacherId = teacherId;
-          WidgetsBinding.instance
-              .addPostFrameCallback((_) => _loadReviews(teacherId));
+          WidgetsBinding.instance.addPostFrameCallback(
+            (_) => _loadReviews(teacherId),
+          );
         }
         return _buildLoaded(context, t);
       },
@@ -190,12 +195,16 @@ class _TeacherProfileScreenState extends ConsumerState<TeacherProfileScreen> {
         .map((s) => s.toUpperCase())
         .toList();
     final videoUrl = t['intro_video_url'] as String?;
+    // Cover chosen by the teacher; fall back to the avatar (mirrors web).
+    final videoPoster =
+        (t['intro_video_poster_url'] as String?)?.trim().isNotEmpty == true
+        ? t['intro_video_poster_url'] as String?
+        : avatarUrl;
     final subjects = (t['teacher_subjects'] as List? ?? [])
         .cast<Map<String, dynamic>>()
         .where((s) => s['is_active'] == true)
         .toList();
-    final isSelf =
-        ref.watch(sessionControllerProvider)?.user.id == teacherId;
+    final isSelf = ref.watch(sessionControllerProvider)?.user.id == teacherId;
 
     return Scaffold(
       body: CustomScrollView(
@@ -208,20 +217,19 @@ class _TeacherProfileScreenState extends ConsumerState<TeacherProfileScreen> {
             backgroundColor: Colors.white,
             surfaceTintColor: Colors.transparent,
             foregroundColor: Colors.white,
+            // Fixed leading width so the back button renders as a tight circle
+            // (matching the heart action), not stretched to the default 56px.
+            leadingWidth: _kAppBarCircleSize + AppTokens.s8 + AppTokens.s4,
             leading: Padding(
               padding: const EdgeInsets.only(left: AppTokens.s8),
-              child: IconButton(
-                style: IconButton.styleFrom(
-                  backgroundColor: Colors.black.withValues(alpha: 0.32),
+              child: Center(
+                child: _AppBarCircleButton(
+                  icon: Icons.arrow_back_rounded,
+                  onPressed: () => Navigator.of(context).maybePop(),
                 ),
-                icon:
-                    const Icon(Icons.arrow_back_rounded, color: Colors.white),
-                onPressed: () => Navigator.of(context).maybePop(),
               ),
             ),
-            actions: [
-              _AppBarHeart(teacherId: teacherId),
-            ],
+            actions: [_AppBarHeart(teacherId: teacherId)],
             flexibleSpace: FlexibleSpaceBar(
               collapseMode: CollapseMode.parallax,
               background: _HeroHeader(avatarUrl: avatarUrl, name: name),
@@ -253,9 +261,10 @@ class _TeacherProfileScreenState extends ConsumerState<TeacherProfileScreen> {
                     Text(
                       headline,
                       style: TextStyle(
-                          fontSize: 15,
-                          height: 1.35,
-                          color: scheme.onSurfaceVariant),
+                        fontSize: 15,
+                        height: 1.35,
+                        color: scheme.onSurfaceVariant,
+                      ),
                     ),
                   ],
                   const SizedBox(height: AppTokens.s12),
@@ -266,8 +275,7 @@ class _TeacherProfileScreenState extends ConsumerState<TeacherProfileScreen> {
                       _MetricChip(
                         icon: Icons.star_rounded,
                         iconColor: AppColors.accent,
-                        label:
-                            '${rating.toStringAsFixed(1)} ($ratingCount)',
+                        label: '${rating.toStringAsFixed(1)} ($ratingCount)',
                       ),
                       _MetricChip(
                         icon: Icons.school_outlined,
@@ -286,21 +294,27 @@ class _TeacherProfileScreenState extends ConsumerState<TeacherProfileScreen> {
                   ),
                   if (videoUrl != null && videoUrl.isNotEmpty) ...[
                     const SizedBox(height: AppTokens.s24),
-                    Text(l10n.teacherVideoIntro,
-                        style: Theme.of(context).textTheme.titleMedium),
+                    Text(
+                      l10n.teacherVideoIntro,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
                     const SizedBox(height: AppTokens.s8),
-                    _IntroVideo(url: videoUrl),
+                    _IntroVideo(url: videoUrl, posterUrl: videoPoster),
                   ],
                   if (bio.trim().isNotEmpty) ...[
                     const SizedBox(height: AppTokens.s24),
-                    Text(l10n.teacherAbout,
-                        style: Theme.of(context).textTheme.titleMedium),
+                    Text(
+                      l10n.teacherAbout,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
                     const SizedBox(height: AppTokens.s8),
                     _ExpandableText(text: bio),
                   ],
                   const SizedBox(height: AppTokens.s24),
-                  Text(l10n.teacherServices,
-                      style: Theme.of(context).textTheme.titleMedium),
+                  Text(
+                    l10n.teacherServices,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
                   const SizedBox(height: AppTokens.s8),
                   for (final s in subjects) ...[
                     _SubjectCard(
@@ -310,13 +324,17 @@ class _TeacherProfileScreenState extends ConsumerState<TeacherProfileScreen> {
                     const SizedBox(height: AppTokens.s8),
                   ],
                   const SizedBox(height: AppTokens.s16),
-                  Text(l10n.teacherFreeSlots,
-                      style: Theme.of(context).textTheme.titleMedium),
+                  Text(
+                    l10n.teacherFreeSlots,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
                   const SizedBox(height: 2),
                   Text(
                     l10n.teacherSlotsHint,
                     style: TextStyle(
-                        fontSize: 12, color: scheme.onSurfaceVariant),
+                      fontSize: 12,
+                      color: scheme.onSurfaceVariant,
+                    ),
                   ),
                   const SizedBox(height: AppTokens.s8),
                   _SlotsPreview(
@@ -346,7 +364,11 @@ class _TeacherProfileScreenState extends ConsumerState<TeacherProfileScreen> {
         top: false,
         child: Container(
           padding: const EdgeInsets.fromLTRB(
-              AppTokens.s16, AppTokens.s12, AppTokens.s16, AppTokens.s12),
+            AppTokens.s16,
+            AppTokens.s12,
+            AppTokens.s16,
+            AppTokens.s12,
+          ),
           decoration: BoxDecoration(
             color: scheme.surface,
             border: Border(top: BorderSide(color: scheme.outlineVariant)),
@@ -413,9 +435,7 @@ class _HeroHeader extends StatelessWidget {
             ),
           )
         else
-          Center(
-            child: AppAvatar(name: name, size: 112),
-          ),
+          Center(child: AppAvatar(name: name, size: 112)),
       ],
     );
   }
@@ -438,6 +458,44 @@ class _HeroFallback extends StatelessWidget {
   }
 }
 
+// Shared diameter for the round app-bar controls so the back button and the
+// heart stay identical circles over the cover photo.
+const double _kAppBarCircleSize = 40;
+
+/// A fixed-size circular icon button used in the profile [SliverAppBar].
+/// Wrapping the [IconButton] in a [SizedBox] of [_kAppBarCircleSize] guarantees
+/// a perfect circle regardless of leading/actions layout constraints.
+class _AppBarCircleButton extends StatelessWidget {
+  const _AppBarCircleButton({
+    required this.icon,
+    required this.onPressed,
+    this.iconColor = Colors.white,
+  });
+
+  final IconData icon;
+  final VoidCallback onPressed;
+  final Color iconColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: _kAppBarCircleSize,
+      height: _kAppBarCircleSize,
+      child: IconButton(
+        padding: EdgeInsets.zero,
+        style: IconButton.styleFrom(
+          backgroundColor: Colors.black.withValues(alpha: 0.32),
+          shape: const CircleBorder(),
+          fixedSize: const Size.square(_kAppBarCircleSize),
+          minimumSize: const Size.square(_kAppBarCircleSize),
+        ),
+        icon: Icon(icon, color: iconColor, size: 22),
+        onPressed: onPressed,
+      ),
+    );
+  }
+}
+
 class _AppBarHeart extends ConsumerWidget {
   const _AppBarHeart({required this.teacherId});
 
@@ -449,40 +507,36 @@ class _AppBarHeart extends ConsumerWidget {
     final favorites = ref.watch(favoriteIdsProvider).value ?? const <String>{};
     final isFavorite = favorites.contains(teacherId);
     return Padding(
-      padding: const EdgeInsets.only(right: AppTokens.s4),
-      child: IconButton(
-        style: IconButton.styleFrom(
-          backgroundColor: Colors.black.withValues(alpha: 0.25),
-        ),
-        icon: Icon(
-          isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-          color: isFavorite ? const Color(0xFFFF6B6B) : Colors.white,
-        ),
-        onPressed: () async {
-          if (ref.read(sessionControllerProvider) == null) {
-            context.push('/auth');
-            return;
-          }
-          try {
-            await ref.read(favoriteIdsProvider.notifier).toggle(teacherId);
-          } catch (_) {
-            if (context.mounted) {
-              ScaffoldMessenger.of(context)
-                  .showSnackBar(SnackBar(content: Text(l10n.commonError)));
+      padding: const EdgeInsets.only(right: AppTokens.s8),
+      child: Center(
+        child: _AppBarCircleButton(
+          icon: isFavorite
+              ? Icons.favorite_rounded
+              : Icons.favorite_border_rounded,
+          iconColor: isFavorite ? const Color(0xFFFF6B6B) : Colors.white,
+          onPressed: () async {
+            if (ref.read(sessionControllerProvider) == null) {
+              context.push('/auth');
+              return;
             }
-          }
-        },
+            try {
+              await ref.read(favoriteIdsProvider.notifier).toggle(teacherId);
+            } catch (_) {
+              if (context.mounted) {
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text(l10n.commonError)));
+              }
+            }
+          },
+        ),
       ),
     );
   }
 }
 
 class _MetricChip extends StatelessWidget {
-  const _MetricChip({
-    required this.icon,
-    required this.label,
-    this.iconColor,
-  });
+  const _MetricChip({required this.icon, required this.label, this.iconColor});
 
   final IconData icon;
   final String label;
@@ -493,7 +547,9 @@ class _MetricChip extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(
-          horizontal: AppTokens.s12, vertical: 6),
+        horizontal: AppTokens.s12,
+        vertical: 6,
+      ),
       decoration: BoxDecoration(
         color: scheme.surface,
         borderRadius: BorderRadius.circular(AppTokens.radiusChip),
@@ -519,9 +575,10 @@ class _MetricChip extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class _IntroVideo extends StatefulWidget {
-  const _IntroVideo({required this.url});
+  const _IntroVideo({required this.url, this.posterUrl});
 
   final String url;
+  final String? posterUrl;
 
   @override
   State<_IntroVideo> createState() => _IntroVideoState();
@@ -592,42 +649,77 @@ class _IntroVideoState extends State<_IntroVideo> {
                           color: Colors.black.withValues(alpha: 0.45),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.play_arrow_rounded,
-                            color: Colors.white, size: 36),
+                        child: const Icon(
+                          Icons.play_arrow_rounded,
+                          color: Colors.white,
+                          size: 36,
+                        ),
                       ),
                   ],
                 ),
               )
             : GestureDetector(
                 onTap: _failed ? null : _start,
-                child: Container(
-                  color: AppColors.primaryDark,
-                  child: Center(
-                    child: _initializing
-                        ? const SizedBox(
-                            width: 32,
-                            height: 32,
-                            child: CircularProgressIndicator(
-                                color: Colors.white, strokeWidth: 3),
-                          )
-                        : _failed
-                            ? Text(
-                                l10n.commonError,
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                    color: Colors.white70, fontSize: 13),
-                              )
-                            : Container(
-                                width: 64,
-                                height: 64,
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.18),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(Icons.play_arrow_rounded,
-                                    color: Colors.white, size: 42),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    // Cover photo behind the play button (matches the website).
+                    // Falls back to the solid brand placeholder when there is
+                    // no poster or it fails to load.
+                    if (widget.posterUrl != null &&
+                        widget.posterUrl!.isNotEmpty)
+                      CachedNetworkImage(
+                        imageUrl: widget.posterUrl!,
+                        fit: BoxFit.cover,
+                        placeholder: (_, _) =>
+                            const ColoredBox(color: AppColors.primaryDark),
+                        errorWidget: (_, _, _) =>
+                            const ColoredBox(color: AppColors.primaryDark),
+                      )
+                    else
+                      const ColoredBox(color: AppColors.primaryDark),
+                    // Subtle scrim so the white play button stays visible over
+                    // any cover image.
+                    if (!_failed)
+                      DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.18),
+                        ),
+                      ),
+                    Center(
+                      child: _initializing
+                          ? const SizedBox(
+                              width: 32,
+                              height: 32,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 3,
                               ),
-                  ),
+                            )
+                          : _failed
+                          ? Text(
+                              l10n.commonError,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 13,
+                              ),
+                            )
+                          : Container(
+                              width: 64,
+                              height: 64,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.22),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.play_arrow_rounded,
+                                color: Colors.white,
+                                size: 42,
+                              ),
+                            ),
+                    ),
+                  ],
                 ),
               ),
       ),
@@ -677,8 +769,9 @@ class _ExpandableTextState extends State<_ExpandableText> {
             if (overflows)
               TextButton(
                 style: TextButton.styleFrom(
-                    padding: EdgeInsets.zero,
-                    minimumSize: const Size(0, 36)),
+                  padding: EdgeInsets.zero,
+                  minimumSize: const Size(0, 36),
+                ),
                 onPressed: () => setState(() => _expanded = !_expanded),
                 child: Text(_expanded ? l10n.readLess : l10n.readMore),
               ),
@@ -706,9 +799,9 @@ class _SubjectCard extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final subj =
         (subject['subjects'] as Map?)?.cast<String, dynamic>() ?? const {};
-    final title = (locale.languageCode == 'ru'
-            ? subj['name_ru']
-            : subj['name_uz']) as String? ??
+    final title =
+        (locale.languageCode == 'ru' ? subj['name_ru'] : subj['name_uz'])
+            as String? ??
         '';
     final discount = (subject['trial_discount_pct'] as num?)?.toInt() ?? 0;
 
@@ -720,9 +813,13 @@ class _SubjectCard extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: Text(title,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w700, fontSize: 15)),
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                  ),
+                ),
               ),
               if (subject['trial_free_enabled'] == true) const TrialBadge(),
             ],
@@ -736,26 +833,27 @@ class _SubjectCard extends StatelessWidget {
                 if (subject['price_$d'] != null)
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: AppTokens.s12, vertical: 6),
+                      horizontal: AppTokens.s12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: d == 60
                           ? (Theme.of(context).brightness == Brightness.light
-                              ? AppColors.primaryTint
-                              : scheme.primaryContainer)
+                                ? AppColors.primaryTint
+                                : scheme.primaryContainer)
                           : scheme.surface,
-                      borderRadius:
-                          BorderRadius.circular(AppTokens.radiusChip),
+                      borderRadius: BorderRadius.circular(AppTokens.radiusChip),
                       border: Border.all(
-                          color: d == 60
-                              ? scheme.primary.withValues(alpha: 0.4)
-                              : scheme.outlineVariant),
+                        color: d == 60
+                            ? scheme.primary.withValues(alpha: 0.4)
+                            : scheme.outlineVariant,
+                      ),
                     ),
                     child: Text(
                       '$d${l10n.minShort} · ${formatTiyin(subject['price_$d'] as num, locale)}',
                       style: TextStyle(
                         fontSize: 13,
-                        fontWeight:
-                            d == 60 ? FontWeight.w700 : FontWeight.w500,
+                        fontWeight: d == 60 ? FontWeight.w700 : FontWeight.w500,
                         color: d == 60 ? scheme.primary : scheme.onSurface,
                       ),
                     ),
@@ -763,7 +861,9 @@ class _SubjectCard extends StatelessWidget {
               if (discount > 0)
                 Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: AppTokens.s8, vertical: 6),
+                    horizontal: AppTokens.s8,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.accent.withValues(alpha: 0.14),
                     borderRadius: BorderRadius.circular(AppTokens.radiusChip),
@@ -831,12 +931,13 @@ class _SlotsPreview extends ConsumerWidget {
           spacing: AppTokens.s8,
           runSpacing: AppTokens.s8,
           children: List.generate(
-              4, (_) => const SkeletonBox(width: 104, height: 36, radius: 18)),
+            4,
+            (_) => const SkeletonBox(width: 104, height: 36, radius: 18),
+          ),
         ),
       ),
       error: (e, _) => TextButton.icon(
-        onPressed: () =>
-            ref.invalidate(teacherSlotPreviewProvider(teacherId)),
+        onPressed: () => ref.invalidate(teacherSlotPreviewProvider(teacherId)),
         icon: const Icon(Icons.refresh_rounded, size: 18),
         label: Text(l10n.commonRetry),
       ),
@@ -853,10 +954,14 @@ class _SlotsPreview extends ConsumerWidget {
           children: [
             for (final slot in list)
               ActionChip(
-                avatar: Icon(Icons.schedule_rounded,
-                    size: 16, color: scheme.primary),
+                avatar: Icon(
+                  Icons.schedule_rounded,
+                  size: 16,
+                  color: scheme.primary,
+                ),
                 label: Text(
-                    '${_dayLabel(context, slot)} ${formatTkTime(slot)}'),
+                  '${_dayLabel(context, slot)} ${formatTkTime(slot)}',
+                ),
                 onPressed: onPick == null ? null : () => onPick!(slot),
               ),
           ],
@@ -897,18 +1002,19 @@ class _ReviewsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(l10n.teacherReviewsTitle,
-            style: Theme.of(context).textTheme.titleMedium),
+        Text(
+          l10n.teacherReviewsTitle,
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
         const SizedBox(height: AppTokens.s12),
         if (ratingCount > 0) ...[
           Row(
             children: [
               Text(
                 rating.toStringAsFixed(1),
-                style: Theme.of(context)
-                    .textTheme
-                    .displaySmall
-                    ?.copyWith(fontWeight: FontWeight.w800),
+                style: Theme.of(
+                  context,
+                ).textTheme.displaySmall?.copyWith(fontWeight: FontWeight.w800),
               ),
               const SizedBox(width: AppTokens.s12),
               Column(
@@ -919,7 +1025,9 @@ class _ReviewsSection extends StatelessWidget {
                   Text(
                     l10n.reviewsCountLabel(ratingCount),
                     style: TextStyle(
-                        fontSize: 12, color: scheme.onSurfaceVariant),
+                      fontSize: 12,
+                      color: scheme.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),
@@ -952,8 +1060,7 @@ class _ReviewsSection extends StatelessWidget {
             child: OutlinedButton(
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size(0, 44),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: AppTokens.s24),
+                padding: const EdgeInsets.symmetric(horizontal: AppTokens.s24),
               ),
               onPressed: onMore,
               child: Text(l10n.showMore),
@@ -995,14 +1102,20 @@ class _ReviewTile extends StatelessWidget {
                     Text(
                       l10n.reviewAnonymous,
                       style: const TextStyle(
-                          fontSize: 13, fontWeight: FontWeight.w600),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     if (created != null)
                       Text(
-                        DateFormat('d MMM yyyy', locale)
-                            .format(toTashkent(created)),
+                        DateFormat(
+                          'd MMM yyyy',
+                          locale,
+                        ).format(toTashkent(created)),
                         style: TextStyle(
-                            fontSize: 11, color: scheme.onSurfaceVariant),
+                          fontSize: 11,
+                          color: scheme.onSurfaceVariant,
+                        ),
                       ),
                   ],
                 ),

@@ -64,10 +64,12 @@ class CatalogFilters {
       query: query ?? this.query,
       categoryId: categoryId != null ? categoryId() : this.categoryId,
       subjectId: subjectId != null ? subjectId() : this.subjectId,
-      priceMinTiyin:
-          priceMinTiyin != null ? priceMinTiyin() : this.priceMinTiyin,
-      priceMaxTiyin:
-          priceMaxTiyin != null ? priceMaxTiyin() : this.priceMaxTiyin,
+      priceMinTiyin: priceMinTiyin != null
+          ? priceMinTiyin()
+          : this.priceMinTiyin,
+      priceMaxTiyin: priceMaxTiyin != null
+          ? priceMaxTiyin()
+          : this.priceMaxTiyin,
       trialOnly: trialOnly ?? this.trialOnly,
       ratingMin: ratingMin != null ? ratingMin() : this.ratingMin,
       lang: lang != null ? lang() : this.lang,
@@ -93,8 +95,19 @@ class CatalogFilters {
       other.limit == limit;
 
   @override
-  int get hashCode => Object.hash(query, categoryId, subjectId, priceMinTiyin,
-      priceMaxTiyin, trialOnly, ratingMin, lang, sort, page, limit);
+  int get hashCode => Object.hash(
+    query,
+    categoryId,
+    subjectId,
+    priceMinTiyin,
+    priceMaxTiyin,
+    trialOnly,
+    ratingMin,
+    lang,
+    sort,
+    page,
+    limit,
+  );
 }
 
 class CatalogRepository {
@@ -103,19 +116,22 @@ class CatalogRepository {
   final SupabaseClient _client;
 
   Future<List<Map<String, dynamic>>> fetchCards(CatalogFilters f) async {
-    final rows = await _client.rpc('catalog_teachers', params: {
-      'p_query': (f.query?.trim().isEmpty ?? true) ? null : f.query!.trim(),
-      'p_category_id': f.categoryId,
-      'p_subject_id': f.subjectId,
-      'p_price_min': f.priceMinTiyin,
-      'p_price_max': f.priceMaxTiyin,
-      'p_rating_min': f.ratingMin,
-      'p_lang': f.lang,
-      'p_trial_only': f.trialOnly,
-      'p_sort': f.sort,
-      'p_limit': f.limit,
-      'p_offset': (f.page - 1) * f.limit,
-    });
+    final rows = await _client.rpc(
+      'catalog_teachers',
+      params: {
+        'p_query': (f.query?.trim().isEmpty ?? true) ? null : f.query!.trim(),
+        'p_category_id': f.categoryId,
+        'p_subject_id': f.subjectId,
+        'p_price_min': f.priceMinTiyin,
+        'p_price_max': f.priceMaxTiyin,
+        'p_rating_min': f.ratingMin,
+        'p_lang': f.lang,
+        'p_trial_only': f.trialOnly,
+        'p_sort': f.sort,
+        'p_limit': f.limit,
+        'p_offset': (f.page - 1) * f.limit,
+      },
+    );
     return (rows as List).cast<Map<String, dynamic>>();
   }
 
@@ -124,6 +140,7 @@ class CatalogRepository {
         .from('teacher_profiles')
         .select('''
           user_id, slug, headline_uz, headline_ru, bio_uz, bio_ru, intro_video_url,
+          intro_video_poster_url,
           experience_years, teaching_langs, is_verified, tier, rating_avg,
           rating_count, lessons_done,
           profiles!teacher_profiles_user_id_fkey ( full_name, avatar_url ),
@@ -153,7 +170,10 @@ CatalogRepository catalogRepository(Ref ref) =>
     CatalogRepository(ref.watch(supabaseClientProvider));
 
 @riverpod
-Future<List<Map<String, dynamic>>> catalogCards(Ref ref, CatalogFilters filters) {
+Future<List<Map<String, dynamic>>> catalogCards(
+  Ref ref,
+  CatalogFilters filters,
+) {
   return ref.watch(catalogRepositoryProvider).fetchCards(filters);
 }
 
@@ -173,7 +193,9 @@ Future<List<Map<String, dynamic>>> activeSubjects(Ref ref) {
 @riverpod
 Future<List<DateTime>> teacherSlotPreview(Ref ref, String teacherId) async {
   final now = DateTime.now();
-  final slots = await ref.watch(bookingRepositoryProvider).fetchFreeSlots(
+  final slots = await ref
+      .watch(bookingRepositoryProvider)
+      .fetchFreeSlots(
         teacherId: teacherId,
         from: now,
         to: now.add(const Duration(days: 2)),
