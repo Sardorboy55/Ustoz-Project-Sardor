@@ -16,6 +16,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../auth/data/auth_repository.dart';
 import '../../notifications/data/notifications_repository.dart';
 import '../data/profile_repository.dart';
+import 'edit_profile_screen.dart';
 
 const _appVersion = '0.1.0';
 
@@ -31,13 +32,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   bool _uploadingAvatar = false;
   static const _becomingTeacher = false;
 
-  String _formatPhone(String? raw) {
-    final p = (raw ?? '').replaceAll(RegExp(r'\D'), '');
-    if (p.length == 12 && p.startsWith('998')) {
-      return '+998 ${p.substring(3, 5)} ${p.substring(5, 8)} '
-          '${p.substring(8, 10)} ${p.substring(10)}';
-    }
-    return p.isEmpty ? '' : '+$p';
+  Future<void> _editProfile(Map<String, dynamic> p) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => EditProfileScreen(
+          fullName: p['full_name'] as String? ?? '',
+          avatarUrl: p['avatar_url'] as String?,
+        ),
+      ),
+    );
   }
 
   Future<void> _changeAvatar() async {
@@ -244,6 +247,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   Widget _header(Map<String, dynamic> p) {
     final scheme = Theme.of(context).colorScheme;
+    final ru = Localizations.localeOf(context).languageCode == 'ru';
     final name = p['full_name'] as String? ?? '';
     return Row(
       children: [
@@ -304,12 +308,27 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.titleLarge,
               ),
-              const SizedBox(height: 2),
-              Text(
-                _formatPhone(p['phone'] as String?),
-                style: TextStyle(
-                  fontSize: 14,
-                  color: scheme.onSurfaceVariant,
+              const SizedBox(height: 4),
+              InkWell(
+                onTap: () => _editProfile(p),
+                borderRadius: BorderRadius.circular(8),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.edit_outlined, size: 15, color: scheme.primary),
+                      const SizedBox(width: 4),
+                      Text(
+                        ru ? 'Редактировать профиль' : 'Profilni tahrirlash',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: scheme.primary,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],

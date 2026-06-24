@@ -530,7 +530,7 @@ class _TeacherRow extends ConsumerWidget {
     final cards = ref.watch(catalogCardsProvider(filters));
     return cards.when(
       loading: () => SizedBox(
-        height: 224,
+        height: 286,
         child: SkeletonPulse(
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
@@ -538,7 +538,7 @@ class _TeacherRow extends ConsumerWidget {
             itemCount: 3,
             separatorBuilder: (_, _) => const SizedBox(width: AppTokens.s12),
             itemBuilder: (_, _) => Container(
-              width: 168,
+              width: 184,
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(AppTokens.radiusCard),
@@ -568,7 +568,7 @@ class _CardsRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 224,
+      height: 286,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: AppTokens.s16),
@@ -589,57 +589,130 @@ class _TeacherMiniCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final locale = Localizations.localeOf(context);
+    final scheme = Theme.of(context).colorScheme;
+    final ru = locale.languageCode == 'ru';
+
     final name = card['full_name'] as String? ?? '';
+    final headline =
+        (ru ? card['headline_ru'] : card['headline_uz']) as String? ?? '';
     final rating = (card['rating_avg'] as num?)?.toDouble() ?? 0;
+    final ratingCount = (card['rating_count'] as num?)?.toInt() ?? 0;
+    final langs = (card['teaching_langs'] as List? ?? [])
+        .cast<String>()
+        .map((s) => s.toUpperCase())
+        .toList();
+    final subjects =
+        ((ru ? card['subjects_ru'] : card['subjects_uz']) as List? ?? [])
+            .cast<String>();
     final minPrice = card['min_price_60'] as num?;
     final priceLine = minPrice == null
         ? null
-        : (locale.languageCode == 'ru'
+        : (ru
             ? '${l10n.catalogFrom} ${formatTiyin(minPrice, locale)}'
             : '${formatTiyin(minPrice, locale)} ${l10n.catalogFrom}');
 
-    final ru = locale.languageCode == 'ru';
     return SizedBox(
-      width: 168,
+      width: 184,
       child: AppCard(
         padding: const EdgeInsets.all(AppTokens.s12),
         onTap: () => context.push('/t/${card['slug']}'),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Stack(
-              clipBehavior: Clip.none,
-              children: [
-                AppAvatar(
-                  imageUrl: card['avatar_url'] as String?,
-                  name: name,
-                  size: 60,
-                ),
-                if (card['tier'] == 'pro')
-                  const Positioned(right: -10, top: -4, child: ProBadge()),
-              ],
-            ),
-            const SizedBox(height: AppTokens.s8),
+            // avatar + name + verified/PRO (header row, like the website body)
             Row(
-              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Flexible(
-                  child: Text(
-                    name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                        fontSize: 14, fontWeight: FontWeight.w700),
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    AppAvatar(
+                      imageUrl: card['avatar_url'] as String?,
+                      name: name,
+                      size: 48,
+                    ),
+                    if (card['tier'] == 'pro')
+                      const Positioned(
+                          right: -8, top: -6, child: ProBadge()),
+                  ],
+                ),
+                const SizedBox(width: AppTokens.s8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                  fontSize: 14, fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                          if (card['is_verified'] == true) ...[
+                            const SizedBox(width: 3),
+                            const VerifiedBadge(size: 14),
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          RatingStars(
+                              rating: rating, size: 12, showValue: true),
+                          if (ratingCount > 0)
+                            Flexible(
+                              child: Text(
+                                ' ($ratingCount)',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                    fontSize: 11,
+                                    color: scheme.onSurfaceVariant),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
-                if (card['is_verified'] == true) ...[
-                  const SizedBox(width: 3),
-                  const VerifiedBadge(size: 14),
-                ],
               ],
             ),
-            const SizedBox(height: 3),
-            RatingStars(rating: rating, size: 13, showValue: true),
+            // headline / specialization
+            if (headline.isNotEmpty) ...[
+              const SizedBox(height: AppTokens.s8),
+              Text(
+                headline,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 12.5,
+                  height: 1.3,
+                  fontWeight: FontWeight.w500,
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+            // subjects · langs line
+            if (subjects.isNotEmpty || langs.isNotEmpty) ...[
+              const SizedBox(height: AppTokens.s4),
+              Text(
+                [
+                  if (subjects.isNotEmpty) subjects.take(2).join(' · '),
+                  if (langs.isNotEmpty) langs.join(' · '),
+                ].join('  ·  '),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 11.5,
+                  color: AppColors.zinc400,
+                ),
+              ),
+            ],
             const Spacer(),
             if (priceLine != null)
               Text(
@@ -647,14 +720,15 @@ class _TeacherMiniCard extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: 14,
                   fontWeight: FontWeight.w800,
-                  color: Theme.of(context).colorScheme.primary,
+                  color: scheme.primary,
                 ),
               ),
             if (card['has_free_trial'] == true) ...[
               const SizedBox(height: AppTokens.s4),
-              const TrialBadge(),
+              const Align(
+                  alignment: Alignment.centerLeft, child: TrialBadge()),
             ],
             const SizedBox(height: AppTokens.s8),
             SizedBox(

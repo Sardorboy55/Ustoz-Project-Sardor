@@ -63,13 +63,15 @@ ustoz/
 ## Agents & pre-build verification
 
 Named specialist subagents live in `agents/` (symlinked from `.claude/agents/` — see `agents/README.md`):
-- **jony-bugs** — bugs / crashes / regressions in the mobile app & APK.
-- **hanna-auth** — registration & login (Google, Telegram, Supabase Auth, auth networking).
-- **ui-ux** — layout, design, parity with the website.
+- **jony-bugs** (Jony) — bugs / crashes / regressions in the mobile app & APK.
+- **hanna-auth** (Hanna) — registration & login (Google, Telegram, Supabase Auth, auth networking).
+- **john** (John) — layout, design, parity with the website.
+- **alisa** (Alisa) — teacher side (become-teacher, cabinet, teacher profile, subjects/pricing).
+- **max** (Max) — student/client side (catalog, booking, lessons, payments, wallet, chat).
 
-Delegate by domain (bug → Jony, auth → Hanna, visuals → UI/UX).
+Delegate by domain (bug → Jony, auth → Hanna, visuals → John, teachers → Alisa, students/payments → Max).
 
-**MANDATORY before every APK build / deploy:** run a pre-build verification — delegate to the three agents in parallel to confirm their domains are correct (jony-bugs: no bugs/regressions, builds; hanna-auth: login intact — `SUPABASE_URL=ibilim.uz/supa`, pin, `INTERNET` permission; ui-ux: no overflow, brand-consistent, matches site). Build/deploy ONLY if all three confirm OK. If any finds a problem, fix it first, then rebuild.
+**MANDATORY before every APK build / deploy:** run a pre-build verification — delegate (in parallel) to **jony-bugs** (always: no bugs/regressions, builds) plus the agents whose domains the change touched (auth → hanna-auth: `SUPABASE_URL=ibilim.uz/supa`, pin, `INTERNET` permission; UI → john: no overflow, brand-consistent, matches site; teachers → alisa; students/payments → max). Build/deploy ONLY if all confirm OK. If any finds a problem, fix it first, then rebuild.
 
 ## Env vars (initial set — keep .env.example current)
 
