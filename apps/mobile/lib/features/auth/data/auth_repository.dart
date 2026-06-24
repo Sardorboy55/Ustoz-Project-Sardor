@@ -24,7 +24,19 @@ class AuthRepository {
     );
   }
 
-  Future<void> signOut() => _client.auth.signOut();
+  /// Выход из аккаунта. Сбрасываем ТОЛЬКО локальную сессию
+  /// (`SignOutScope.local`) — это происходит мгновенно, без сетевого запроса
+  /// `POST /auth/v1/logout` к серверу. Глобальный logout идёт через прокси
+  /// `ibilim.uz/supa` и может падать/висеть; раньше из-за этого исключение
+  /// прерывало выход, локальная сессия оставалась живой и роутер кидал юзера
+  /// обратно на главную. Любую ошибку гасим: главное — снять локальную сессию.
+  Future<void> signOut() async {
+    try {
+      await _client.auth.signOut(scope: SignOutScope.local);
+    } catch (e) {
+      debugPrint('signOut local error (ignored): $e');
+    }
+  }
 
   /// Google OAuth via the SAME Supabase project as the website.
   /// Opens a Custom Tab and returns via the `uz.ustoz.app://login-callback`

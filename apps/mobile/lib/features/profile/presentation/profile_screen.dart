@@ -173,6 +173,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       ),
     );
     if (confirmed != true || !mounted) return;
+    // signOut() уже не бросает (ловит ошибку внутри) и сбрасывает локальную
+    // сессию синхронно по сети-независимому пути. После сброса refreshListenable
+    // роутера сам уведёт на /auth, а ручной go('/auth') страхует мгновенно.
     await ref.read(authRepositoryProvider).signOut();
     ref.invalidate(ownProfileProvider);
     if (mounted) context.go('/auth');
