@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../app/theme.dart';
 import '../../../common/format.dart';
@@ -64,14 +65,57 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       await repo.updateProfile(avatarUrl: url);
       ref.invalidate(ownProfileProvider);
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(l10n.commonSaved)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.commonSaved)));
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(l10n.commonError)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.commonError)));
     } finally {
       if (mounted) setState(() => _uploadingAvatar = false);
+    }
+  }
+
+  /// Binds the account to the Telegram notifications bot (@Ibilimuzbot):
+  /// fetch a one-time token via RPC, then open the deep link externally so the
+  /// user can press Start in Telegram. No money/balance involved.
+  Future<void> _connectTelegram() async {
+    final ru = Localizations.localeOf(context).languageCode == 'ru';
+    void snack(String msg) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    }
+
+    try {
+      final token = await ref
+          .read(profileRepositoryProvider)
+          .createTelegramLinkToken();
+      if (!mounted) return;
+      if (token == null || token.isEmpty) {
+        snack(
+          ru
+              ? 'Не удалось получить ссылку. Попробуйте позже'
+              : 'Havolani olishning iloji bo\'lmadi. Keyinroq urinib ko\'ring',
+        );
+        return;
+      }
+      final uri = Uri.parse('https://t.me/Ibilimuzbot?start=$token');
+      final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!ok) {
+        snack(
+          ru
+              ? 'Не удалось открыть Telegram'
+              : 'Telegramni ochishning iloji bo\'lmadi',
+        );
+      }
+    } catch (_) {
+      snack(
+        ru
+            ? 'Что-то пошло не так. Войдите и попробуйте снова'
+            : 'Xatolik yuz berdi. Tizimga kirib, qayta urinib ko\'ring',
+      );
     }
   }
 
@@ -204,7 +248,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ErrorState(onRetry: () => ref.invalidate(ownProfileProvider)),
         data: (p) {
           if (p == null) {
-            return ErrorState(onRetry: () => ref.invalidate(ownProfileProvider));
+            return ErrorState(
+              onRetry: () => ref.invalidate(ownProfileProvider),
+            );
           }
           final isTeacher = p['is_teacher'] == true;
           return RefreshIndicator(
@@ -317,7 +363,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.edit_outlined, size: 15, color: scheme.primary),
+                      Icon(
+                        Icons.edit_outlined,
+                        size: 15,
+                        color: scheme.primary,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         ru ? 'Редактировать профиль' : 'Profilni tahrirlash',
@@ -404,9 +454,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               onPressed: () {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(ru
-                        ? 'Пополнение появится после подключения онлайн-оплаты'
-                        : 'To\'ldirish onlayn to\'lov ulangach ishlaydi'),
+                    content: Text(
+                      ru
+                          ? 'Пополнение появится после подключения онлайн-оплаты'
+                          : 'To\'ldirish onlayn to\'lov ulangach ishlaydi',
+                    ),
                   ),
                 );
               },
@@ -421,6 +473,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Widget _menuCard({required bool isTeacher}) {
     final l10n = AppLocalizations.of(context)!;
     final locale = ref.watch(localeControllerProvider);
+    final ru = locale.languageCode == 'ru';
     final unread = ref.watch(unreadNotificationsCountProvider).value ?? 0;
 
     return AppCard(
@@ -452,6 +505,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             title: l10n.notificationsTitle,
             badgeCount: unread,
             onTap: () => context.push('/notifications'),
+          ),
+          const _MenuDivider(),
+          _MenuTile(
+            icon: Icons.telegram,
+            title: ru ? 'Подключить Telegram' : 'Telegramni ulash',
+            onTap: _connectTelegram,
           ),
           const _MenuDivider(),
           _MenuTile(
@@ -534,13 +593,19 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             children: [
               Padding(
                 padding: const EdgeInsets.fromLTRB(
-                    AppTokens.s16, AppTokens.s12, AppTokens.s16, AppTokens.s4),
+                  AppTokens.s16,
+                  AppTokens.s12,
+                  AppTokens.s16,
+                  AppTokens.s4,
+                ),
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
                     l10n.settingsLanguage,
                     style: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.w700),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
               ),
@@ -641,12 +706,12 @@ class _GamificationCard extends ConsumerWidget {
         final streak = (g['streak_days'] as num?)?.toInt() ?? 0;
         final settings =
             (g['settings'] as Map?)?.cast<String, dynamic>() ?? const {};
-        final namesByLocale =
-            (settings['level_names'] as Map?)?.cast<String, dynamic>();
-        final names = ((namesByLocale?[locale] ??
-                    namesByLocale?['uz']) as List? ??
-                const [])
-            .cast<String>();
+        final namesByLocale = (settings['level_names'] as Map?)
+            ?.cast<String, dynamic>();
+        final names =
+            ((namesByLocale?[locale] ?? namesByLocale?['uz']) as List? ??
+                    const [])
+                .cast<String>();
         final thresholds = ((settings['level_thresholds'] as List?) ?? const [])
             .map((e) => (e as num).toInt())
             .toList();
@@ -713,8 +778,9 @@ class _GamificationCard extends ConsumerWidget {
                       ),
                       decoration: BoxDecoration(
                         color: AppColors.accent.withValues(alpha: 0.12),
-                        borderRadius:
-                            BorderRadius.circular(AppTokens.radiusChip),
+                        borderRadius: BorderRadius.circular(
+                          AppTokens.radiusChip,
+                        ),
                       ),
                       child: Text(
                         '🔥 $streak',
@@ -740,10 +806,7 @@ class _GamificationCard extends ConsumerWidget {
                 next != null
                     ? l10n.gamificationToNext(next - xp)
                     : l10n.gamificationMaxLevel,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: scheme.onSurfaceVariant,
-                ),
+                style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
               ),
             ],
           ),

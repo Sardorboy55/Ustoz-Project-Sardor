@@ -133,11 +133,25 @@ class ProfileRepository {
     });
   }
 
+  /// Creates a one-time link token to bind this account to the Telegram
+  /// notifications bot (@Ibilimuzbot). RPC is auth-only and returns the token
+  /// string used in `https://t.me/Ibilimuzbot?start=<token>`.
+  Future<String?> createTelegramLinkToken() async {
+    final res = await _client.rpc('create_telegram_link_token');
+    return res as String?;
+  }
+
   /// Uploads into the user's folder (`<uid>/...`) per storage RLS.
-  Future<String> uploadToBucket(String bucket, String path, List<int> bytes,
-      {required String contentType}) async {
+  Future<String> uploadToBucket(
+    String bucket,
+    String path,
+    List<int> bytes, {
+    required String contentType,
+  }) async {
     final fullPath = '$_uid/$path';
-    await _client.storage.from(bucket).uploadBinary(
+    await _client.storage
+        .from(bucket)
+        .uploadBinary(
           fullPath,
           Uint8List.fromList(bytes),
           fileOptions: FileOptions(contentType: contentType, upsert: true),
