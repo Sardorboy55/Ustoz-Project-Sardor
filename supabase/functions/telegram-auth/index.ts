@@ -103,14 +103,23 @@ Deno.serve(async (req) => {
     return json(500, { error: `create user failed: ${createErr.message}` });
   }
 
-  // mint a one-time OTP; the client verifies it to get a real session
-  const { data: link, error: linkErr } = await admin.auth.admin.generateLink({
-    type: "magiclink",
-    email,
-  });
-  const otp = link?.properties?.email_otp;
-  if (linkErr || !otp) {
-    return json(500, { error: `link failed: ${linkErr?.message ?? "no otp"}` });
+  // mint a one-time OTP; the client verifies it to get a real session.
+  // Пробуем magiclink, при неудаче — recovery (оба отдают email_otp и не
+  // требуют SMTP). Если Email-провайдер выключен в Auth — generateLink
+  // вернёт явную ошибку, её и пробрасываем для диагностики на клиенте.
+  let otp: string | undefined;
+  let lastLinkErr: string | undefined;
+  for (const type of ["magiclink", "recovery"] as const) {
+    const { data: link, error: linkErr } = await admin.auth.admin
+      .generateLink({ type, email });
+    if (link?.properties?.email_otp) {
+      otp = link.properties.email_otp;
+      break;
+    }
+    lastLinkErr = linkErr?.message ?? "no email_otp in link";
+  }
+  if (!otp) {
+    return json(500, { error: `link failed: ${lastLinkErr ?? "no otp"}` });
   }
 
   return json(200, { email, otp });

@@ -53,18 +53,24 @@ class AuthRepository {
     if (email == null || otp == null) {
       throw 'tg-fn no otp: $data';
     }
-    try {
-      await _client.auth
-          .verifyOTP(email: email, token: otp, type: OtpType.email);
-    } catch (_) {
+    // Пробуем все типы OTP, которые может выдать generateLink на сервере
+    // (email / magiclink / signup для только что созданного пользователя).
+    // Возвращаем ошибку ПОСЛЕДНЕЙ попытки — чтобы в диагностике была
+    // реальная причина, а не «expired/invalid» от устаревшего типа.
+    Object? lastErr;
+    for (final type in const [
+      OtpType.email,
+      OtpType.magiclink,
+      OtpType.signup,
+    ]) {
       try {
-        await _client.auth
-            .verifyOTP(email: email, token: otp, type: OtpType.magiclink);
-      } catch (e2) {
-        // обе попытки verify не прошли — показываем причину.
-        throw 'tg-verify: $e2';
+        await _client.auth.verifyOTP(email: email, token: otp, type: type);
+        return; // сессия создана — навигацию подхватит onAuthStateChange
+      } catch (e) {
+        lastErr = e;
       }
     }
+    throw 'tg-verify: $lastErr';
   }
 
   static String normalizePhone(String input) {
