@@ -45,6 +45,19 @@
                 <data android:scheme="uz.ustoz.app" android:host="login-callback"/>
                 <data android:scheme="uz.ustoz.app" android:host="tg-callback"/>
             </intent-filter>
+            <!-- Android App Links: https://ibilim.uz/... открывает приложение напрямую
+                 (без браузера). autoVerify="true" требует /.well-known/assetlinks.json
+                 на ibilim.uz с отпечатком релизного ключа uz.ustoz.app.
+                 Claim'им ТОЛЬКО эти префиксы — не корень и не весь сайт, чтобы не
+                 перехватывать маркетинговые/SEO-страницы. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="https" android:host="ibilim.uz" android:pathPrefix="/become-teacher"/>
+                <data android:scheme="https" android:host="ibilim.uz" android:pathPrefix="/lessons"/>
+                <data android:scheme="https" android:host="ibilim.uz" android:pathPrefix="/t/"/>
+            </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->

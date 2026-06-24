@@ -3,6 +3,16 @@
     "relation": ["delegate_permission/common.handle_all_urls"],
     "target": {
       "namespace": "android_app",
+      "package_name": "uz.ustoz.app",
+      "sha256_cert_fingerprints": [
+        "EF:F9:2A:B7:21:29:77:71:52:9B:51:C8:D8:37:A3:E5:DA:E8:6D:65:80:68:F6:56:4B:45:89:4F:62:DC:29:4E"
+      ]
+    }
+  },
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
       "package_name": "uz.ibilim.twa",
       "sha256_cert_fingerprints": [
         "29:1B:89:2D:10:47:24:41:73:2B:18:63:66:32:E6:01:A0:AE:28:41:38:8C:4D:B9:39:D6:03:15:C6:4B:B9:A8"

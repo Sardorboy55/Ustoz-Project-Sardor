@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/providers/locale_provider.dart';
 import '../l10n/app_localizations.dart';
+import 'deep_link_handler.dart';
 import 'router.dart';
 import 'theme.dart';
 
@@ -27,6 +28,10 @@ class UstozApp extends ConsumerWidget {
         GlobalCupertinoLocalizations.delegate,
       ],
       routerConfig: ref.watch(routerProvider),
+      // Глобально слушаем App Links (https://ibilim.uz/...) над всем навигатором,
+      // не мешая логике входа в AuthScreen.
+      builder: (context, child) =>
+          DeepLinkHandler(child: child ?? const SizedBox.shrink()),
     );
   }
 }

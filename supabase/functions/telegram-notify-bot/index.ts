@@ -44,7 +44,7 @@ function mainMenu() {
   return {
     inline_keyboard: [
       [{ text: "🎓 O'qituvchi bo'lish / Стать преподавателем", url: `${APP_BASE}/become-teacher` }],
-      [{ text: "📚 Ilovani ochish / Открыть приложение", url: APP_BASE }],
+      [{ text: "📚 Ilovani ochish / Открыть приложение", url: `${APP_BASE}/lessons` }],
     ],
   };
 }
