@@ -9,6 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../app/theme.dart';
 import '../../../common/widgets/app_card.dart';
+import '../../../core/config/env.dart';
 import '../data/auth_repository.dart';
 
 /// Login screen matching the website (apps/web auth-form): Google + Telegram,
@@ -35,6 +36,10 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
   Timer? _cancelTimer;
   bool _busy = false;
   String? _error;
+  String? _info;
+  // Поля тестового входа (используются только при Env.testLogin == true).
+  final _emailCtrl = TextEditingController();
+  final _passCtrl = TextEditingController();
   // один и тот же deep-link может прийти дважды (поток + начальная ссылка) —
   // обрабатываем каждый ровно один раз.
   final Set<String> _handledUris = {};
@@ -111,6 +116,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
     _sub?.cancel();
     _authTimer?.cancel();
     _cancelTimer?.cancel();
+    _emailCtrl.dispose();
+    _passCtrl.dispose();
     super.dispose();
   }
 
@@ -194,6 +201,136 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
     }
   }
 
+  // ---- ТЕСТОВЫЙ вход по email+паролю (только при Env.testLogin) ----
+
+  bool _validTestInput() {
+    final email = _emailCtrl.text.trim();
+    final pass = _passCtrl.text;
+    if (email.isEmpty || !email.contains('@') || pass.isEmpty) {
+      setState(() {
+        _info = null;
+        _error =
+            _ru ? 'Введите email и пароль' : 'Email va parolni kiriting';
+      });
+      return false;
+    }
+    return true;
+  }
+
+  Future<void> _emailSignIn() async {
+    if (!_validTestInput()) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+      _info = null;
+    });
+    try {
+      await ref
+          .read(authRepositoryProvider)
+          .signInWithEmailPassword(_emailCtrl.text, _passCtrl.text);
+      // Сессия создана → onAuthStateChange → роутер сам редиректит с /auth.
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _error = e.toString();
+        });
+      }
+    }
+  }
+
+  Future<void> _emailSignUp() async {
+    if (!_validTestInput()) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+      _info = null;
+    });
+    try {
+      final needsConfirmation = await ref
+          .read(authRepositoryProvider)
+          .signUpWithEmailPassword(_emailCtrl.text, _passCtrl.text);
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          if (needsConfirmation) {
+            _info = _ru
+                ? 'Аккаунт создан. Проверьте почту для подтверждения, затем войдите.'
+                : 'Hisob yaratildi. Tasdiqlash uchun pochtangizni tekshiring, keyin kiring.';
+          }
+          // Если подтверждение не требуется — сессия уже есть, роутер редиректит.
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _error = e.toString();
+        });
+      }
+    }
+  }
+
+  List<Widget> _testLoginBlock(bool ru) {
+    return [
+      const SizedBox(height: 20),
+      Row(
+        children: [
+          const Expanded(child: Divider(color: AppColors.zinc300)),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Text(
+              ru ? 'или для теста' : 'test login',
+              style: const TextStyle(color: AppColors.zinc500, fontSize: 12),
+            ),
+          ),
+          const Expanded(child: Divider(color: AppColors.zinc300)),
+        ],
+      ),
+      const SizedBox(height: 16),
+      TextField(
+        controller: _emailCtrl,
+        enabled: !_busy,
+        keyboardType: TextInputType.emailAddress,
+        autocorrect: false,
+        textInputAction: TextInputAction.next,
+        decoration: InputDecoration(
+          labelText: 'Email',
+          border: const OutlineInputBorder(),
+          isDense: true,
+        ),
+      ),
+      const SizedBox(height: 12),
+      TextField(
+        controller: _passCtrl,
+        enabled: !_busy,
+        obscureText: true,
+        textInputAction: TextInputAction.done,
+        onSubmitted: (_) => _busy ? null : _emailSignIn(),
+        decoration: InputDecoration(
+          labelText: ru ? 'Пароль' : 'Parol',
+          border: const OutlineInputBorder(),
+          isDense: true,
+        ),
+      ),
+      const SizedBox(height: 12),
+      SizedBox(
+        width: double.infinity,
+        child: FilledButton(
+          onPressed: _busy ? null : _emailSignIn,
+          style: FilledButton.styleFrom(
+            minimumSize: const Size.fromHeight(50),
+          ),
+          child: Text(ru ? 'Войти' : 'Kirish'),
+        ),
+      ),
+      TextButton(
+        onPressed: _busy ? null : _emailSignUp,
+        child: Text(ru ? 'Регистрация' : 'Ro\'yxatdan o\'tish'),
+      ),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     final ru = _ru;
@@ -240,6 +377,22 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                     ),
                     const SizedBox(height: 12),
                   ],
+                  if (_info != null) ...[
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFECFDF5),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        _info!,
+                        style: const TextStyle(
+                            color: Color(0xFF047857), fontSize: 13),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
@@ -279,6 +432,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                       ),
                     ),
                   ),
+                  if (Env.testLogin) ..._testLoginBlock(ru),
                 ],
               ),
             ),

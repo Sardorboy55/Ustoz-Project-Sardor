@@ -6,5 +6,11 @@ abstract final class Env {
   static const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
   static const supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
 
+  /// Тестовый вход по email+паролю на экране входа.
+  /// Включается ТОЛЬКО в отдельном тестовом APK через
+  /// `--dart-define=TEST_LOGIN=true`. В обычной (продакшн) сборке — false,
+  /// и блок email/пароля не появляется (остаются только Google + Telegram).
+  static const testLogin = bool.fromEnvironment('TEST_LOGIN', defaultValue: false);
+
   static bool get hasSupabase => supabaseUrl.isNotEmpty && supabaseAnonKey.isNotEmpty;
 }

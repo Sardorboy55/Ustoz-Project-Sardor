@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -71,6 +72,65 @@ class AuthRepository {
       }
     }
     throw 'tg-verify: $lastErr';
+  }
+
+  /// ТОЛЬКО для тестового APK (флаг Env.testLogin). Обычный вход по
+  /// email+паролю через тот же Supabase (`/auth/v1/token?grant_type=password`),
+  /// идёт через прокси ibilim.uz/supa, как и весь остальной auth-трафик.
+  /// Бросает дружелюбный текст; технические детали — в debugPrint.
+  Future<void> signInWithEmailPassword(String email, String password) async {
+    try {
+      await _client.auth.signInWithPassword(
+        email: email.trim(),
+        password: password,
+      );
+    } on AuthException catch (e) {
+      debugPrint('signInWithEmailPassword AuthException: ${e.statusCode} ${e.message}');
+      throw _friendlyAuthError(e);
+    } catch (e) {
+      debugPrint('signInWithEmailPassword error: $e');
+      throw 'Не удалось войти. Проверьте соединение и попробуйте снова.';
+    }
+  }
+
+  /// ТОЛЬКО для тестового APK. Регистрация тестового аккаунта по email+паролю.
+  /// Если в Supabase включено подтверждение почты — сессии сразу не будет;
+  /// возвращает [needsConfirmation] = true, чтобы экран показал подсказку.
+  Future<bool> signUpWithEmailPassword(String email, String password) async {
+    try {
+      final res = await _client.auth.signUp(
+        email: email.trim(),
+        password: password,
+      );
+      // session == null → требуется подтверждение почты (нет авто-входа).
+      return res.session == null;
+    } on AuthException catch (e) {
+      debugPrint('signUpWithEmailPassword AuthException: ${e.statusCode} ${e.message}');
+      throw _friendlyAuthError(e);
+    } catch (e) {
+      debugPrint('signUpWithEmailPassword error: $e');
+      throw 'Не удалось зарегистрироваться. Проверьте соединение и попробуйте снова.';
+    }
+  }
+
+  String _friendlyAuthError(AuthException e) {
+    final msg = e.message.toLowerCase();
+    if (msg.contains('invalid login') || msg.contains('invalid credentials')) {
+      return 'Неверный email или пароль';
+    }
+    if (msg.contains('not confirmed') || msg.contains('confirm')) {
+      return 'Проверьте почту для подтверждения аккаунта';
+    }
+    if (msg.contains('already registered') || msg.contains('already exists')) {
+      return 'Такой email уже зарегистрирован — войдите';
+    }
+    if (msg.contains('password') && msg.contains('least')) {
+      return 'Пароль слишком короткий (минимум 6 символов)';
+    }
+    if (msg.contains('valid email') || msg.contains('invalid email')) {
+      return 'Неверный формат email';
+    }
+    return 'Ошибка входа: ${e.message}';
   }
 
   static String normalizePhone(String input) {
