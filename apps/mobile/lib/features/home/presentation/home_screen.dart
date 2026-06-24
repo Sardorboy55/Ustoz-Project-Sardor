@@ -25,6 +25,10 @@ import '../data/home_repository.dart';
 const _popularFilters = CatalogFilters(limit: 5);
 const _trialFilters = CatalogFilters(trialOnly: true, limit: 5);
 
+/// Material 3 NavigationBar default height — reserved as bottom padding so
+/// scrollable content never hides under the shell's bottom navigation.
+const double _kBottomNavHeight = 80;
+
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
@@ -48,14 +52,24 @@ class HomeScreen extends ConsumerWidget {
     final profile = ref.watch(ownProfileProvider);
     final favorites = ref.watch(favoriteCardsProvider);
     final isTeacher = profile.value?['is_teacher'] == true;
+    // Контент тянется под bottom-nav: Scaffold с bottomNavigationBar обнуляет
+    // padding.bottom для body, поэтому резервируем высоту навбара + жест-инсет
+    // вручную, иначе последняя секция уходит под навигацию (особенно на
+    // невысоких экранах). viewPadding сохраняет системный инсет даже когда
+    // padding обнулён.
+    final bottomInset =
+        AppTokens.s32 +
+        _kBottomNavHeight +
+        MediaQuery.viewPaddingOf(context).bottom;
 
     return Scaffold(
       body: SafeArea(
+        bottom: false,
         child: RefreshIndicator(
           onRefresh: () => _refresh(ref),
           child: ListView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.only(bottom: AppTokens.s32),
+            padding: EdgeInsets.only(bottom: bottomInset),
             children: [
               const _Hero(),
               const _TrustBand(),

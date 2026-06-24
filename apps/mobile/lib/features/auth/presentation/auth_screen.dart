@@ -76,12 +76,31 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
   }
 
   Future<void> _handleUri(Uri uri) async {
+    // Нас интересуют ТОЛЬКО наши auth-коллбеки. Прочее (https App Links и т.п.)
+    // ловит глобальный DeepLinkHandler — здесь игнорируем.
+    final isLogin = uri.host == 'login-callback';
+    final isTg = uri.host == 'tg-callback';
+    if (!isLogin && !isTg) return;
+
+    // Идемпотентность + защита от стрэй-коллбеков в уже авторизованной сессии.
+    // Если сессия УЖЕ есть — это посторонний/повторный коллбек: НЕ меняем код
+    // на сессию, НЕ открываем браузер, просто молча игнорируем. Иначе невалидный
+    // `code` приводил к unhandled AuthException («Code verifier could not be
+    // found…»), а лишний tg-callback мог заново поднять внешний логин-флоу.
+    if (Supabase.instance.client.auth.currentSession != null) {
+      debugPrint(
+        'Auth callback ignored — session already present: ${uri.host}',
+      );
+      return;
+    }
     if (!_handledUris.add(uri.toString())) return; // уже обработали этот линк
-    if (uri.host == 'login-callback') {
+
+    if (isLogin) {
       // Google: явно меняем OAuth-код на сессию. Сначала прямой
       // exchangeCodeForSession(code) (PKCE), затем getSessionFromUrl как фолбэк.
       try {
-        final err = uri.queryParameters['error_description'] ??
+        final err =
+            uri.queryParameters['error_description'] ??
             uri.queryParameters['error'];
         if (err != null) throw err;
         final code = uri.queryParameters['code'];
@@ -94,18 +113,18 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
         debugPrint('Google login callback error: $e');
         // supabase may have already exchanged the code itself — only surface an
         // error if there is still no session.
-        if (mounted &&
-            Supabase.instance.client.auth.currentSession == null) {
+        if (mounted && Supabase.instance.client.auth.currentSession == null) {
           setState(() {
             _busy = false;
-            _error = (_ru
+            _error =
+                (_ru
                     ? 'Не удалось завершить вход. Попробуйте снова.'
                     : 'Kirishni yakunlab bo\'lmadi. Qaytadan urinib ko\'ring.') +
                 '\n[$e]';
           });
         }
       }
-    } else if (uri.host == 'tg-callback') {
+    } else if (isTg) {
       _completeTelegram(uri.queryParameters);
     }
   }
@@ -166,21 +185,32 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
         mode: LaunchMode.externalApplication,
       );
       if (!ok && mounted) {
-        setState(() => _error = _ru
-            ? 'Не удалось открыть Telegram-вход'
-            : 'Telegram kirishni ochib bo\'lmadi');
+        setState(
+          () => _error = _ru
+              ? 'Не удалось открыть Telegram-вход'
+              : 'Telegram kirishni ochib bo\'lmadi',
+        );
       }
     } catch (_) {
       if (mounted) {
-        setState(() => _error = _ru
-            ? 'Не удалось открыть Telegram-вход'
-            : 'Telegram kirishni ochib bo\'lmadi');
+        setState(
+          () => _error = _ru
+              ? 'Не удалось открыть Telegram-вход'
+              : 'Telegram kirishni ochib bo\'lmadi',
+        );
       }
     }
   }
 
   Future<void> _completeTelegram(Map<String, String> params) async {
-    if (params['hash'] == null || params['id'] == null) return;
+    // Битый/неполный tg-callback (нет подписи) — молча игнорируем. Браузер
+    // здесь НЕ открываем: внешний Telegram-логин стартует ТОЛЬКО по явному
+    // нажатию кнопки «Войти через Telegram» (_telegram), а не на входящий
+    // коллбек, иначе стрэй-callback поднимал Chrome с логин-страницей.
+    if (params['hash'] == null || params['id'] == null) {
+      debugPrint('Telegram callback ignored — missing hash/id: ${params.keys}');
+      return;
+    }
     setState(() {
       _busy = true;
       _error = null;
@@ -191,10 +221,13 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
     } catch (e) {
       debugPrint('Telegram login error: $e');
       if (mounted) {
-        setState(() => _error = (_ru
-                ? 'Не удалось войти через Telegram. Попробуйте снова.'
-                : 'Telegram orqali kirib bo\'lmadi. Qaytadan urinib ko\'ring.') +
-            '\n[$e]');
+        setState(
+          () => _error =
+              (_ru
+                  ? 'Не удалось войти через Telegram. Попробуйте снова.'
+                  : 'Telegram orqali kirib bo\'lmadi. Qaytadan urinib ko\'ring.') +
+              '\n[$e]',
+        );
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -209,8 +242,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
     if (email.isEmpty || !email.contains('@') || pass.isEmpty) {
       setState(() {
         _info = null;
-        _error =
-            _ru ? 'Введите email и пароль' : 'Email va parolni kiriting';
+        _error = _ru ? 'Введите email и пароль' : 'Email va parolni kiriting';
       });
       return false;
     }
@@ -318,9 +350,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
         width: double.infinity,
         child: FilledButton(
           onPressed: _busy ? null : _emailSignIn,
-          style: FilledButton.styleFrom(
-            minimumSize: const Size.fromHeight(50),
-          ),
+          style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(50)),
           child: Text(ru ? 'Войти' : 'Kirish'),
         ),
       ),
@@ -342,8 +372,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 448),
             child: AppCard(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -352,11 +381,15 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                   Text(
                     ru ? 'Добро пожаловать' : 'Xush kelibsiz',
                     style: const TextStyle(
-                        fontSize: 22, fontWeight: FontWeight.w800),
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    ru ? 'Войдите, чтобы продолжить' : 'Davom etish uchun kiring',
+                    ru
+                        ? 'Войдите, чтобы продолжить'
+                        : 'Davom etish uchun kiring',
                     textAlign: TextAlign.center,
                     style: const TextStyle(color: AppColors.zinc500),
                   ),
@@ -372,7 +405,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                       child: Text(
                         _error!,
                         style: const TextStyle(
-                            color: Color(0xFFB91C1C), fontSize: 13),
+                          color: Color(0xFFB91C1C),
+                          fontSize: 13,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -388,7 +423,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                       child: Text(
                         _info!,
                         style: const TextStyle(
-                            color: Color(0xFF047857), fontSize: 13),
+                          color: Color(0xFF047857),
+                          fontSize: 13,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -401,13 +438,18 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                           ? const SizedBox(
                               width: 18,
                               height: 18,
-                              child:
-                                  CircularProgressIndicator(strokeWidth: 2))
-                          : SvgPicture.asset('assets/icons/google.svg',
-                              width: 20, height: 20),
-                      label: Text(ru
-                          ? 'Продолжить через Google'
-                          : 'Google bilan davom etish'),
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : SvgPicture.asset(
+                              'assets/icons/google.svg',
+                              width: 20,
+                              height: 20,
+                            ),
+                      label: Text(
+                        ru
+                            ? 'Продолжить через Google'
+                            : 'Google bilan davom etish',
+                      ),
                       style: OutlinedButton.styleFrom(
                         minimumSize: const Size.fromHeight(50),
                         backgroundColor: Colors.white,
@@ -422,9 +464,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                     child: FilledButton.icon(
                       onPressed: _busy ? null : _telegram,
                       icon: const Icon(Icons.send_rounded, size: 20),
-                      label: Text(ru
-                          ? 'Войти через Telegram'
-                          : 'Telegram bilan kirish'),
+                      label: Text(
+                        ru ? 'Войти через Telegram' : 'Telegram bilan kirish',
+                      ),
                       style: FilledButton.styleFrom(
                         minimumSize: const Size.fromHeight(50),
                         backgroundColor: const Color(0xFF229ED9),

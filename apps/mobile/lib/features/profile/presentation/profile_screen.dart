@@ -21,6 +21,10 @@ import 'edit_profile_screen.dart';
 
 const _appVersion = '0.1.0';
 
+/// Material 3 NavigationBar default height — reserved as bottom padding so the
+/// "sign out" button never hides under the shell's bottom navigation.
+const double _kBottomNavHeight = 80;
+
 /// Profile tab: identity header, gamification, balance, menu, teacher entry.
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -34,7 +38,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   static const _becomingTeacher = false;
 
   Future<void> _editProfile(Map<String, dynamic> p) async {
-    await Navigator.of(context).push(
+    // rootNavigator: true — открываем поверх shell, чтобы bottom-nav не
+    // показывалась на полноэкранном экране редактирования.
+    await Navigator.of(context, rootNavigator: true).push(
       MaterialPageRoute<void>(
         builder: (_) => EditProfileScreen(
           fullName: p['full_name'] as String? ?? '',
@@ -265,7 +271,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             },
             child: ListView(
               physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(AppTokens.s16),
+              // Контент тянется под bottom-nav (Scaffold обнуляет padding.bottom
+              // для body внутри shell), поэтому резервируем высоту навбара +
+              // жест-инсет — иначе «Выйти» прячется под навигацию.
+              padding: EdgeInsets.fromLTRB(
+                AppTokens.s16,
+                AppTokens.s16,
+                AppTokens.s16,
+                AppTokens.s24 +
+                    _kBottomNavHeight +
+                    MediaQuery.viewPaddingOf(context).bottom,
+              ),
               children: [
                 _header(p),
                 const SizedBox(height: AppTokens.s16),
@@ -285,7 +301,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   label: Text(l10n.signOut),
                   onPressed: _signOut,
                 ),
-                const SizedBox(height: AppTokens.s24),
               ],
             ),
           );

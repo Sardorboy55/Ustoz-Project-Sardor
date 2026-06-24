@@ -22,26 +22,42 @@ class EditProfileScreen extends ConsumerStatefulWidget {
 class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   late final TextEditingController _first;
   late final TextEditingController _last;
+  late final String _initialFull;
   String? _avatarUrl;
   bool _saving = false;
   bool _uploadingAvatar = false;
 
   bool get _ru => Localizations.localeOf(context).languageCode == 'ru';
 
-  @override
-  void initState() {
-    super.initState();
-    final parts =
-        widget.fullName.trim().split(RegExp(r'\s+')).where((s) => s.isNotEmpty);
-    final list = parts.toList();
-    _first = TextEditingController(text: list.isEmpty ? '' : list.first);
-    _last = TextEditingController(
-        text: list.length > 1 ? list.sublist(1).join(' ') : '');
-    _avatarUrl = widget.avatarUrl;
+  /// «Saqlash» активна только когда имя реально изменилось (аватар сохраняется
+  /// отдельно сразу при выборе, поэтому в dirty не входит).
+  bool get _dirty {
+    final current = '${_first.text.trim()} ${_last.text.trim()}'.trim();
+    return current.isNotEmpty && current != _initialFull;
   }
 
   @override
+  void initState() {
+    super.initState();
+    _initialFull = widget.fullName.trim();
+    final parts = _initialFull.split(RegExp(r'\s+')).where((s) => s.isNotEmpty);
+    final list = parts.toList();
+    _first = TextEditingController(text: list.isEmpty ? '' : list.first);
+    _last = TextEditingController(
+      text: list.length > 1 ? list.sublist(1).join(' ') : '',
+    );
+    _avatarUrl = widget.avatarUrl;
+    // Перерисовываем кнопку при правке полей (dirty-tracking).
+    _first.addListener(_onChanged);
+    _last.addListener(_onChanged);
+  }
+
+  void _onChanged() => setState(() {});
+
+  @override
   void dispose() {
+    _first.removeListener(_onChanged);
+    _last.removeListener(_onChanged);
     _first.dispose();
     _last.dispose();
     super.dispose();
@@ -96,8 +112,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   void _toast(String msg) {
     if (mounted) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(msg)));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
     }
   }
 
@@ -129,7 +144,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                             width: 26,
                             height: 26,
                             child: CircularProgressIndicator(
-                                strokeWidth: 2.4, color: Colors.white),
+                              strokeWidth: 2.4,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                       ),
@@ -145,8 +162,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                         shape: BoxShape.circle,
                         border: Border.all(color: scheme.surface, width: 2),
                       ),
-                      child: const Icon(Icons.photo_camera_rounded,
-                          size: 15, color: Colors.white),
+                      child: const Icon(
+                        Icons.photo_camera_rounded,
+                        size: 15,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                 ],
@@ -156,7 +176,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           const SizedBox(height: AppTokens.s8),
           Center(
             child: Text(
-              ru ? 'Нажмите, чтобы сменить фото' : 'Rasmni o\'zgartirish uchun bosing',
+              ru
+                  ? 'Нажмите, чтобы сменить фото'
+                  : 'Rasmni o\'zgartirish uchun bosing',
               style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
             ),
           ),
@@ -167,8 +189,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             controller: _first,
             textCapitalization: TextCapitalization.words,
             textInputAction: TextInputAction.next,
-            decoration:
-                InputDecoration(hintText: ru ? 'Имя' : 'Ism'),
+            decoration: InputDecoration(hintText: ru ? 'Имя' : 'Ism'),
           ),
           const SizedBox(height: AppTokens.s16),
           _Label(ru ? 'Фамилия' : 'Familiya'),
@@ -178,18 +199,19 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             textCapitalization: TextCapitalization.words,
             textInputAction: TextInputAction.done,
             onSubmitted: (_) => _save(),
-            decoration:
-                InputDecoration(hintText: ru ? 'Фамилия' : 'Familiya'),
+            decoration: InputDecoration(hintText: ru ? 'Фамилия' : 'Familiya'),
           ),
           const SizedBox(height: AppTokens.s24),
           FilledButton(
-            onPressed: _saving ? null : _save,
+            onPressed: (_saving || !_dirty) ? null : _save,
             child: _saving
                 ? const SizedBox(
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: Colors.white),
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
                   )
                 : Text(ru ? 'Сохранить' : 'Saqlash'),
           ),

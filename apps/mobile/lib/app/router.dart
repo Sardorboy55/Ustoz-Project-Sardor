@@ -47,9 +47,17 @@ const _protectedPrefixes = [
 class _AuthRefresh extends ChangeNotifier {
   _AuthRefresh() {
     if (Env.hasSupabase) {
-      Supabase.instance.client.auth.onAuthStateChange.listen((_) {
-        notifyListeners();
-      });
+      Supabase.instance.client.auth.onAuthStateChange.listen(
+        (_) => notifyListeners(),
+        // supabase_flutter сам слушает deep-link с кастомной схемой и пытается
+        // обменять `code` на сессию. На стрэй/битый коллбек (например
+        // login-callback?code=invalid в уже авторизованной сессии) обмен PKCE
+        // падает «Code verifier could not be found…» и без onError эта ошибка
+        // летела в зону как unhandled exception (см. logcat QA). Гасим её здесь:
+        // логируем и идём дальше — нормальный вход это не затрагивает.
+        onError: (Object e) =>
+            debugPrint('onAuthStateChange error (ignored): $e'),
+      );
     }
   }
 }
@@ -73,10 +81,7 @@ GoRouter router(Ref ref) {
     routes: [
       // ---- outside the shell (no bottom bar) ----
       GoRoute(path: '/', builder: (context, state) => const SplashScreen()),
-      GoRoute(
-        path: '/auth',
-        builder: (context, state) => const AuthScreen(),
-      ),
+      GoRoute(path: '/auth', builder: (context, state) => const AuthScreen()),
       // legacy paths kept as aliases → new Google/Telegram login screen
       GoRoute(
         path: '/auth/phone',
@@ -151,42 +156,52 @@ GoRouter router(Ref ref) {
         builder: (context, state, navigationShell) =>
             AppShell(shell: navigationShell),
         branches: [
-          StatefulShellBranch(routes: [
-            GoRoute(
-              path: '/home',
-              builder: (context, state) => const HomeScreen(),
-            ),
-          ]),
-          StatefulShellBranch(routes: [
-            GoRoute(
-              path: '/catalog',
-              // home deep-links: ?category=<id>, ?trial=1, ?focus=1
-              builder: (context, state) => CatalogScreen(
-                initialCategoryId: state.uri.queryParameters['category'],
-                initialTrialOnly: state.uri.queryParameters['trial'] == '1',
-                autofocusSearch: state.uri.queryParameters['focus'] == '1',
-                initialQuery: state.uri.queryParameters['q'],
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/home',
+                builder: (context, state) => const HomeScreen(),
               ),
-            ),
-          ]),
-          StatefulShellBranch(routes: [
-            GoRoute(
-              path: '/lessons',
-              builder: (context, state) => const LessonsScreen(),
-            ),
-          ]),
-          StatefulShellBranch(routes: [
-            GoRoute(
-              path: '/chats',
-              builder: (context, state) => const ChatListScreen(),
-            ),
-          ]),
-          StatefulShellBranch(routes: [
-            GoRoute(
-              path: '/profile',
-              builder: (context, state) => const ProfileScreen(),
-            ),
-          ]),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/catalog',
+                // home deep-links: ?category=<id>, ?trial=1, ?focus=1
+                builder: (context, state) => CatalogScreen(
+                  initialCategoryId: state.uri.queryParameters['category'],
+                  initialTrialOnly: state.uri.queryParameters['trial'] == '1',
+                  autofocusSearch: state.uri.queryParameters['focus'] == '1',
+                  initialQuery: state.uri.queryParameters['q'],
+                ),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/lessons',
+                builder: (context, state) => const LessonsScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/chats',
+                builder: (context, state) => const ChatListScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/profile',
+                builder: (context, state) => const ProfileScreen(),
+              ),
+            ],
+          ),
         ],
       ),
     ],
