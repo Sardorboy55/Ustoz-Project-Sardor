@@ -144,7 +144,8 @@ export function BookingDetail({ bookingId }: { bookingId: string }) {
     setChecking(true);
     setCheckFailed(false);
     const supabase = createClient();
-    const deadline = Date.now() + 40_000;
+    // Bank SMS → forwarder → match can lag; poll ~90s before showing "not found".
+    const deadline = Date.now() + 90_000;
     while (Date.now() < deadline) {
       const { data } = await supabase
         .from("bookings")
