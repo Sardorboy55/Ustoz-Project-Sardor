@@ -185,6 +185,13 @@
 
       function cleanup() { conv = null; releaseProbe(); setLive(false); }
 
+      // Глушение входа агента. Безопасно при любом состоянии conv (guard внутри).
+      function muteMic(on) {
+        try {
+          if (conv && conv.setMicMuted) conv.setMicMuted(on);
+        } catch (e) {}
+      }
+
       async function start() {
         // Один сеанс за раз. Без этого повторное нажатие плодило параллельные
         // сессии, которые дрались за микрофон и обрывали голос агента.
@@ -218,20 +225,24 @@
               var id = info && (info.conversationId || info.conversation_id);
               post({ type: "connected", conversationId: id });
               setLive(true);
+              // MUTE-BY-DEFAULT: агент ВСЕГДА первым говорит приветствие, поэтому
+              // на старте микрофон закрыт. Дублируем мьют здесь — на случай если
+              // вызов сразу после startSession ещё не успел примениться. Микрофон
+              // откроется только когда onModeChange даст mode === "listening".
+              muteMic(true);
+              $("status").textContent = L.agentSpeaking;
             },
             // ПОЛУДУПЛЕКС против эхо-самоперебивания. В режиме websocket нет
             // встроенного AEC, и на динамике микрофон ловит голос самого агента
             // → его turn-taking считает это речью пользователя и обрывает
-            // приветствие. Пока агент ГОВОРИТ — глушим вход (setMicMuted(true)),
-            // как только СЛУШАЕТ — открываем (setMicMuted(false)). Для
-            // структурированного собеседования (агент спросил → ждёт ответ)
-            // это естественно и не мешает кандидату.
+            // приветствие. ИНВАРИАНТ: агент ГОВОРИТ → mic muted; СЛУШАЕТ → mic
+            // open. По умолчанию (до первого "listening") — muted, чтобы первый
+            // greeting гарантированно не утёк в микрофон (race с поздним первым
+            // "speaking"). Открываем микрофон ТОЛЬКО на явном "listening".
             onModeChange: function (m) {
-              var mode = m && m.mode;
-              try {
-                if (conv && conv.setMicMuted) conv.setMicMuted(mode === "speaking");
-              } catch (e) {}
-              $("status").textContent = mode === "speaking" ? L.agentSpeaking : L.yourTurn;
+              var listening = m && m.mode === "listening";
+              muteMic(!listening);
+              $("status").textContent = listening ? L.yourTurn : L.agentSpeaking;
             },
             onDisconnect: function () { post({ type: "disconnected" }); cleanup(); },
             onError: function (e) {
@@ -239,6 +250,10 @@
               post({ type: "error", message: String(e) });
             },
           });
+          // Самая ранняя гарантированная точка: conv уже присвоен. Глушим вход
+          // СРАЗУ, не дожидаясь onConnect/onModeChange — чтобы первый greeting
+          // не утёк в микрофон. Открытие — только по onModeChange("listening").
+          muteMic(true);
         } catch (e) {
           $("err").textContent = L.connErr;
           $("status").textContent = "";
