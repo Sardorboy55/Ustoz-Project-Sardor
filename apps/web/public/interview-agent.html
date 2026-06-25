@@ -74,6 +74,8 @@
           loadingSdk: "Ovozli modul yuklanmoqda…",
           sdkErr: "Ovozli modulni yuklab bo'lmadi. Internetni tekshirib, qaytadan urinib ko'ring.",
           connecting: "Ulanmoqda…",
+          agentSpeaking: "Agent gapiryapti…",
+          yourTurn: "Gapiring — agent eshityapti",
         },
         ru: {
           idle: "Начнём собеседование?",
@@ -87,6 +89,8 @@
           loadingSdk: "Загрузка голосового модуля…",
           sdkErr: "Не удалось загрузить голосовой модуль. Проверьте интернет и попробуйте снова.",
           connecting: "Подключаюсь…",
+          agentSpeaking: "Агент говорит…",
+          yourTurn: "Говорите — агент слушает",
         },
         en: {
           idle: "Start the interview?",
@@ -100,6 +104,8 @@
           loadingSdk: "Loading voice module…",
           sdkErr: "Could not load the voice module. Check your internet and try again.",
           connecting: "Connecting…",
+          agentSpeaking: "Agent is speaking…",
+          yourTurn: "Speak — the agent is listening",
         },
       };
       var L = T[lang] || T.uz;
@@ -212,6 +218,20 @@
               var id = info && (info.conversationId || info.conversation_id);
               post({ type: "connected", conversationId: id });
               setLive(true);
+            },
+            // ПОЛУДУПЛЕКС против эхо-самоперебивания. В режиме websocket нет
+            // встроенного AEC, и на динамике микрофон ловит голос самого агента
+            // → его turn-taking считает это речью пользователя и обрывает
+            // приветствие. Пока агент ГОВОРИТ — глушим вход (setMicMuted(true)),
+            // как только СЛУШАЕТ — открываем (setMicMuted(false)). Для
+            // структурированного собеседования (агент спросил → ждёт ответ)
+            // это естественно и не мешает кандидату.
+            onModeChange: function (m) {
+              var mode = m && m.mode;
+              try {
+                if (conv && conv.setMicMuted) conv.setMicMuted(mode === "speaking");
+              } catch (e) {}
+              $("status").textContent = mode === "speaking" ? L.agentSpeaking : L.yourTurn;
             },
             onDisconnect: function () { post({ type: "disconnected" }); cleanup(); },
             onError: function (e) {
