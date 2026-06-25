@@ -35,16 +35,6 @@
     .secondary { background: #fff; color: #18181b; border: 1px solid #d4d4d8; }
     #status { color: #2563eb; font-size: 13px; margin: 12px 0 0; min-height: 16px; font-weight: 600; }
     #err { color: #b91c1c; font-size: 13px; margin-top: 10px; min-height: 16px; }
-    /* ВРЕМЕННАЯ диагностическая панель — потом убрать. */
-    #diag {
-      position: fixed; left: 0; right: 0; bottom: 0; max-height: 42vh; overflow: auto;
-      margin: 0; padding: 8px 10px; background: #0b0b0f; color: #d4d4d8;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      font-size: 11px; line-height: 1.4; white-space: pre-wrap; word-break: break-word;
-      border-top: 1px solid #27272a; z-index: 9999;
-    }
-    #diag .ev { color: #93c5fd; }
-    #diag .bad { color: #fca5a5; }
   </style>
 </head>
 <body>
@@ -57,8 +47,6 @@
     <p id="status"></p>
     <p id="err"></p>
   </div>
-  <!-- ВРЕМЕННАЯ диагностика событий сессии (последние ~12 строк). Убрать после отладки. -->
-  <pre id="diag"></pre>
 
   <!-- ВАЖНО: UI выставляется СИНХРОННЫМ обычным скриптом (не module).
        Раньше всё было внутри <script type="module"> c верхнеуровневым
@@ -140,38 +128,6 @@
         } catch (e) {}
       }
 
-      // --- ВРЕМЕННАЯ диагностика: лог событий на экран + в Flutter-мост ---
-      var _t0 = Date.now();
-      function _safe(v) {
-        try { return typeof v === "string" ? v : JSON.stringify(v); }
-        catch (e) {
-          // объекты с circular refs / Error: вытащим максимум вручную
-          if (v && typeof v === "object") {
-            var o = {};
-            ["name", "message", "code", "reason", "context", "type", "closeCode", "closeReason", "stack"]
-              .forEach(function (k) { if (v[k] !== undefined) o[k] = String(v[k]); });
-            try { return JSON.stringify(o); } catch (e2) { return String(v); }
-          }
-          return String(v);
-        }
-      }
-      function dlog(event, detail, bad) {
-        var s = ((Date.now() - _t0) / 1000); // секунды от загрузки
-        var mm = Math.floor(s / 60), ss = Math.floor(s % 60);
-        var stamp = (mm < 10 ? "0" : "") + mm + ":" + (ss < 10 ? "0" : "") + ss;
-        var line = "[" + stamp + "] " + event + (detail !== undefined && detail !== "" ? ": " + _safe(detail) : "");
-        try {
-          var el = $("diag");
-          var div = document.createElement("div");
-          div.className = bad ? "bad" : "ev";
-          div.textContent = line;
-          el.appendChild(div);
-          while (el.childNodes.length > 12) el.removeChild(el.firstChild);
-          el.scrollTop = el.scrollHeight;
-        } catch (e) {}
-        post({ type: "debug", line: line });
-      }
-
       // --- Загрузка SDK: динамический import() с fallback-цепочкой ---
       // САМОХОСТ ПЕРВЫМ: узбекская сеть режет сторонние CDN, но наш домен
       // достаёт (страница же грузится). Бандл собран из @elevenlabs/client@1.11.2
@@ -198,11 +154,9 @@
             var mod = await dynImport(SDK_SOURCES[i]);
             if (mod && mod.Conversation) {
               Conversation = mod.Conversation;
-              dlog("SDK loaded", SDK_SOURCES[i]);
               return true;
             }
           } catch (e) {
-            dlog("SDK src failed", SDK_SOURCES[i], true);
             // пробуем следующий источник
           }
         }
@@ -247,7 +201,6 @@
         $("startBtn").disabled = true;
         $("err").textContent = "";
         $("status").textContent = L.connecting;
-        dlog("start()", "запрашиваю микрофон");
         // Микрофон с ЭХОПОДАВЛЕНИЕМ. В режиме websocket (UZ режет WebRTC) нет
         // встроенного AEC — без этого агент слышит свой голос из динамика,
         // срабатывает «перебивание» и приветствие обрывается в начале. Поток
@@ -259,12 +212,10 @@
         } catch (e) {
           $("err").textContent = L.micErr;
           $("status").textContent = "";
-          dlog("mic error", e, true);
           post({ type: "error", reason: "mic" });
           $("startBtn").disabled = false; busy = false;
           return;
         }
-        dlog("start()", "микрофон ок, startSession…");
         try {
           conv = await Conversation.startSession({
             agentId: AGENT_ID,
@@ -273,7 +224,6 @@
             onConnect: function (info) {
               var id = info && (info.conversationId || info.conversation_id);
               post({ type: "connected", conversationId: id });
-              dlog("onConnect", { conversationId: id || null });
               setLive(true);
               // MUTE-BY-DEFAULT: агент ВСЕГДА первым говорит приветствие, поэтому
               // на старте микрофон закрыт. Дублируем мьют здесь — на случай если
@@ -281,12 +231,6 @@
               // откроется только когда onModeChange даст mode === "listening".
               muteMic(true);
               $("status").textContent = L.agentSpeaking;
-            },
-            // Статусы сессии: "connecting" → "connected" → "disconnected".
-            // Самый сильный сигнал в таймлайне обрыва — виден момент перехода
-            // connected → disconnected.
-            onStatusChange: function (s) {
-              dlog("onStatusChange", s && s.status, s && s.status === "disconnected");
             },
             // ПОЛУДУПЛЕКС против эхо-самоперебивания. В режиме websocket нет
             // встроенного AEC, и на динамике микрофон ловит голос самого агента
@@ -297,37 +241,23 @@
             // "speaking"). Открываем микрофон ТОЛЬКО на явном "listening".
             onModeChange: function (m) {
               var listening = m && m.mode === "listening";
-              dlog("onModeChange", m && m.mode);
               muteMic(!listening);
               $("status").textContent = listening ? L.yourTurn : L.agentSpeaking;
             },
-            // ВЕСЬ объект disconnectionDetails: reason ("agent"|"error"|"user"),
-            // context ({type:"close",closeCode,closeReason} | "end_call" |
-            // "max_duration_exceeded" | ...). Это главный ключ к причине обрыва.
-            onDisconnect: function (d) {
-              dlog("onDisconnect", d === undefined ? "(no details)" : d, true);
-              post({ type: "disconnected", details: _safe(d) });
-              cleanup();
-            },
-            onError: function (e, ctx) {
-              dlog("onError", { error: _safe(e), context: ctx !== undefined ? _safe(ctx) : undefined }, true);
+            onDisconnect: function () { post({ type: "disconnected" }); cleanup(); },
+            onError: function (e) {
               $("err").textContent = L.connErr;
-              post({ type: "error", message: _safe(e) });
-            },
-            onMessage: function (msg) {
-              dlog("onMessage", msg && (msg.source || msg.type) ? { source: msg.source, type: msg.type } : msg);
+              post({ type: "error", message: String(e) });
             },
           });
           // Самая ранняя гарантированная точка: conv уже присвоен. Глушим вход
           // СРАЗУ, не дожидаясь onConnect/onModeChange — чтобы первый greeting
           // не утёк в микрофон. Открытие — только по onModeChange("listening").
           muteMic(true);
-          dlog("startSession ok", "сессия создана, mic muted");
         } catch (e) {
           $("err").textContent = L.connErr;
           $("status").textContent = "";
-          dlog("startSession threw", e, true);
-          post({ type: "error", message: _safe(e) });
+          post({ type: "error", message: String(e) });
           cleanup();
         } finally {
           $("startBtn").disabled = false;
@@ -336,7 +266,6 @@
       }
 
       async function stop() {
-        dlog("stop()", "пользователь завершает");
         try { if (conv) await conv.endSession(); } catch (e) {}
         cleanup();
       }
