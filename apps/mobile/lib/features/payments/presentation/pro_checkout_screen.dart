@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:image_picker/image_picker.dart';
 
 import '../../../app/theme.dart';
 import '../../../common/widgets/app_card.dart';
@@ -21,9 +20,8 @@ class _ProCheckoutScreenState extends ConsumerState<ProCheckoutScreen> {
   bool _error = false;
   String? _blockedMsg;
   int _payAmount = 0;
-  bool _sent = false;
-  bool _uploading = false;
-  String? _uploadError;
+  bool _checking = false;
+  bool _notFound = false;
 
   bool get _ru => Localizations.localeOf(context).languageCode == 'ru';
 
@@ -44,7 +42,6 @@ class _ProCheckoutScreenState extends ConsumerState<ProCheckoutScreen> {
       if (!mounted) return;
       setState(() {
         _payAmount = (row?['pay_amount'] as num?)?.toInt() ?? 0;
-        _sent = row?['receipt_path'] != null;
         _loading = false;
       });
     } catch (e) {
@@ -59,37 +56,40 @@ class _ProCheckoutScreenState extends ConsumerState<ProCheckoutScreen> {
     }
   }
 
-  Future<void> _upload() async {
-    final file = await ImagePicker()
-        .pickImage(source: ImageSource.gallery, imageQuality: 80);
-    if (file == null) return;
-    if (await file.length() > 10 * 1024 * 1024) {
-      setState(() =>
-          _uploadError = _ru ? 'Файл больше 10 МБ' : 'Fayl 10 MB dan katta');
-      return;
-    }
+  /// «Я оплатил — Продолжить»: опрашиваем бэкенд ~40 сек. SMS-форвардер находит
+  /// платёж по уникальной сумме → Pro активируется.
+  Future<void> _check() async {
     setState(() {
-      _uploading = true;
-      _uploadError = null;
+      _checking = true;
+      _notFound = false;
     });
-    try {
-      final repo = ref.read(paymentRepositoryProvider);
-      final path = await repo.uploadReceipt(file);
-      await repo.submitProProof(path);
-      if (mounted) {
-        setState(() {
-          _uploading = false;
-          _sent = true;
-        });
+    final repo = ref.read(paymentRepositoryProvider);
+    final deadline = DateTime.now().add(const Duration(seconds: 40));
+    while (DateTime.now().isBefore(deadline)) {
+      bool ok = false;
+      try {
+        ok = await repo.paymentConfirmed(purpose: 'pro', payAmount: _payAmount);
+      } catch (_) {
+        /* сеть моргнула — повторим */
       }
-    } catch (_) {
-      if (mounted) {
-        setState(() {
-          _uploading = false;
-          _uploadError =
-              _ru ? 'Не удалось отправить чек' : 'Chek yuborilmadi';
-        });
+      if (ok) {
+        if (!mounted) return;
+        setState(() => _checking = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_ru ? 'Pro активирован ✓' : 'Pro faollashdi ✓'),
+          ),
+        );
+        Navigator.of(context).maybePop();
+        return;
       }
+      await Future.delayed(const Duration(seconds: 3));
+    }
+    if (mounted) {
+      setState(() {
+        _checking = false;
+        _notFound = true;
+      });
     }
   }
 
@@ -101,62 +101,63 @@ class _ProCheckoutScreenState extends ConsumerState<ProCheckoutScreen> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error
-              ? ErrorState(onRetry: _load)
-              : _blockedMsg != null
-                  ? Padding(
-                      padding: const EdgeInsets.all(AppTokens.s24),
-                      child: Center(
-                        child: Text(_blockedMsg!,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(color: AppColors.zinc500)),
+          ? ErrorState(onRetry: _load)
+          : _blockedMsg != null
+          ? Padding(
+              padding: const EdgeInsets.all(AppTokens.s24),
+              child: Center(
+                child: Text(
+                  _blockedMsg!,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: AppColors.zinc500),
+                ),
+              ),
+            )
+          : ListView(
+              padding: const EdgeInsets.all(AppTokens.s16),
+              children: [
+                AppCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.workspace_premium_rounded,
+                            color: AppColors.accent,
+                          ),
+                          const SizedBox(width: AppTokens.s8),
+                          const Text(
+                            'IBILIM Pro',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
                       ),
-                    )
-                  : ListView(
-                      padding: const EdgeInsets.all(AppTokens.s16),
-                      children: [
-                        AppCard(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(Icons.workspace_premium_rounded,
-                                      color: AppColors.accent),
-                                  const SizedBox(width: AppTokens.s8),
-                                  const Text('IBILIM Pro',
-                                      style: TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.w800)),
-                                ],
-                              ),
-                              const SizedBox(height: AppTokens.s8),
-                              Text(
-                                ru
-                                    ? 'Выше в каталоге, бейдж PRO, больше учеников. На 30 дней.'
-                                    : 'Katalogda yuqorida, PRO belgisi, ko\'proq o\'quvchi. 30 kunga.',
-                                style: const TextStyle(
-                                    color: AppColors.zinc500, height: 1.4),
-                              ),
-                            ],
-                          ),
+                      const SizedBox(height: AppTokens.s8),
+                      Text(
+                        ru
+                            ? 'Выше в каталоге, бейдж PRO, больше учеников. На 30 дней.'
+                            : 'Katalogda yuqorida, PRO belgisi, ko\'proq o\'quvchi. 30 kunga.',
+                        style: const TextStyle(
+                          color: AppColors.zinc500,
+                          height: 1.4,
                         ),
-                        const SizedBox(height: AppTokens.s16),
-                        QrPaymentView(
-                          payAmountTiyin: _payAmount,
-                          sent: _sent,
-                          uploading: _uploading,
-                          onUploadTap: _upload,
-                          errorText: _uploadError,
-                          sentNote: ru
-                              ? 'После проверки Pro активируется автоматически.'
-                              : 'Tekshiruvdan so\'ng Pro avtomatik faollashadi.',
-                          sentAction: FilledButton(
-                            onPressed: () => Navigator.of(context).maybePop(),
-                            child: Text(ru ? 'Готово' : 'Tayyor'),
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppTokens.s16),
+                QrPaymentView(
+                  payAmountTiyin: _payAmount,
+                  checking: _checking,
+                  notFound: _notFound,
+                  onContinue: _check,
+                ),
+              ],
+            ),
     );
   }
 }

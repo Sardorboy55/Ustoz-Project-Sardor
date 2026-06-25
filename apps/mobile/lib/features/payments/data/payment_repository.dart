@@ -28,46 +28,83 @@ class PaymentRepository {
 
   // ---- LESSON ----
   Future<Map<String, dynamic>?> ensureLessonPayment(String bookingId) async =>
-      _row(await _client
-          .rpc('ensure_lesson_payment', params: {'p_booking_id': bookingId}));
+      _row(
+        await _client.rpc(
+          'ensure_lesson_payment',
+          params: {'p_booking_id': bookingId},
+        ),
+      );
 
   Future<void> submitLessonProof(String bookingId, String receiptPath) =>
-      _client.rpc('submit_payment_proof',
-          params: {'p_booking_id': bookingId, 'p_receipt_path': receiptPath});
+      _client.rpc(
+        'submit_payment_proof',
+        params: {'p_booking_id': bookingId, 'p_receipt_path': receiptPath},
+      );
 
-  Future<Map<String, dynamic>?> payWithPackage(String bookingId) async =>
-      _row(await _client
-          .rpc('booking_pay_with_package', params: {'p_booking_id': bookingId}));
+  Future<Map<String, dynamic>?> payWithPackage(String bookingId) async => _row(
+    await _client.rpc(
+      'booking_pay_with_package',
+      params: {'p_booking_id': bookingId},
+    ),
+  );
 
   // ---- PACKAGE ----
   Future<Map<String, dynamic>?> ensurePackagePayment({
     required String teacherSubjectId,
     required int lessons,
     required int durationMin,
-  }) async =>
-      _row(await _client.rpc('ensure_package_payment', params: {
+  }) async => _row(
+    await _client.rpc(
+      'ensure_package_payment',
+      params: {
         'p_teacher_subject_id': teacherSubjectId,
         'p_lessons': lessons,
         'p_duration_min': durationMin,
-      }));
+      },
+    ),
+  );
 
-  Future<void> submitPackageProof(String receiptPath) =>
-      _client.rpc('submit_package_payment',
-          params: {'p_receipt_path': receiptPath});
+  Future<void> submitPackageProof(String receiptPath) => _client.rpc(
+    'submit_package_payment',
+    params: {'p_receipt_path': receiptPath},
+  );
 
   // ---- PRO ----
   Future<Map<String, dynamic>?> ensureProPayment() async =>
       _row(await _client.rpc('ensure_pro_payment'));
 
-  Future<void> submitProProof(String receiptPath) =>
-      _client.rpc('submit_pro_payment', params: {'p_receipt_path': receiptPath});
+  Future<void> submitProProof(String receiptPath) => _client.rpc(
+    'submit_pro_payment',
+    params: {'p_receipt_path': receiptPath},
+  );
+
+  /// True once the manual payment for this purpose+amount is confirmed
+  /// (auto by SMS forwarder, or by admin). Used by the "Я оплатил — Продолжить"
+  /// polling flow instead of uploading a receipt.
+  Future<bool> paymentConfirmed({
+    required String purpose,
+    required int payAmount,
+  }) async {
+    final r = await _client
+        .from('manual_payments')
+        .select('id')
+        .eq('student_id', _uid)
+        .eq('purpose', purpose)
+        .eq('pay_amount', payAmount)
+        .eq('status', 'confirmed')
+        .limit(1)
+        .maybeSingle();
+    return r != null;
+  }
 
   // ---- receipt upload (private bucket; path must start with the uid) ----
   Future<String> uploadReceipt(XFile file) async {
     final safe = file.name.replaceAll(RegExp(r'[^a-zA-Z0-9._-]+'), '_');
     final path = '$_uid/${DateTime.now().microsecondsSinceEpoch}_$safe';
     final bytes = await file.readAsBytes();
-    await _client.storage.from(_bucket).uploadBinary(
+    await _client.storage
+        .from(_bucket)
+        .uploadBinary(
           path,
           bytes,
           fileOptions: FileOptions(upsert: false, contentType: file.mimeType),
@@ -79,8 +116,9 @@ class PaymentRepository {
   Future<List<Map<String, dynamic>>> myPackages() => _client
       .from('student_packages')
       .select(
-          'id, lessons_total, lessons_left, duration_min, price_paid, expires_at, '
-          'teacher_subjects ( subjects ( name_uz, name_ru ) )')
+        'id, lessons_total, lessons_left, duration_min, price_paid, expires_at, '
+        'teacher_subjects ( subjects ( name_uz, name_ru ) )',
+      )
       .eq('student_id', _uid)
       .order('created_at', ascending: false)
       .then((r) => r.cast<Map<String, dynamic>>());

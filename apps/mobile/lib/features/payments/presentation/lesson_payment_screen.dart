@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image_picker/image_picker.dart';
 
 import '../../../app/theme.dart';
 import '../../../common/format.dart';
@@ -26,11 +25,10 @@ class _LessonPaymentScreenState extends ConsumerState<LessonPaymentScreen> {
   bool _loading = true;
   bool _error = false;
   int _payAmount = 0;
-  bool _sent = false;
   int? _packageLeft;
-  bool _uploading = false;
+  bool _checking = false;
+  bool _notFound = false;
   bool _payingPackage = false;
-  String? _uploadError;
 
   bool get _ru => Localizations.localeOf(context).languageCode == 'ru';
 
@@ -53,12 +51,13 @@ class _LessonPaymentScreenState extends ConsumerState<LessonPaymentScreen> {
       final dur = (widget.booking?['duration_min'] as num?)?.toInt();
       if (ts != null && dur != null) {
         left = await repo.matchingPackageLeft(
-            teacherSubjectId: ts, durationMin: dur);
+          teacherSubjectId: ts,
+          durationMin: dur,
+        );
       }
       if (!mounted) return;
       setState(() {
         _payAmount = (row?['pay_amount'] as num?)?.toInt() ?? 0;
-        _sent = row?['receipt_path'] != null;
         _packageLeft = left;
         _loading = false;
       });
@@ -72,56 +71,71 @@ class _LessonPaymentScreenState extends ConsumerState<LessonPaymentScreen> {
     }
   }
 
-  Future<void> _upload() async {
-    final picker = ImagePicker();
-    final file =
-        await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
-    if (file == null) return;
-    if (await file.length() > 10 * 1024 * 1024) {
-      setState(() =>
-          _uploadError = _ru ? 'Файл больше 10 МБ' : 'Fayl 10 MB dan katta');
-      return;
-    }
+  /// «Я оплатил — Продолжить»: опрашиваем бэкенд ~40 сек. SMS-форвардер ловит
+  /// банковское SMS по уникальной сумме и подтверждает платёж → урок открывается.
+  Future<void> _check() async {
     setState(() {
-      _uploading = true;
-      _uploadError = null;
+      _checking = true;
+      _notFound = false;
     });
-    try {
-      final repo = ref.read(paymentRepositoryProvider);
-      final path = await repo.uploadReceipt(file);
-      await repo.submitLessonProof(widget.bookingId, path);
-      if (mounted) {
-        setState(() {
-          _uploading = false;
-          _sent = true;
-        });
+    final repo = ref.read(paymentRepositoryProvider);
+    final deadline = DateTime.now().add(const Duration(seconds: 40));
+    while (DateTime.now().isBefore(deadline)) {
+      bool ok = false;
+      try {
+        ok = await repo.paymentConfirmed(
+          purpose: 'lesson',
+          payAmount: _payAmount,
+        );
+      } catch (_) {
+        /* сеть моргнула — попробуем ещё раз в цикле */
       }
-    } catch (_) {
-      if (mounted) {
-        setState(() {
-          _uploading = false;
-          _uploadError =
-              _ru ? 'Не удалось отправить чек' : 'Chek yuborilmadi';
-        });
+      if (ok) {
+        if (!mounted) return;
+        setState(() => _checking = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              _ru ? 'Оплата прошла ✓ Урок открыт' : 'To\'lov qabul qilindi ✓',
+            ),
+          ),
+        );
+        context.go('/lessons');
+        return;
       }
+      await Future.delayed(const Duration(seconds: 3));
+    }
+    if (mounted) {
+      setState(() {
+        _checking = false;
+        _notFound = true;
+      });
     }
   }
 
   Future<void> _payWithPackage() async {
     setState(() => _payingPackage = true);
     try {
-      await ref.read(paymentRepositoryProvider).payWithPackage(widget.bookingId);
+      await ref
+          .read(paymentRepositoryProvider)
+          .payWithPackage(widget.bookingId);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(_ru ? 'Оплачено пакетом ✓' : 'Paket bilan to\'landi ✓'),
-      ));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_ru ? 'Оплачено пакетом ✓' : 'Paket bilan to\'landi ✓'),
+        ),
+      );
       context.go('/lessons');
     } catch (_) {
       if (mounted) {
         setState(() => _payingPackage = false);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(_ru ? 'Не удалось списать пакет' : 'Paket yechilmadi'),
-        ));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              _ru ? 'Не удалось списать пакет' : 'Paket yechilmadi',
+            ),
+          ),
+        );
       }
     }
   }
@@ -134,32 +148,24 @@ class _LessonPaymentScreenState extends ConsumerState<LessonPaymentScreen> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error
-              ? ErrorState(onRetry: _load)
-              : ListView(
-                  padding: const EdgeInsets.all(AppTokens.s16),
-                  children: [
-                    _summary(ru),
-                    const SizedBox(height: AppTokens.s16),
-                    if (_packageLeft != null && !_sent) ...[
-                      _payWithPackageCard(ru),
-                      const SizedBox(height: AppTokens.s16),
-                    ],
-                    QrPaymentView(
-                      payAmountTiyin: _payAmount,
-                      sent: _sent,
-                      uploading: _uploading,
-                      onUploadTap: _upload,
-                      errorText: _uploadError,
-                      sentNote: ru
-                          ? 'Как только подтвердим оплату — урок откроется.'
-                          : 'To\'lov tasdiqlangach, dars ochiladi.',
-                      sentAction: FilledButton(
-                        onPressed: () => context.go('/lessons'),
-                        child: Text(ru ? 'Мои уроки' : 'Mening darslarim'),
-                      ),
-                    ),
-                  ],
+          ? ErrorState(onRetry: _load)
+          : ListView(
+              padding: const EdgeInsets.all(AppTokens.s16),
+              children: [
+                _summary(ru),
+                const SizedBox(height: AppTokens.s16),
+                if (_packageLeft != null) ...[
+                  _payWithPackageCard(ru),
+                  const SizedBox(height: AppTokens.s16),
+                ],
+                QrPaymentView(
+                  payAmountTiyin: _payAmount,
+                  checking: _checking,
+                  notFound: _notFound,
+                  onContinue: _check,
                 ),
+              ],
+            ),
     );
   }
 
@@ -170,8 +176,10 @@ class _LessonPaymentScreenState extends ConsumerState<LessonPaymentScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(ru ? 'К оплате' : 'To\'lovga',
-              style: const TextStyle(fontSize: 13, color: AppColors.zinc500)),
+          Text(
+            ru ? 'К оплате' : 'To\'lovga',
+            style: const TextStyle(fontSize: 13, color: AppColors.zinc500),
+          ),
           const SizedBox(height: 2),
           Text(
             formatTiyin(_payAmount, locale),
@@ -181,12 +189,18 @@ class _LessonPaymentScreenState extends ConsumerState<LessonPaymentScreen> {
             const SizedBox(height: AppTokens.s8),
             Row(
               children: [
-                const Icon(Icons.schedule_rounded,
-                    size: 16, color: AppColors.zinc500),
+                const Icon(
+                  Icons.schedule_rounded,
+                  size: 16,
+                  color: AppColors.zinc500,
+                ),
                 const SizedBox(width: 6),
                 Text(
                   b['start_at'].toString(),
-                  style: const TextStyle(fontSize: 13, color: AppColors.zinc700),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.zinc700,
+                  ),
                 ),
               ],
             ),
@@ -225,14 +239,21 @@ class _LessonPaymentScreenState extends ConsumerState<LessonPaymentScreen> {
           const SizedBox(height: AppTokens.s12),
           FilledButton(
             onPressed: _payingPackage ? null : _payWithPackage,
-            style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+            style: FilledButton.styleFrom(
+              minimumSize: const Size.fromHeight(48),
+            ),
             child: _payingPackage
                 ? const SizedBox(
                     width: 18,
                     height: 18,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: Colors.white))
-                : Text(ru ? 'Списать 1 урок из пакета' : 'Paketdan 1 dars yechish'),
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : Text(
+                    ru ? 'Списать 1 урок из пакета' : 'Paketdan 1 dars yechish',
+                  ),
           ),
         ],
       ),

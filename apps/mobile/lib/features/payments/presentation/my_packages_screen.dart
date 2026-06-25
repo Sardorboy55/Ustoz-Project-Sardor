@@ -70,11 +70,11 @@ class _MyPackagesScreenState extends ConsumerState<MyPackagesScreen> {
   }
 
   Widget _card(Map<String, dynamic> p, bool ru, Locale locale) {
-    final subj = ((p['teacher_subjects'] as Map?)?['subjects'] as Map?)
+    final subj =
+        ((p['teacher_subjects'] as Map?)?['subjects'] as Map?)
             ?.cast<String, dynamic>() ??
         const {};
-    final name =
-        (ru ? subj['name_ru'] : subj['name_uz']) as String? ?? '';
+    final name = (ru ? subj['name_ru'] : subj['name_uz']) as String? ?? '';
     final left = (p['lessons_left'] as num?)?.toInt() ?? 0;
     final total = (p['lessons_total'] as num?)?.toInt() ?? 0;
     final dur = (p['duration_min'] as num?)?.toInt() ?? 0;
@@ -90,13 +90,19 @@ class _MyPackagesScreenState extends ConsumerState<MyPackagesScreen> {
             children: [
               Expanded(
                 child: Text(
-                  name.isEmpty ? (ru ? 'Пакет уроков' : 'Darslar paketi') : name,
+                  name.isEmpty
+                      ? (ru ? 'Пакет уроков' : 'Darslar paketi')
+                      : name,
                   style: const TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.w700),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
-              Text('$dur ${ru ? "мин" : "min"}',
-                  style: const TextStyle(color: AppColors.zinc500)),
+              Text(
+                '$dur ${ru ? "мин" : "min"}',
+                style: const TextStyle(color: AppColors.zinc500),
+              ),
             ],
           ),
           const SizedBox(height: AppTokens.s8),
