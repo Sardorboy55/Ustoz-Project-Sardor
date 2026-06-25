@@ -44,8 +44,7 @@ class _BecomeTeacherScreenState extends ConsumerState<BecomeTeacherScreen> {
   bool _busy = false;
   bool _loading = true;
 
-  bool get _ru =>
-      Localizations.localeOf(context).languageCode == 'ru';
+  bool get _ru => Localizations.localeOf(context).languageCode == 'ru';
 
   @override
   void initState() {
@@ -73,13 +72,23 @@ class _BecomeTeacherScreenState extends ConsumerState<BecomeTeacherScreen> {
         _bio.text = (app['bio'] as String?) ?? '';
         _experience.text = '${app['experience_years'] ?? 0}';
         _subjectId = app['subject_id'] as String?;
-        final status = (app['status'] as String?) ?? 'draft';
+        final status = (app['status'] as String?) ?? 'interviewing';
         _existingStatus = status;
         _reviewNote = app['review_note'] as String?;
-        // Anything past the draft stage = already submitted → show status.
-        if (status != 'draft') _stage = _Stage.submitted;
+        _conversationId = app['conversation_id'] as String?;
+        // 'interviewing' = открытый черновик (анкета сохранена, заявка ещё НЕ
+        // отправлена) → продолжаем флоу с документов, а НЕ показываем «на
+        // рассмотрении». Только реально отправленные статусы
+        // (pending_review/approved/rejected) дают submitted-вид.
+        if (status == 'interviewing') {
+          _stage = _appId != null ? _Stage.documents : _Stage.anketa;
+        } else {
+          _stage = _Stage.submitted;
+        }
       }
-    } catch (_) {/* offline / first time — start clean */}
+    } catch (_) {
+      /* offline / first time — start clean */
+    }
     if (mounted) setState(() => _loading = false);
   }
 
@@ -108,7 +117,11 @@ class _BecomeTeacherScreenState extends ConsumerState<BecomeTeacherScreen> {
       if (_appId == null) throw Exception('no application id');
       setState(() => _stage = _Stage.documents);
     } catch (e) {
-      _snack(_ru ? 'Не удалось сохранить. Попробуйте снова.' : 'Saqlanmadi. Qayta urinib koʻring.');
+      _snack(
+        _ru
+            ? 'Не удалось сохранить. Попробуйте снова.'
+            : 'Saqlanmadi. Qayta urinib koʻring.',
+      );
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -166,7 +179,7 @@ class _BecomeTeacherScreenState extends ConsumerState<BecomeTeacherScreen> {
       final repo = ref.read(teacherApplicationRepositoryProvider);
       await repo.submit(_appId!, _conversationId);
       setState(() {
-        _existingStatus = 'submitted';
+        _existingStatus = 'pending_review';
         _stage = _Stage.submitted;
       });
     } catch (e) {
@@ -209,17 +222,23 @@ class _BecomeTeacherScreenState extends ConsumerState<BecomeTeacherScreen> {
             CircleAvatar(
               radius: 14,
               backgroundColor: on ? AppColors.primary : AppColors.zinc200,
-              child: Text('${i + 1}',
-                  style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: on ? Colors.white : AppColors.zinc500)),
+              child: Text(
+                '${i + 1}',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: on ? Colors.white : AppColors.zinc500,
+                ),
+              ),
             ),
             const SizedBox(height: 4),
-            Text(label,
-                style: TextStyle(
-                    fontSize: 11,
-                    color: on ? AppColors.zinc900 : AppColors.zinc400)),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                color: on ? AppColors.zinc900 : AppColors.zinc400,
+              ),
+            ),
           ],
         ),
       );
@@ -247,14 +266,17 @@ class _BecomeTeacherScreenState extends ConsumerState<BecomeTeacherScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _steps(0),
-          Text(ru ? 'Расскажите о себе' : 'Oʻzingiz haqingizda',
-              style: Theme.of(context).textTheme.titleLarge),
+          Text(
+            ru ? 'Расскажите о себе' : 'Oʻzingiz haqingizda',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
           const SizedBox(height: AppTokens.s16),
           TextFormField(
             controller: _fullName,
             textCapitalization: TextCapitalization.words,
             decoration: InputDecoration(
-                labelText: ru ? 'Имя и фамилия' : 'Ism familiya'),
+              labelText: ru ? 'Имя и фамилия' : 'Ism familiya',
+            ),
             validator: (v) => (v == null || v.trim().length < 2)
                 ? (ru ? 'Укажите имя' : 'Ismni kiriting')
                 : null,
@@ -262,12 +284,13 @@ class _BecomeTeacherScreenState extends ConsumerState<BecomeTeacherScreen> {
           const SizedBox(height: AppTokens.s12),
           subjects.when(
             loading: () => const LinearProgressIndicator(),
-            error: (_, _) => Text(ru ? 'Не удалось загрузить предметы' : 'Fanlar yuklanmadi'),
+            error: (_, _) => Text(
+              ru ? 'Не удалось загрузить предметы' : 'Fanlar yuklanmadi',
+            ),
             data: (list) => DropdownButtonFormField<String>(
               initialValue: _subjectId,
               isExpanded: true,
-              decoration:
-                  InputDecoration(labelText: ru ? 'Предмет' : 'Fan'),
+              decoration: InputDecoration(labelText: ru ? 'Предмет' : 'Fan'),
               items: [
                 for (final s in list)
                   DropdownMenuItem(
@@ -281,11 +304,14 @@ class _BecomeTeacherScreenState extends ConsumerState<BecomeTeacherScreen> {
                   ),
               ],
               onChanged: (v) {
-                final s = list.firstWhere((e) => e['id'] == v,
-                    orElse: () => const {});
+                final s = list.firstWhere(
+                  (e) => e['id'] == v,
+                  orElse: () => const {},
+                );
                 setState(() {
                   _subjectId = v;
-                  _subjectName = ((ru ? s['name_ru'] : s['name_uz']) as String?) ??
+                  _subjectName =
+                      ((ru ? s['name_ru'] : s['name_uz']) as String?) ??
                       (s['name_uz'] as String?) ??
                       '';
                 });
@@ -316,7 +342,8 @@ class _BecomeTeacherScreenState extends ConsumerState<BecomeTeacherScreen> {
             controller: _experience,
             keyboardType: TextInputType.number,
             decoration: InputDecoration(
-                labelText: ru ? 'Опыт (лет)' : 'Tajriba (yil)'),
+              labelText: ru ? 'Опыт (лет)' : 'Tajriba (yil)',
+            ),
           ),
           const SizedBox(height: AppTokens.s24),
           FilledButton(
@@ -326,7 +353,10 @@ class _BecomeTeacherScreenState extends ConsumerState<BecomeTeacherScreen> {
                     height: 20,
                     width: 20,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: Colors.white))
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
                 : Text(ru ? 'Продолжить' : 'Davom etish'),
           ),
         ],
@@ -340,8 +370,10 @@ class _BecomeTeacherScreenState extends ConsumerState<BecomeTeacherScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _steps(1),
-        Text(ru ? 'Документы и дипломы' : 'Hujjat va diplomlar',
-            style: Theme.of(context).textTheme.titleLarge),
+        Text(
+          ru ? 'Документы и дипломы' : 'Hujjat va diplomlar',
+          style: Theme.of(context).textTheme.titleLarge,
+        ),
         const SizedBox(height: AppTokens.s8),
         Text(
           ru
@@ -358,9 +390,7 @@ class _BecomeTeacherScreenState extends ConsumerState<BecomeTeacherScreen> {
               title: Text(d.name, overflow: TextOverflow.ellipsis),
               trailing: IconButton(
                 icon: const Icon(Icons.close, size: 20),
-                onPressed: _busy
-                    ? null
-                    : () => setState(() => _docs.remove(d)),
+                onPressed: _busy ? null : () => setState(() => _docs.remove(d)),
               ),
             ),
           ),
@@ -377,13 +407,18 @@ class _BecomeTeacherScreenState extends ConsumerState<BecomeTeacherScreen> {
                   height: 20,
                   width: 20,
                   child: CircularProgressIndicator(
-                      strokeWidth: 2, color: Colors.white))
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
               : Text(ru ? 'Продолжить' : 'Davom etish'),
         ),
         const SizedBox(height: AppTokens.s8),
         Center(
           child: TextButton(
-            onPressed: _busy ? null : () => setState(() => _stage = _Stage.anketa),
+            onPressed: _busy
+                ? null
+                : () => setState(() => _stage = _Stage.anketa),
             child: Text(ru ? 'Назад' : 'Orqaga'),
           ),
         ),
@@ -398,8 +433,10 @@ class _BecomeTeacherScreenState extends ConsumerState<BecomeTeacherScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _steps(2),
-        Text(ru ? 'Голосовое собеседование' : 'Ovozli suhbat',
-            style: Theme.of(context).textTheme.titleLarge),
+        Text(
+          ru ? 'Голосовое собеседование' : 'Ovozli suhbat',
+          style: Theme.of(context).textTheme.titleLarge,
+        ),
         const SizedBox(height: AppTokens.s8),
         Text(
           ru
@@ -416,14 +453,18 @@ class _BecomeTeacherScreenState extends ConsumerState<BecomeTeacherScreen> {
           ),
           child: Row(
             children: [
-              Icon(done ? Icons.check_circle : Icons.mic_none,
-                  color: done ? AppColors.primary : AppColors.zinc500),
+              Icon(
+                done ? Icons.check_circle : Icons.mic_none,
+                color: done ? AppColors.primary : AppColors.zinc500,
+              ),
               const SizedBox(width: AppTokens.s12),
               Expanded(
                 child: Text(
                   done
                       ? (ru ? 'Собеседование пройдено' : 'Suhbat oʻtildi')
-                      : (ru ? 'Собеседование не пройдено' : 'Suhbat oʻtilmagan'),
+                      : (ru
+                            ? 'Собеседование не пройдено'
+                            : 'Suhbat oʻtilmagan'),
                   style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
               ),
@@ -434,21 +475,35 @@ class _BecomeTeacherScreenState extends ConsumerState<BecomeTeacherScreen> {
         OutlinedButton.icon(
           onPressed: _busy ? null : _startInterview,
           icon: const Icon(Icons.record_voice_over),
-          label: Text(done
-              ? (ru ? 'Пройти заново' : 'Qayta oʻtish')
-              : (ru ? 'Начать собеседование' : 'Suhbatni boshlash')),
+          label: Text(
+            done
+                ? (ru ? 'Пройти заново' : 'Qayta oʻtish')
+                : (ru ? 'Начать собеседование' : 'Suhbatni boshlash'),
+          ),
         ),
         const SizedBox(height: AppTokens.s24),
         FilledButton(
-          onPressed: _busy ? null : _submit,
+          // Собеседование обязательно: отправка только после захвата
+          // conversation_id (его возвращает экран WebView-собеседования).
+          onPressed: (_busy || !done) ? null : _submit,
           child: _busy
               ? const SizedBox(
                   height: 20,
                   width: 20,
                   child: CircularProgressIndicator(
-                      strokeWidth: 2, color: Colors.white))
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
               : Text(ru ? 'Отправить заявку' : 'Arizani yuborish'),
         ),
+        if (!done) ...[
+          const SizedBox(height: AppTokens.s8),
+          Text(
+            ru ? 'Сначала пройдите собеседование' : 'Avval suhbatdan oʻting',
+            style: const TextStyle(color: AppColors.zinc500, fontSize: 13),
+          ),
+        ],
         const SizedBox(height: AppTokens.s8),
         Center(
           child: TextButton(
@@ -474,44 +529,49 @@ class _BecomeTeacherScreenState extends ConsumerState<BecomeTeacherScreen> {
             ru ? 'Заявка одобрена' : 'Ariza tasdiqlandi',
             ru
                 ? 'Поздравляем! Вы можете настроить профиль преподавателя.'
-                : 'Tabriklaymiz! Oʻqituvchi profilini sozlashingiz mumkin.'
+                : 'Tabriklaymiz! Oʻqituvchi profilini sozlashingiz mumkin.',
           )
         : rejected
-            ? (
-                Icons.cancel,
-                AppColors.danger,
-                ru ? 'Заявка отклонена' : 'Ariza rad etildi',
-                _reviewNote?.isNotEmpty == true
-                    ? _reviewNote!
-                    : (ru
-                        ? 'К сожалению, заявка отклонена. Вы можете подать новую.'
-                        : 'Afsuski, ariza rad etildi. Yangi ariza yuborishingiz mumkin.')
-              )
-            : (
-                Icons.hourglass_top,
-                AppColors.primary,
-                ru ? 'Заявка на рассмотрении' : 'Ariza koʻrib chiqilmoqda',
-                ru
-                    ? 'Мы получили вашу заявку и собеседование. Ответ придёт в уведомлениях.'
-                    : 'Arizangiz va suhbat qabul qilindi. Javob bildirishnomalarda keladi.'
-              );
+        ? (
+            Icons.cancel,
+            AppColors.danger,
+            ru ? 'Заявка отклонена' : 'Ariza rad etildi',
+            _reviewNote?.isNotEmpty == true
+                ? _reviewNote!
+                : (ru
+                      ? 'К сожалению, заявка отклонена. Вы можете подать новую.'
+                      : 'Afsuski, ariza rad etildi. Yangi ariza yuborishingiz mumkin.'),
+          )
+        : (
+            Icons.hourglass_top,
+            AppColors.primary,
+            ru ? 'Заявка на рассмотрении' : 'Ariza koʻrib chiqilmoqda',
+            ru
+                ? 'Мы получили вашу заявку и собеседование. Ответ придёт в уведомлениях.'
+                : 'Arizangiz va suhbat qabul qilindi. Javob bildirishnomalarda keladi.',
+          );
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppTokens.s32),
       child: Column(
         children: [
           CircleAvatar(
-              radius: 36,
-              backgroundColor: color.withValues(alpha: 0.12),
-              child: Icon(icon, color: color, size: 38)),
+            radius: 36,
+            backgroundColor: color.withValues(alpha: 0.12),
+            child: Icon(icon, color: color, size: 38),
+          ),
           const SizedBox(height: AppTokens.s16),
-          Text(title,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.titleLarge),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
           const SizedBox(height: AppTokens.s8),
-          Text(body,
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: AppColors.zinc500)),
+          Text(
+            body,
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: AppColors.zinc500),
+          ),
           const SizedBox(height: AppTokens.s24),
           if (rejected)
             FilledButton(

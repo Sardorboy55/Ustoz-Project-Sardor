@@ -16,7 +16,8 @@ class TeacherApplicationRepository {
   static const _bucket = 'teacher-docs';
 
   Map<String, dynamic>? _row(dynamic d) {
-    if (d is List) return d.isEmpty ? null : (d.first as Map).cast<String, dynamic>();
+    if (d is List)
+      return d.isEmpty ? null : (d.first as Map).cast<String, dynamic>();
     if (d is Map) return d.cast<String, dynamic>();
     return null;
   }
@@ -29,13 +30,16 @@ class TeacherApplicationRepository {
     String bio = '',
     int experienceYears = 0,
   }) async {
-    final res = await _client.rpc('upsert_teacher_application', params: {
-      'p_subject_id': subjectId,
-      'p_full_name': fullName,
-      'p_headline': headline,
-      'p_bio': bio,
-      'p_experience_years': experienceYears,
-    });
+    final res = await _client.rpc(
+      'upsert_teacher_application',
+      params: {
+        'p_subject_id': subjectId,
+        'p_full_name': fullName,
+        'p_headline': headline,
+        'p_bio': bio,
+        'p_experience_years': experienceYears,
+      },
+    );
     return _row(res)?['id'] as String?;
   }
 
@@ -44,7 +48,9 @@ class TeacherApplicationRepository {
     final safe = file.name.replaceAll(RegExp(r'[^a-zA-Z0-9._-]+'), '_');
     final path = '$_uid/${DateTime.now().microsecondsSinceEpoch}_$safe';
     final bytes = await file.readAsBytes();
-    await _client.storage.from(_bucket).uploadBinary(
+    await _client.storage
+        .from(_bucket)
+        .uploadBinary(
           path,
           bytes,
           fileOptions: FileOptions(upsert: false, contentType: file.mimeType),
@@ -54,24 +60,28 @@ class TeacherApplicationRepository {
 
   /// Step 2 — attach the uploaded document paths to the application.
   Future<void> setDocuments(String applicationId, List<String> paths) =>
-      _client.rpc('set_teacher_application_documents', params: {
-        'p_application_id': applicationId,
-        'p_document_urls': paths,
-      });
+      _client.rpc(
+        'set_teacher_application_documents',
+        params: {'p_application_id': applicationId, 'p_document_urls': paths},
+      );
 
   /// Step 3 — submit for review with the interview conversation id.
   Future<void> submit(String applicationId, String? conversationId) =>
-      _client.rpc('submit_teacher_application', params: {
-        'p_application_id': applicationId,
-        'p_conversation_id': conversationId,
-      });
+      _client.rpc(
+        'submit_teacher_application',
+        params: {
+          'p_application_id': applicationId,
+          'p_conversation_id': conversationId,
+        },
+      );
 
   /// The latest application (to resume / show status), or null.
   Future<Map<String, dynamic>?> myApplication() => _client
       .from('teacher_applications')
       .select(
-          'id, status, subject_id, full_name, headline, bio, experience_years, '
-          'document_urls, review_note')
+        'id, status, subject_id, full_name, headline, bio, experience_years, '
+        'document_urls, review_note, conversation_id',
+      )
       .order('created_at', ascending: false)
       .limit(1)
       .maybeSingle();
