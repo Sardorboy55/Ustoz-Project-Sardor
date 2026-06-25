@@ -22,7 +22,13 @@ export const metadata: Metadata = {
   description:
     "O'zbekiston uchun ustozlar va mutaxassislar marketpleysi: tillar, maktab fanlari, IT, psixologiya va boshqalar.",
   manifest: "/manifest.webmanifest",
-  icons: { apple: "/apple-icon.png" },
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+    ],
+    apple: "/apple-icon.png",
+  },
   appleWebApp: { capable: true, statusBarStyle: "default", title: "IBILIM" },
 };
 
