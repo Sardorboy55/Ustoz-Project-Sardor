@@ -1,8 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
-  BadgeCheck,
   CalendarPlus,
   CalendarX2,
   Check,
@@ -10,7 +9,6 @@ import {
   Clock,
   GraduationCap,
   Package,
-  Paperclip,
   QrCode,
   ShieldCheck,
   Star,
@@ -93,11 +91,9 @@ export function BookingDetail({ bookingId }: { bookingId: string }) {
   const [payingPkg, setPayingPkg] = useState(false);
   const [pkgErr, setPkgErr] = useState(false);
   const [paidModal, setPaidModal] = useState(false);
-  const [proofSent, setProofSent] = useState(false);
   const [payAmount, setPayAmount] = useState<number | null>(null);
-  const [uploadingProof, setUploadingProof] = useState(false);
-  const [proofErr, setProofErr] = useState<string | null>(null);
-  const receiptRef = useRef<HTMLInputElement>(null);
+  const [checking, setChecking] = useState(false);
+  const [checkFailed, setCheckFailed] = useState(false);
 
   const load = useCallback(async () => {
     const supabase = createClient();
@@ -126,57 +122,45 @@ export function BookingDetail({ bookingId }: { bookingId: string }) {
     setBooking(data as unknown as BookingRow);
     const bk = data as unknown as BookingRow;
     if (bk.status === "pending_payment" && bk.price > 0) {
-      // Создаём/получаем заявку с уникальной суммой-кодом + узнаём, отправлен ли чек.
+      // Создаём/получаем заявку с уникальной суммой-кодом — по ней SMS-форвардер
+      // опознает платёж и подтвердит автоматически.
       const { data: pay } = await supabase.rpc("ensure_lesson_payment", {
         p_booking_id: bookingId,
       });
       const row = (Array.isArray(pay) ? pay[0] : pay) as
-        | { pay_amount: number | null; receipt_path: string | null }
+        | { pay_amount: number | null }
         | null;
       if (row) {
         setPayAmount(row.pay_amount);
-        setProofSent(!!row.receipt_path);
       }
     }
     setPhase("ready");
   }, [bookingId, router]);
 
-  // Загрузка чека → submit_payment_proof → «на проверке».
-  const onReceipt = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (receiptRef.current) receiptRef.current.value = "";
-    if (!file || !uid) return;
-    if (file.size > 10 * 1024 * 1024) {
-      setProofErr("Файл больше 10 МБ.");
-      return;
-    }
-    setUploadingProof(true);
-    setProofErr(null);
+  // «Я оплатил — Продолжить»: опрашиваем статус брони ~40 сек. SMS-форвардер
+  // ловит банковское SMS по уникальной сумме и подтверждает платёж на сервере →
+  // бронь выходит из pending_payment. Никакого чека и админа.
+  const checkPayment = async () => {
+    setChecking(true);
+    setCheckFailed(false);
     const supabase = createClient();
-    const safe = file.name.replace(/[^a-zA-Z0-9._-]+/g, "_");
-    const path = `${uid}/${crypto.randomUUID()}-${safe}`;
-    const { error: upErr } = await supabase.storage
-      .from("payment-receipts")
-      .upload(path, file, { upsert: false });
-    if (upErr) {
-      setUploadingProof(false);
-      setProofErr("Не удалось загрузить файл.");
-      return;
+    const deadline = Date.now() + 40_000;
+    while (Date.now() < deadline) {
+      const { data } = await supabase
+        .from("bookings")
+        .select("status")
+        .eq("id", bookingId)
+        .maybeSingle();
+      if (data && data.status !== "pending_payment") {
+        await load(); // платёж нашёлся → перерисуем как оплаченную
+        setChecking(false);
+        setPaidModal(true);
+        return;
+      }
+      await new Promise((r) => setTimeout(r, 3000));
     }
-    const { error: rpcErr } = await supabase.rpc("submit_payment_proof", {
-      p_booking_id: bookingId,
-      p_receipt_path: path,
-    });
-    setUploadingProof(false);
-    if (rpcErr) {
-      setProofErr(
-        rpcErr.message.includes("BOOKING_NOT_PENDING")
-          ? "Эта бронь уже оплачена или не ждёт оплаты."
-          : `Не удалось отправить чек: ${rpcErr.message}`,
-      );
-      return;
-    }
-    setProofSent(true);
+    setChecking(false);
+    setCheckFailed(true);
   };
 
   useEffect(() => {
@@ -468,86 +452,69 @@ export function BookingDetail({ bookingId }: { bookingId: string }) {
               </h2>
             </div>
 
-            {proofSent ? (
-              <div className="mt-4 flex flex-col items-center rounded-2xl bg-amber-50 px-5 py-7 text-center">
-                <BadgeCheck size={34} className="text-amber-600" aria-hidden="true" />
-                <p className="mt-3 text-lg font-bold text-amber-800">
-                  Оплата на проверке
-                </p>
-                <p className="mt-1 max-w-xs text-sm text-amber-700">
-                  Чек отправлен. Как только мы подтвердим оплату —{" "}
-                  <span className="font-semibold">урок откроется</span>, и вы
-                  сможете зайти на занятие. Обычно это занимает немного времени.
-                </p>
-                <ButtonLink
-                  href="/cabinet/lessons"
-                  variant="secondary"
-                  className="mt-4"
-                >
-                  Мои уроки
-                </ButtonLink>
-              </div>
-            ) : (
-              <div className="mt-4 flex flex-col items-center text-center">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="/paynet-qr.png"
-                  alt="QR Paynet"
-                  onError={(e) => {
-                    e.currentTarget.style.display = "none";
-                  }}
-                  className="h-52 w-52 rounded-2xl border border-zinc-200 bg-white object-contain"
-                />
-                <p className="mt-4 text-sm text-zinc-700">
-                  Отсканируйте QR в приложении{" "}
-                  <span className="font-semibold">Paynet</span> (или оплатите на
-                  счёт ниже){" "}
-                  <span className="font-semibold text-brand-700">
-                    ровно на {payLabel}
+            <div className="mt-4 flex flex-col items-center text-center">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/paynet-qr.png"
+                alt="QR Paynet"
+                onError={(e) => {
+                  e.currentTarget.style.display = "none";
+                }}
+                className="h-52 w-52 rounded-2xl border border-zinc-200 bg-white object-contain"
+              />
+              <p className="mt-4 text-sm text-zinc-700">
+                Отсканируйте QR в приложении{" "}
+                <span className="font-semibold">Paynet</span> (или оплатите на
+                счёт ниже){" "}
+                <span className="font-semibold text-brand-700">
+                  ровно на {payLabel}
+                </span>
+                .
+              </p>
+              <div className="mt-3 w-full rounded-xl bg-zinc-50 px-4 py-3 text-sm">
+                <div className="flex justify-between gap-3">
+                  <span className="text-zinc-500">Получатель</span>
+                  <span className="font-semibold text-zinc-900">
+                    TEMUR BASHIROV
                   </span>
-                  .
-                </p>
-                <div className="mt-3 w-full rounded-xl bg-zinc-50 px-4 py-3 text-sm">
-                  <div className="flex justify-between gap-3">
-                    <span className="text-zinc-500">Получатель</span>
-                    <span className="font-semibold text-zinc-900">
-                      TEMUR BASHIROV
-                    </span>
-                  </div>
-                  <div className="mt-1 flex justify-between gap-3">
-                    <span className="text-zinc-500">Счёт Paynet</span>
-                    <span className="font-mono font-semibold text-zinc-900">
-                      8888012884806485
-                    </span>
-                  </div>
                 </div>
-
-                <input
-                  ref={receiptRef}
-                  type="file"
-                  accept="image/*,application/pdf"
-                  onChange={onReceipt}
-                  className="hidden"
-                />
-                <Button
-                  className="mt-4 w-full"
-                  loading={uploadingProof}
-                  onClick={() => receiptRef.current?.click()}
-                >
-                  <Paperclip size={16} aria-hidden="true" />
-                  Я оплатил — загрузить чек
-                </Button>
-                {proofErr && (
-                  <p role="alert" className="mt-2 text-sm font-medium text-red-600">
-                    {proofErr}
-                  </p>
-                )}
-                <p className="mt-2 text-xs text-zinc-500">
-                  После проверки администратором доступ к уроку откроется
-                  автоматически.
-                </p>
+                <div className="mt-1 flex justify-between gap-3">
+                  <span className="text-zinc-500">Счёт Paynet</span>
+                  <span className="font-mono font-semibold text-zinc-900">
+                    8888012884806485
+                  </span>
+                </div>
               </div>
-            )}
+
+              <Button
+                className="mt-4 w-full"
+                loading={checking}
+                onClick={checkPayment}
+              >
+                <Check size={16} aria-hidden="true" />
+                {checking ? "Проверяем платёж…" : "Я оплатил — Продолжить"}
+              </Button>
+
+              {checkFailed && (
+                <div className="mt-3 w-full rounded-xl bg-amber-50 px-4 py-3.5 text-left">
+                  <p className="text-sm font-bold text-amber-800">
+                    Платёж пока не найден
+                  </p>
+                  <p className="mt-1 text-xs leading-relaxed text-amber-700">
+                    Если вы только что оплатили — банковское SMS может прийти с
+                    небольшой задержкой. Подождите минуту и нажмите{" "}
+                    <span className="font-semibold">«Продолжить»</span> ещё раз.
+                    Проверьте, что отправили{" "}
+                    <span className="font-semibold">ровно {payLabel}</span>.
+                  </p>
+                </div>
+              )}
+
+              <p className="mt-2 text-xs text-zinc-500">
+                После оплаты нажмите «Продолжить» — мы найдём ваш платёж по сумме
+                и сразу откроем урок.
+              </p>
+            </div>
           </div>
 
           <div className="mt-5 flex items-start gap-2.5 rounded-xl bg-emerald-50 p-3.5">
