@@ -123,11 +123,15 @@
       }
 
       // --- Загрузка SDK: динамический import() с fallback-цепочкой ---
-      // jsDelivr обычно доступнее в UZ; пробуем источники по очереди.
+      // САМОХОСТ ПЕРВЫМ: узбекская сеть режет сторонние CDN, но наш домен
+      // достаёт (страница же грузится). Бандл собран из @elevenlabs/client@1.11.2
+      // (esbuild, ESM, self-contained). CDN — только запасной путь.
       var SDK_SOURCES = [
-        "https://cdn.jsdelivr.net/npm/@elevenlabs/client@0.1.4/+esm",
-        "https://esm.sh/@elevenlabs/client@0.1.4",
-        "https://unpkg.com/@elevenlabs/client@0.1.4?module",
+        "/vendor/elevenlabs-client.js",
+        "https://ibilim.uz/vendor/elevenlabs-client.js",
+        "https://cdn.jsdelivr.net/npm/@elevenlabs/client@1.11.2/+esm",
+        "https://esm.sh/@elevenlabs/client@1.11.2",
+        "https://unpkg.com/@elevenlabs/client@1.11.2?module",
       ];
 
       var Conversation = null;
