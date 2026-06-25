@@ -70,6 +70,8 @@
     }
 
     let conv = null;
+    let probeStream = null;
+    let busy = false;
 
     function setLive(live) {
       $("mic").classList.toggle("live", live);
@@ -79,15 +81,32 @@
       $("hint").textContent = live ? L.liveHint : L.hint;
     }
 
+    function releaseProbe() {
+      try { if (probeStream) probeStream.getTracks().forEach((t) => t.stop()); } catch (e) {}
+      probeStream = null;
+    }
+
+    function cleanup() { conv = null; releaseProbe(); setLive(false); }
+
     async function start() {
+      // Один сеанс за раз. Без этого повторное нажатие плодило параллельные
+      // сессии, которые дрались за микрофон и обрывали голос агента.
+      if (busy || conv) return;
+      busy = true;
+      $("startBtn").disabled = true;
       $("err").textContent = "";
-      // probe mic then release (avoids audio-device contention with the SDK)
+      // Микрофон с ЭХОПОДАВЛЕНИЕМ. В режиме websocket (UZ режет WebRTC) нет
+      // встроенного AEC — без этого агент слышит свой голос из динамика,
+      // срабатывает «перебивание» и приветствие обрывается в начале. Поток
+      // держим живым весь сеанс, чтобы устройство оставалось в режиме AEC.
       try {
-        const p = await navigator.mediaDevices.getUserMedia({ audio: true });
-        p.getTracks().forEach((t) => t.stop());
+        probeStream = await navigator.mediaDevices.getUserMedia({
+          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+        });
       } catch (e) {
         $("err").textContent = L.micErr;
         post({ type: "error", reason: "mic" });
+        $("startBtn").disabled = false; busy = false;
         return;
       }
       try {
@@ -100,16 +119,23 @@
             post({ type: "connected", conversationId: id });
             setLive(true);
           },
-          onDisconnect: () => { post({ type: "disconnected" }); setLive(false); },
+          onDisconnect: () => { post({ type: "disconnected" }); cleanup(); },
           onError: (e) => { $("err").textContent = L.connErr; post({ type: "error", message: String(e) }); },
         });
       } catch (e) {
         $("err").textContent = L.connErr;
         post({ type: "error", message: String(e) });
+        cleanup();
+      } finally {
+        $("startBtn").disabled = false;
+        busy = false;
       }
     }
 
-    async function stop() { try { if (conv) await conv.endSession(); } catch (e) {} setLive(false); }
+    async function stop() {
+      try { if (conv) await conv.endSession(); } catch (e) {}
+      cleanup();
+    }
 
     $("startBtn").addEventListener("click", start);
     $("stopBtn").addEventListener("click", stop);

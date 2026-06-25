@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:webview_flutter_android/webview_flutter_android.dart';
 
 import '../../../app/theme.dart';
 
@@ -52,6 +53,12 @@ class _InterviewWebviewScreenState extends State<InterviewWebviewScreen> {
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..addJavaScriptChannel('IBILIM', onMessageReceived: _onMessage)
       ..loadRequest(Uri.parse(url));
+    // Android: разрешить аудио агента воспроизводиться без отдельного жеста —
+    // иначе поток озвучки ElevenLabs может троттлиться/обрываться.
+    if (c.platform is AndroidWebViewController) {
+      (c.platform as AndroidWebViewController)
+          .setMediaPlaybackRequiresUserGesture(false);
+    }
     if (mounted) setState(() => _controller = c);
   }
 
