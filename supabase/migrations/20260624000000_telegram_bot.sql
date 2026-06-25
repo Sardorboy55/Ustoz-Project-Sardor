@@ -105,7 +105,7 @@ create or replace function public._tg_on_booking_paid()
 returns trigger language plpgsql security definer set search_path = public as $$
 declare v_student text; v_teacher text; v_sub_uz text; v_sub_ru text;
 begin
-  if new.status = 'paid' and coalesce(old.status, '') <> 'paid' then
+  if new.status = 'paid' and old.status is distinct from 'paid' then
     select coalesce(full_name, '') into v_student from profiles where id = new.student_id;
     select coalesce(full_name, '') into v_teacher from profiles where id = new.teacher_id;
     select s.name_uz, s.name_ru into v_sub_uz, v_sub_ru
@@ -135,7 +135,7 @@ create or replace function public._tg_on_lesson_completed()
 returns trigger language plpgsql security definer set search_path = public as $$
 declare v_teacher text;
 begin
-  if new.status = 'completed' and coalesce(old.status, '') <> 'completed' then
+  if new.status = 'completed' and old.status is distinct from 'completed' then
     -- не просим оценку, если отзыв уже есть
     if not exists (select 1 from reviews where booking_id = new.id) then
       select coalesce(full_name, '') into v_teacher from profiles where id = new.teacher_id;
