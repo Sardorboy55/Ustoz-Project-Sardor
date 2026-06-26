@@ -17,6 +17,7 @@ export function ProPayClient({ priceLabel }: { priceLabel: string }) {
   const [state, setState] = useState<State>("loading");
   const [uid, setUid] = useState<string | null>(null);
   const [payAmount, setPayAmount] = useState<number | null>(null);
+  const [reviewNote, setReviewNote] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -39,11 +40,19 @@ export function ProPayClient({ priceLabel }: { priceLabel: string }) {
 
       const { data: pay } = await supabase.rpc("ensure_pro_payment");
       const row = (Array.isArray(pay) ? pay[0] : pay) as
-        | { pay_amount: number | null; receipt_path: string | null }
+        | {
+            pay_amount: number | null;
+            receipt_path: string | null;
+            status: "pending" | "confirmed" | "rejected" | null;
+            review_note: string | null;
+          }
         | null;
       if (row) {
         setPayAmount(row.pay_amount);
-        setState(row.receipt_path ? "sent" : "ready");
+        const rejected = row.status === "rejected";
+        setReviewNote(rejected ? row.review_note : null);
+        // Чек отправлен (pending) → «на проверке»; отклонён → снова к оплате.
+        setState(!rejected && row.receipt_path ? "sent" : "ready");
       } else {
         setState("ready");
       }
@@ -79,6 +88,7 @@ export function ProPayClient({ priceLabel }: { priceLabel: string }) {
       setErr("Не удалось отправить чек. Попробуйте ещё раз.");
       return;
     }
+    setReviewNote(null);
     setState("sent");
   };
 
@@ -142,6 +152,17 @@ export function ProPayClient({ priceLabel }: { priceLabel: string }) {
         <QrCode size={18} className="text-brand-600" aria-hidden="true" />
         <p className="text-sm font-bold text-zinc-900">Оплата через Paynet</p>
       </div>
+      {reviewNote !== null && (
+        <div className="mt-3 rounded-xl bg-red-50 px-3 py-2.5 text-left">
+          <p className="text-sm font-bold text-red-800">Чек отклонён</p>
+          <p className="mt-1 text-xs leading-relaxed text-red-700">
+            {reviewNote.trim()
+              ? reviewNote
+              : "Оплата не подтвердилась. Проверьте сумму и приложите корректный чек."}{" "}
+            Загрузите чек ещё раз — мы проверим повторно.
+          </p>
+        </div>
+      )}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src="/paynet-qr.png"
@@ -185,7 +206,9 @@ export function ProPayClient({ priceLabel }: { priceLabel: string }) {
         onClick={() => fileRef.current?.click()}
       >
         <Paperclip size={16} aria-hidden="true" />
-        Я оплатил — загрузить чек
+        {reviewNote !== null
+          ? "Загрузить чек повторно"
+          : "Я оплатил — загрузить чек"}
       </Button>
       {err && (
         <p role="alert" className="mt-2 text-sm font-medium text-red-600">

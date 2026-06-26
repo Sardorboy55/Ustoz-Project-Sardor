@@ -39,6 +39,7 @@ export function PackagePicker({
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [payAmount, setPayAmount] = useState<number | null>(null);
+  const [reviewNote, setReviewNote] = useState<string | null>(null);
   const [uid, setUid] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -74,10 +75,18 @@ export function PackagePicker({
       return;
     }
     const row = (Array.isArray(data) ? data[0] : data) as
-      | { pay_amount: number | null; receipt_path: string | null }
+      | {
+          pay_amount: number | null;
+          receipt_path: string | null;
+          status: "pending" | "confirmed" | "rejected" | null;
+          review_note: string | null;
+        }
       | null;
     setPayAmount(row?.pay_amount ?? null);
-    setStep(row?.receipt_path ? "sent" : "pay");
+    const rejected = row?.status === "rejected";
+    setReviewNote(rejected ? (row?.review_note ?? null) : null);
+    // Чек отправлен (pending) → «на проверке»; отклонён → снова к оплате + причина.
+    setStep(!rejected && row?.receipt_path ? "sent" : "pay");
   };
 
   const onReceipt = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -109,6 +118,7 @@ export function PackagePicker({
       setErr("Не удалось отправить чек. Попробуйте ещё раз.");
       return;
     }
+    setReviewNote(null);
     setStep("sent");
   };
 
@@ -117,6 +127,7 @@ export function PackagePicker({
     setStep("select");
     setErr(null);
     setPayAmount(null);
+    setReviewNote(null);
   };
 
   // Точная сумма с уникальным кодом (целые сумы) — её платят «ровно».
@@ -172,6 +183,17 @@ export function PackagePicker({
                 Оплата через Paynet
               </p>
             </div>
+            {reviewNote !== null && (
+              <div className="mt-3 rounded-xl bg-red-50 px-3 py-2.5 text-left">
+                <p className="text-sm font-bold text-red-800">Чек отклонён</p>
+                <p className="mt-1 text-xs leading-relaxed text-red-700">
+                  {reviewNote.trim()
+                    ? reviewNote
+                    : "Оплата не подтвердилась. Проверьте сумму и приложите корректный чек."}{" "}
+                  Загрузите чек ещё раз — мы проверим повторно.
+                </p>
+              </div>
+            )}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/paynet-qr.png"
@@ -218,7 +240,9 @@ export function PackagePicker({
               onClick={() => fileRef.current?.click()}
             >
               <Paperclip size={16} aria-hidden="true" />
-              Я оплатил — загрузить чек
+              {reviewNote !== null
+                ? "Загрузить чек повторно"
+                : "Я оплатил — загрузить чек"}
             </Button>
             {err && (
               <p role="alert" className="mt-2 text-sm font-medium text-red-600">
