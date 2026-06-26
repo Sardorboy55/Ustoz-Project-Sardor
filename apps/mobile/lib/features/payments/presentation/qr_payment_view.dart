@@ -8,29 +8,46 @@ import '../../../common/widgets/app_card.dart';
 /// Shared Paynet-QR payment block — mirrors the website's QR checkout.
 /// Reused by the lesson / package / Pro payment flows.
 ///
-/// Flow: pay the exact QR amount → tap "Я оплатил — Продолжить" → the parent
-/// polls the backend (SMS forwarder auto-confirms by the unique amount). No
-/// receipt upload, no admin step.
+/// Flow: pay the exact QR amount → «Загрузить чек» (gallery) → «Отправить
+/// заявку» → status «На проверке». Admin confirms (or rejects with a reason)
+/// in the panel. No SMS-polling, no «Я оплатил — Продолжить».
 class QrPaymentView extends StatelessWidget {
   const QrPaymentView({
     super.key,
     required this.payAmountTiyin,
-    required this.checking,
-    required this.notFound,
-    required this.onContinue,
+    required this.status,
+    required this.hasReceipt,
+    required this.uploading,
+    required this.submitting,
+    required this.onUploadTap,
+    required this.onSubmitTap,
+    this.reviewNote,
+    this.errorText,
   });
 
-  /// Exact amount to pay, in tiyin (unique sum the SMS matcher recognizes).
+  /// Exact amount to pay, in tiyin (the unique sum the admin matches by).
   final int payAmountTiyin;
 
-  /// Polling for the auto-confirmation is in progress.
-  final bool checking;
+  /// Server-side request status: null = nothing submitted yet,
+  /// 'pending' = on review, 'confirmed' = done, 'rejected' = declined.
+  final String? status;
 
-  /// Last check found no payment yet → show the "не найдено" hint.
-  final bool notFound;
+  /// A receipt file is already attached (uploaded) but not yet submitted.
+  final bool hasReceipt;
 
-  /// Tapped "Я оплатил — Продолжить".
-  final VoidCallback onContinue;
+  final bool uploading;
+  final bool submitting;
+
+  /// «Загрузить чек» → pick from gallery + upload.
+  final VoidCallback onUploadTap;
+
+  /// «Отправить заявку» → submit*Proof. Enabled only when a receipt is attached.
+  final VoidCallback onSubmitTap;
+
+  /// Rejection reason (review_note), shown when status == 'rejected'.
+  final String? reviewNote;
+
+  final String? errorText;
 
   static const _account = '8888 0128 8480 6485';
   static const _accountRaw = '8888012884806485';
@@ -39,11 +56,84 @@ class QrPaymentView extends StatelessWidget {
   Widget build(BuildContext context) {
     final ru = Localizations.localeOf(context).languageCode == 'ru';
     final locale = Localizations.localeOf(context);
+    final tokens = AppTokens.of(context);
     final amount = formatTiyin(payAmountTiyin, locale);
+
+    // ---- on review ----
+    if (status == 'pending') {
+      return AppCard(
+        child: Column(
+          children: [
+            Icon(Icons.hourglass_top_rounded, color: tokens.warning, size: 44),
+            const SizedBox(height: AppTokens.s12),
+            Text(
+              ru ? 'Заявка на проверке' : 'Ariza tekshiruvda',
+              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: AppTokens.s8),
+            Text(
+              ru
+                  ? 'Мы получили ваш чек. Ждём подтверждения администратора — '
+                        'обычно это занимает несколько минут.'
+                  : 'Chekingizni oldik. Administrator tasdig\'ini kutyapmiz — '
+                        'odatda bir necha daqiqa.',
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: AppColors.zinc500, height: 1.4),
+            ),
+          ],
+        ),
+      );
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        // ---- rejected banner (re-upload allowed below) ----
+        if (status == 'rejected') ...[
+          Container(
+            padding: const EdgeInsets.all(AppTokens.s12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFEF2F2),
+              borderRadius: BorderRadius.circular(AppTokens.radiusButton),
+              border: Border.all(color: const Color(0xFFFECACA)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  ru ? 'Заявка отклонена' : 'Ariza rad etildi',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFFB91C1C),
+                  ),
+                ),
+                if (reviewNote != null && reviewNote!.trim().isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    reviewNote!,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFF991B1B),
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 4),
+                Text(
+                  ru
+                      ? 'Загрузите корректный чек и отправьте заявку снова.'
+                      : 'To\'g\'ri chek yuklang va arizani qayta yuboring.',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF991B1B),
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppTokens.s16),
+        ],
         Center(
           child: ClipRRect(
             borderRadius: BorderRadius.circular(AppTokens.radiusCard),
@@ -62,7 +152,7 @@ class QrPaymentView extends StatelessWidget {
           style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: AppTokens.s8),
-        // exact amount — the unique sum the system matches the payment by
+        // exact amount — the unique sum the admin matches the payment by
         Container(
           padding: const EdgeInsets.symmetric(
             horizontal: AppTokens.s16,
@@ -81,7 +171,7 @@ class QrPaymentView extends StatelessWidget {
               const SizedBox(height: 2),
               Text(
                 amount,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w800,
                   color: AppColors.primaryDark,
@@ -90,8 +180,8 @@ class QrPaymentView extends StatelessWidget {
               const SizedBox(height: 2),
               Text(
                 ru
-                    ? 'По этой сумме мы найдём ваш платёж'
-                    : 'Shu summa bo\'yicha to\'lovingizni topamiz',
+                    ? 'Эту сумму укажите в чеке'
+                    : 'Shu summani chekda ko\'rsating',
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 11, color: AppColors.zinc500),
               ),
@@ -156,9 +246,63 @@ class QrPaymentView extends StatelessWidget {
           ),
         ),
         const SizedBox(height: AppTokens.s16),
+        // ---- attached-receipt chip ----
+        if (hasReceipt) ...[
+          Container(
+            padding: const EdgeInsets.all(AppTokens.s12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFECFDF5),
+              borderRadius: BorderRadius.circular(AppTokens.radiusButton),
+              border: Border.all(color: const Color(0xFFA7F3D0)),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.check_circle_rounded,
+                  color: AppColors.success,
+                  size: 20,
+                ),
+                const SizedBox(width: AppTokens.s8),
+                Expanded(
+                  child: Text(
+                    ru ? 'Чек прикреплён' : 'Chek biriktirildi',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF047857),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppTokens.s12),
+        ],
+        // ---- 1) upload receipt ----
+        OutlinedButton.icon(
+          onPressed: uploading || submitting ? null : onUploadTap,
+          icon: uploading
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.receipt_long_rounded, size: 20),
+          label: Text(
+            hasReceipt
+                ? (ru ? 'Заменить чек' : 'Chekni almashtirish')
+                : (ru ? 'Загрузить чек' : 'Chek yuklash'),
+          ),
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size.fromHeight(52),
+          ),
+        ),
+        const SizedBox(height: AppTokens.s8),
+        // ---- 2) submit request (enabled only when a receipt is attached) ----
         FilledButton.icon(
-          onPressed: checking ? null : onContinue,
-          icon: checking
+          onPressed: (!hasReceipt || uploading || submitting)
+              ? null
+              : onSubmitTap,
+          icon: submitting
               ? const SizedBox(
                   width: 18,
                   height: 18,
@@ -167,58 +311,24 @@ class QrPaymentView extends StatelessWidget {
                     color: Colors.white,
                   ),
                 )
-              : const Icon(Icons.check_circle_outline_rounded, size: 20),
-          label: Text(
-            checking
-                ? (ru ? 'Проверяем платёж…' : 'To\'lov tekshirilmoqda…')
-                : (ru ? 'Я оплатил — Продолжить' : 'To\'ladim — Davom etish'),
-          ),
+              : const Icon(Icons.send_rounded, size: 20),
+          label: Text(ru ? 'Отправить заявку' : 'Arizani yuborish'),
           style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
         ),
-        if (notFound) ...[
-          const SizedBox(height: AppTokens.s12),
-          Container(
-            padding: const EdgeInsets.all(AppTokens.s12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFFBEB),
-              borderRadius: BorderRadius.circular(AppTokens.radiusButton),
-              border: Border.all(color: const Color(0xFFFDE68A)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  ru ? 'Платёж пока не найден' : 'To\'lov hali topilmadi',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF92400E),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  ru
-                      ? 'Если вы только что оплатили — SMS от банка может прийти '
-                            'с задержкой. Подождите минуту и нажмите «Продолжить» '
-                            'ещё раз. Проверьте, что отправили ровно $amount.'
-                      : 'Agar hozir to\'lagan bo\'lsangiz — bankdan SMS biroz '
-                            'kechikishi mumkin. Bir daqiqa kuting va «Davom etish» '
-                            'tugmasini yana bosing. Aynan $amount yuborganingizni '
-                            'tekshiring.',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFFB45309),
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
+        if (errorText != null) ...[
+          const SizedBox(height: AppTokens.s8),
+          Text(
+            errorText!,
+            style: const TextStyle(color: Color(0xFFB91C1C), fontSize: 13),
           ),
         ],
         const SizedBox(height: AppTokens.s8),
         Text(
           ru
-              ? 'После оплаты нажмите «Продолжить» — найдём платёж по сумме и откроем доступ.'
-              : 'To\'lovdan keyin «Davom etish»ni bosing — summa bo\'yicha topamiz.',
+              ? 'Оплатите по QR, приложите чек и отправьте заявку — '
+                    'администратор подтвердит платёж.'
+              : 'QR orqali to\'lang, chekni biriktiring va arizani yuboring — '
+                    'administrator tasdiqlaydi.',
           textAlign: TextAlign.center,
           style: const TextStyle(fontSize: 11, color: AppColors.zinc400),
         ),

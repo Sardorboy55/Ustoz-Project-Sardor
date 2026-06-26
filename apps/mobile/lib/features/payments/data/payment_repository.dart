@@ -78,24 +78,23 @@ class PaymentRepository {
     params: {'p_receipt_path': receiptPath},
   );
 
-  /// True once the manual payment for this purpose+amount is confirmed
-  /// (auto by SMS forwarder, or by admin). Used by the "Я оплатил — Продолжить"
-  /// polling flow instead of uploading a receipt.
-  Future<bool> paymentConfirmed({
+  /// Latest manual-payment request for this purpose+amount (the one we just
+  /// created/submitted). Returns its `status` (pending/confirmed/rejected),
+  /// `review_note` (rejection reason), `receipt_path`, `pay_amount`, or null
+  /// if nothing submitted yet. Used to drive the receipt + admin-confirm UI.
+  /// RLS policy `manual_payments_select_own` allows selecting one's own rows.
+  Future<Map<String, dynamic>?> myPaymentStatus({
     required String purpose,
     required int payAmount,
-  }) async {
-    final r = await _client
-        .from('manual_payments')
-        .select('id')
-        .eq('student_id', _uid)
-        .eq('purpose', purpose)
-        .eq('pay_amount', payAmount)
-        .eq('status', 'confirmed')
-        .limit(1)
-        .maybeSingle();
-    return r != null;
-  }
+  }) => _client
+      .from('manual_payments')
+      .select('id, status, review_note, receipt_path, pay_amount')
+      .eq('student_id', _uid)
+      .eq('purpose', purpose)
+      .eq('pay_amount', payAmount)
+      .order('created_at', ascending: false)
+      .limit(1)
+      .maybeSingle();
 
   // ---- receipt upload (private bucket; path must start with the uid) ----
   Future<String> uploadReceipt(XFile file) async {

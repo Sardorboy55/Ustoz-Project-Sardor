@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../app/theme.dart';
 import '../../../common/widgets/app_card.dart';
@@ -20,8 +21,14 @@ class _ProCheckoutScreenState extends ConsumerState<ProCheckoutScreen> {
   bool _error = false;
   String? _blockedMsg;
   int _payAmount = 0;
-  bool _checking = false;
-  bool _notFound = false;
+
+  // manual-payment (receipt + admin confirm) state
+  String? _status; // null | pending | confirmed | rejected
+  String? _reviewNote;
+  String? _receiptPath;
+  bool _uploading = false;
+  bool _submitting = false;
+  String? _proofError;
 
   bool get _ru => Localizations.localeOf(context).languageCode == 'ru';
 
@@ -38,12 +45,21 @@ class _ProCheckoutScreenState extends ConsumerState<ProCheckoutScreen> {
       _blockedMsg = null;
     });
     try {
-      final row = await ref.read(paymentRepositoryProvider).ensureProPayment();
+      final repo = ref.read(paymentRepositoryProvider);
+      final row = await repo.ensureProPayment();
+      final pay = (row?['pay_amount'] as num?)?.toInt() ?? 0;
+      Map<String, dynamic>? st;
+      if (pay > 0) {
+        st = await repo.myPaymentStatus(purpose: 'pro', payAmount: pay);
+      }
       if (!mounted) return;
       setState(() {
-        _payAmount = (row?['pay_amount'] as num?)?.toInt() ?? 0;
+        _payAmount = pay;
+        _status = st?['status'] as String?;
+        _reviewNote = st?['review_note'] as String?;
         _loading = false;
       });
+      if (_status == 'confirmed') _onConfirmed();
     } catch (e) {
       if (!mounted) return;
       // ensure_pro_payment raises if the user is not a teacher.
@@ -56,40 +72,70 @@ class _ProCheckoutScreenState extends ConsumerState<ProCheckoutScreen> {
     }
   }
 
-  /// «Я оплатил — Продолжить»: опрашиваем бэкенд ~40 сек. SMS-форвардер находит
-  /// платёж по уникальной сумме → Pro активируется.
-  Future<void> _check() async {
+  void _onConfirmed() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(_ru ? 'Pro активирован ✓' : 'Pro faollashdi ✓')),
+    );
+    Navigator.of(context).maybePop();
+  }
+
+  /// «Загрузить чек» → pick from gallery → upload to the receipts bucket.
+  Future<void> _uploadReceipt() async {
     setState(() {
-      _checking = true;
-      _notFound = false;
+      _uploading = true;
+      _proofError = null;
     });
-    final repo = ref.read(paymentRepositoryProvider);
-    final deadline = DateTime.now().add(const Duration(seconds: 40));
-    while (DateTime.now().isBefore(deadline)) {
-      bool ok = false;
-      try {
-        ok = await repo.paymentConfirmed(purpose: 'pro', payAmount: _payAmount);
-      } catch (_) {
-        /* сеть моргнула — повторим */
-      }
-      if (ok) {
-        if (!mounted) return;
-        setState(() => _checking = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(_ru ? 'Pro активирован ✓' : 'Pro faollashdi ✓'),
-          ),
-        );
-        Navigator.of(context).maybePop();
+    try {
+      final picked = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 80,
+      );
+      if (picked == null) {
+        if (mounted) setState(() => _uploading = false);
         return;
       }
-      await Future.delayed(const Duration(seconds: 3));
-    }
-    if (mounted) {
+      final path = await ref
+          .read(paymentRepositoryProvider)
+          .uploadReceipt(picked);
+      if (!mounted) return;
       setState(() {
-        _checking = false;
-        _notFound = true;
+        _receiptPath = path;
+        _uploading = false;
       });
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _uploading = false;
+          _proofError = _ru ? 'Не удалось загрузить чек' : 'Chek yuklanmadi';
+        });
+      }
+    }
+  }
+
+  /// «Отправить заявку» → submit proof → status «На проверке».
+  Future<void> _submitProof() async {
+    final path = _receiptPath;
+    if (path == null) return;
+    setState(() {
+      _submitting = true;
+      _proofError = null;
+    });
+    try {
+      await ref.read(paymentRepositoryProvider).submitProProof(path);
+      if (!mounted) return;
+      setState(() {
+        _status = 'pending';
+        _reviewNote = null;
+        _receiptPath = null;
+        _submitting = false;
+      });
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _submitting = false;
+          _proofError = _ru ? 'Не удалось отправить заявку' : 'Ariza yuborilmadi';
+        });
+      }
     }
   }
 
@@ -152,9 +198,14 @@ class _ProCheckoutScreenState extends ConsumerState<ProCheckoutScreen> {
                 const SizedBox(height: AppTokens.s16),
                 QrPaymentView(
                   payAmountTiyin: _payAmount,
-                  checking: _checking,
-                  notFound: _notFound,
-                  onContinue: _check,
+                  status: _status,
+                  hasReceipt: _receiptPath != null,
+                  uploading: _uploading,
+                  submitting: _submitting,
+                  onUploadTap: _uploadReceipt,
+                  onSubmitTap: _submitProof,
+                  reviewNote: _reviewNote,
+                  errorText: _proofError,
                 ),
               ],
             ),

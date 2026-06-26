@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../app/theme.dart';
 import '../../../common/format.dart';
@@ -64,9 +65,15 @@ class _PackagePickerSheetState extends ConsumerState<_PackagePickerSheet> {
   int _step = 0; // 0 = select, 1 = pay
   int _payAmount = 0;
   bool _busy = false;
-  bool _checking = false;
-  bool _notFound = false;
   String? _error;
+
+  // manual-payment (receipt + admin confirm) state
+  String? _status; // null | pending | confirmed | rejected
+  String? _reviewNote;
+  String? _receiptPath;
+  bool _uploading = false;
+  bool _submitting = false;
+  String? _proofError;
 
   bool get _ru => Localizations.localeOf(context).languageCode == 'ru';
 
@@ -89,18 +96,23 @@ class _PackagePickerSheetState extends ConsumerState<_PackagePickerSheet> {
       _error = null;
     });
     try {
-      final row = await ref
-          .read(paymentRepositoryProvider)
-          .ensurePackagePayment(
-            teacherSubjectId: widget.teacherSubjectId,
-            lessons: _size,
-            durationMin: _duration!,
-          );
+      final repo = ref.read(paymentRepositoryProvider);
+      final row = await repo.ensurePackagePayment(
+        teacherSubjectId: widget.teacherSubjectId,
+        lessons: _size,
+        durationMin: _duration!,
+      );
+      final pay =
+          (row?['pay_amount'] as num?)?.toInt() ??
+          _totalTiyin(_duration!, _size);
+      final st = pay > 0
+          ? await repo.myPaymentStatus(purpose: 'package', payAmount: pay)
+          : null;
       if (!mounted) return;
       setState(() {
-        _payAmount =
-            (row?['pay_amount'] as num?)?.toInt() ??
-            _totalTiyin(_duration!, _size);
+        _payAmount = pay;
+        _status = st?['status'] as String?;
+        _reviewNote = st?['review_note'] as String?;
         _step = 1;
         _busy = false;
       });
@@ -114,46 +126,63 @@ class _PackagePickerSheetState extends ConsumerState<_PackagePickerSheet> {
     }
   }
 
-  /// «Я оплатил — Продолжить»: опрашиваем бэкенд ~40 сек. SMS-форвардер находит
-  /// платёж по уникальной сумме → уроки зачисляются в «Мои пакеты».
-  Future<void> _check() async {
+  /// «Загрузить чек» → pick from gallery → upload to the receipts bucket.
+  Future<void> _uploadReceipt() async {
     setState(() {
-      _checking = true;
-      _notFound = false;
+      _uploading = true;
+      _proofError = null;
     });
-    final repo = ref.read(paymentRepositoryProvider);
-    final deadline = DateTime.now().add(const Duration(seconds: 40));
-    while (DateTime.now().isBefore(deadline)) {
-      bool ok = false;
-      try {
-        ok = await repo.paymentConfirmed(
-          purpose: 'package',
-          payAmount: _payAmount,
-        );
-      } catch (_) {
-        /* сеть моргнула — повторим */
-      }
-      if (ok) {
-        if (!mounted) return;
-        // Capture before pop() — closing the sheet deactivates this context.
-        final messenger = ScaffoldMessenger.of(context);
-        final router = GoRouter.of(context);
-        final ru = _ru;
-        setState(() => _checking = false);
-        Navigator.of(context).pop();
-        messenger.showSnackBar(
-          SnackBar(content: Text(ru ? 'Пакет оплачен ✓' : 'Paket to\'landi ✓')),
-        );
-        router.push('/packages');
+    try {
+      final picked = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 80,
+      );
+      if (picked == null) {
+        if (mounted) setState(() => _uploading = false);
         return;
       }
-      await Future.delayed(const Duration(seconds: 3));
-    }
-    if (mounted) {
+      final path = await ref
+          .read(paymentRepositoryProvider)
+          .uploadReceipt(picked);
+      if (!mounted) return;
       setState(() {
-        _checking = false;
-        _notFound = true;
+        _receiptPath = path;
+        _uploading = false;
       });
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _uploading = false;
+          _proofError = _ru ? 'Не удалось загрузить чек' : 'Chek yuklanmadi';
+        });
+      }
+    }
+  }
+
+  /// «Отправить заявку» → submit proof → status «На проверке».
+  Future<void> _submitProof() async {
+    final path = _receiptPath;
+    if (path == null) return;
+    setState(() {
+      _submitting = true;
+      _proofError = null;
+    });
+    try {
+      await ref.read(paymentRepositoryProvider).submitPackageProof(path);
+      if (!mounted) return;
+      setState(() {
+        _status = 'pending';
+        _reviewNote = null;
+        _receiptPath = null;
+        _submitting = false;
+      });
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _submitting = false;
+          _proofError = _ru ? 'Не удалось отправить заявку' : 'Ariza yuborilmadi';
+        });
+      }
     }
   }
 
@@ -371,11 +400,55 @@ class _PackagePickerSheetState extends ConsumerState<_PackagePickerSheet> {
   }
 
   Widget _payStep() {
+    final ru = _ru;
+    if (_status == 'confirmed') {
+      return AppCard(
+        child: Column(
+          children: [
+            const Icon(
+              Icons.check_circle_rounded,
+              color: AppColors.success,
+              size: 44,
+            ),
+            const SizedBox(height: AppTokens.s12),
+            Text(
+              ru ? 'Пакет оплачен ✓' : 'Paket to\'landi ✓',
+              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: AppTokens.s8),
+            Text(
+              ru
+                  ? 'Уроки зачислены в «Мои пакеты».'
+                  : 'Darslar «Mening paketlarim»ga qo\'shildi.',
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: AppColors.zinc500, height: 1.4),
+            ),
+            const SizedBox(height: AppTokens.s16),
+            FilledButton(
+              onPressed: () {
+                final router = GoRouter.of(context);
+                Navigator.of(context).pop();
+                router.push('/packages');
+              },
+              style: FilledButton.styleFrom(
+                minimumSize: const Size.fromHeight(48),
+              ),
+              child: Text(ru ? 'К моим пакетам' : 'Mening paketlarim'),
+            ),
+          ],
+        ),
+      );
+    }
     return QrPaymentView(
       payAmountTiyin: _payAmount,
-      checking: _checking,
-      notFound: _notFound,
-      onContinue: _check,
+      status: _status,
+      hasReceipt: _receiptPath != null,
+      uploading: _uploading,
+      submitting: _submitting,
+      onUploadTap: _uploadReceipt,
+      onSubmitTap: _submitProof,
+      reviewNote: _reviewNote,
+      errorText: _proofError,
     );
   }
 }
