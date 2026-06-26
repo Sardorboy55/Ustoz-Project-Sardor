@@ -212,7 +212,7 @@ export function PackagePicker({
               .
             </p>
             <p className="mt-1 text-xs text-zinc-500">
-              Оплатите ровно эту сумму — по ней мы найдём ваш платёж.
+              Оплатите эту сумму и приложите чек ниже — по чеку мы подтвердим ваш платёж.
             </p>
             <div className="mt-3 rounded-xl bg-zinc-50 px-3 py-2.5 text-left text-sm">
               <div className="flex justify-between gap-2">

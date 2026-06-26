@@ -474,7 +474,7 @@ export function BookingDetail({ bookingId }: { bookingId: string }) {
             </span>
           </div>
           <p className="mt-1 text-right text-xs text-zinc-500">
-            Оплатите ровно эту сумму — по ней мы найдём ваш платёж.
+            Оплатите цену урока и приложите чек ниже — по чеку мы подтвердим ваш платёж.
           </p>
 
           <div className="mt-6 border-t border-zinc-100 pt-6">
